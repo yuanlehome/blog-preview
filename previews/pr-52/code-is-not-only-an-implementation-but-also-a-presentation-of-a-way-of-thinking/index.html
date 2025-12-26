@@ -1,0 +1,177 @@
+<!DOCTYPE html><html lang="en" data-astro-cid-sckkx6r4> <head><script>(() => {
+  const storageKey = 'theme';
+  const className = 'dark';
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  const validThemes = ['light', 'dark'];
+  let currentPreference = (() => {
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored && validThemes.includes(stored)) return stored;
+    } catch (error) {
+      console.warn('Unable to access localStorage for theme:', error);
+    }
+    return mediaQuery.matches ? 'dark' : 'light';
+  })();
+
+  const resolveTheme = (preference) => (preference === 'dark' ? 'dark' : 'light');
+
+  const applyTheme = (preference) => {
+    const effectiveTheme = resolveTheme(preference);
+    document.documentElement.classList.toggle(className, effectiveTheme === 'dark');
+    document.documentElement.dataset.theme = effectiveTheme;
+    return effectiveTheme;
+  };
+
+  const dispatchChange = (preference) => {
+    const resolved = document.documentElement.classList.contains(className) ? 'dark' : 'light';
+    window.dispatchEvent(
+      new CustomEvent('themechange', {
+        detail: { theme: preference, resolved },
+      }),
+    );
+  };
+
+  applyTheme(currentPreference);
+
+  window.__setTheme = (next) => {
+    const preference = validThemes.includes(String(next)) ? String(next) : resolveTheme(currentPreference);
+    currentPreference = preference;
+    try {
+      localStorage.setItem(storageKey, preference);
+    } catch (error) {
+      console.warn('Unable to persist theme selection:', error);
+    }
+    applyTheme(preference);
+    dispatchChange(preference);
+  };
+})();</script><meta charset="UTF-8"><meta name="description" content="A minimal Astro blog"><meta name="viewport" content="width=device-width"><link rel="icon" type="image/svg+xml" href="/blog-preview/previews/pr-52/favicon.svg"><meta name="generator" content="Astro v5.16.6"><link rel="canonical" href="https://yuanlehome.github.io/blog-preview/previews/pr-52/code-is-not-only-an-implementation-but-also-a-presentation-of-a-way-of-thinking/"><link rel="alternate" type="application/rss+xml" title="RSS" href="/blog-preview/previews/pr-52/rss.xml"><meta property="og:title" content="Code is not only an implementation, but also a presentation of a way of thinking"><meta property="og:description" content="A minimal Astro blog"><meta property="og:image" content><meta property="og:type" content="article"><meta property="og:url" content="https://yuanlehome.github.io/blog-preview/previews/pr-52/code-is-not-only-an-implementation-but-also-a-presentation-of-a-way-of-thinking/"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Code is not only an implementation, but also a presentation of a way of thinking"><meta name="twitter:description" content="A minimal Astro blog"><meta name="twitter:image" content><title>Code is not only an implementation, but also a presentation of a way of thinking</title><link rel="stylesheet" href="/blog-preview/previews/pr-52/_astro/_slug_.DSUSDQi5.css">
+<style>.reading-progress[data-astro-cid-mu6cnre2]{position:fixed;inset:0 0 auto;height:3px;width:100%;background:transparent;z-index:50;pointer-events:none}.reading-progress__bar[data-astro-cid-mu6cnre2]{display:block;height:100%;width:100%;transform:scaleX(var(--progress-value, 0));transform-origin:left center;background:linear-gradient(90deg,var(--progress-color-start),var(--progress-color-end));transition:transform .1s linear}:root{--progress-color-start: #2563eb;--progress-color-end: #22d3ee}:root.dark{--progress-color-start: #38bdf8;--progress-color-end: #a855f7}@media(prefers-reduced-motion:reduce){.reading-progress__bar[data-astro-cid-mu6cnre2]{transition:none}}.reading-progress__controls[data-astro-cid-mu6cnre2]{position:fixed;inset:auto 1rem 1.5rem auto;display:flex;flex-direction:column;gap:.5rem;z-index:60;pointer-events:none}.reading-progress__control[data-astro-cid-mu6cnre2]{pointer-events:auto;border:1px solid var(--progress-control-border);background:var(--progress-control-bg);color:var(--progress-control-text);border-radius:9999px;padding:.5rem .75rem;font-size:.875rem;line-height:1.25rem;box-shadow:0 4px 12px #0000001f;transition:transform .15s ease,box-shadow .15s ease,background-color .15s ease}.reading-progress__control[data-astro-cid-mu6cnre2]:hover,.reading-progress__control[data-astro-cid-mu6cnre2]:focus-visible{transform:translateY(-2px);box-shadow:0 8px 20px #0000002e;outline:none}:root{--progress-control-bg: #ffffff;--progress-control-border: rgba(0, 0, 0, .08);--progress-control-text: #0f172a}:root.dark{--progress-control-bg: #0f172a;--progress-control-border: rgba(255, 255, 255, .08);--progress-control-text: #e2e8f0}@media(max-width:640px){.reading-progress__controls[data-astro-cid-mu6cnre2]{inset:auto .75rem 1rem auto}.reading-progress__control[data-astro-cid-mu6cnre2]{padding:.45rem .65rem;font-size:.8125rem}}
+</style></head> <body class="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300 min-h-screen flex flex-col" data-astro-cid-sckkx6r4>  <div class="reading-progress" data-reading-progress data-target-selector="[data-article]" data-astro-cid-mu6cnre2> <span class="reading-progress__bar" data-reading-progress-bar data-astro-cid-mu6cnre2></span> </div> <div class="reading-progress__controls" data-reading-progress-controls hidden data-astro-cid-mu6cnre2> <button type="button" class="reading-progress__control" data-scroll-top aria-label="返回文章顶部" data-astro-cid-mu6cnre2>
+⬆️ 顶部
+</button> <button type="button" class="reading-progress__control" data-scroll-bottom aria-label="跳转文章底部" data-astro-cid-mu6cnre2>
+⬇️ 底部
+</button> </div>  <script type="module">const a=document.querySelector("[data-reading-progress]"),p=a?.dataset?.targetSelector||"[data-article]",w=a?.querySelector("[data-reading-progress-bar]"),l=document.querySelector(p),r=document.querySelector("[data-reading-progress-controls]"),h=r?.querySelector("[data-scroll-top]"),v=r?.querySelector("[data-scroll-bottom]");if(a&&w&&l){let e=0,s=0,n=!1;const m=(t,o,c)=>Math.min(Math.max(t,o),c),i=()=>{e=l.getBoundingClientRect().top+window.scrollY,s=l.scrollHeight},d=()=>{const t=Math.max(s-window.innerHeight,1),o=m((window.scrollY-e)/t,0,1);w.style.setProperty("--progress-value",o.toString()),n=!1},u=()=>{n||(n=!0,requestAnimationFrame(d))},g=()=>{i(),u()};if(i(),d(),window.addEventListener("scroll",u,{passive:!0}),window.addEventListener("resize",g),window.addEventListener("load",g,{once:!0}),r){r.hidden=!1;const t=()=>{window.scrollTo({top:e,behavior:"smooth"})},o=()=>{const c=Math.max(e+s-window.innerHeight,e);window.scrollTo({top:c,behavior:"smooth"})};h?.addEventListener("click",t),v?.addEventListener("click",o)}}</script> <header class="py-6 border-b border-gray-200 dark:border-gray-800"> <div class="container mx-auto px-4 flex justify-between items-center max-w-4xl"> <a href="/blog-preview/previews/pr-52/" class="text-xl font-bold hover:text-blue-600 dark:hover:text-blue-400">Yuanle Liu‘s Blog</a> <nav class="flex items-center gap-3"> <a href="/blog-preview/previews/pr-52/" class="hover:underline">Home</a> <a href="/blog-preview/previews/pr-52/archive/" class="hover:underline">Archive</a> <a href="/blog-preview/previews/pr-52/about/" class="hover:underline">About</a> <a href="/blog-preview/previews/pr-52/rss.xml" class="hover:underline">RSS</a> <button id="theme-toggle" class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-800" aria-label="Toggle theme">
+🖥️☀️
+</button> </nav> </div> </header> <script type="module">const d="theme",r=["light","dark"],c=()=>{try{const e=localStorage.getItem(d);if(e==="light"||e==="dark")return e}catch(e){console.warn("Unable to read theme preference:",e)}return window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"},i=()=>document.documentElement.classList.contains("dark")?"dark":"light",h=e=>e==="dark"?"🌙":"☀️",m=e=>e==="dark"?"Dark":"Light",a=(e,t)=>{const n=document.getElementById("theme-toggle");if(!n)return;const o=t??i(),l=h(o),s=m(o);n.dataset.theme=e,n.textContent=`${l} ${s}`,n.setAttribute("aria-label",`Toggle theme (current: ${s})`)},g=e=>{if(typeof window.__setTheme=="function"){window.__setTheme?.(e);return}const t=e==="dark"?"dark":"light";document.documentElement.classList.toggle("dark",t==="dark");try{localStorage.setItem(d,e)}catch(n){console.warn("Unable to persist theme preference:",n)}window.dispatchEvent(new CustomEvent("themechange",{detail:{theme:e,resolved:t}}))},u=()=>{const e=c(),t=r[(r.indexOf(e)+1)%r.length];g(t),a(t)};document.getElementById("theme-toggle")?.addEventListener("click",u);a(c());window.addEventListener("themechange",e=>{const t=e.detail,n=t?.theme??c(),o=t?.resolved;a(n,o)});</script> <main class="container mx-auto px-4 py-8 max-w-6xl"> <div class="flex flex-col gap-6 lg:flex-row lg:gap-10"> <div class="w-full lg:w-72 shrink-0" style="--toc-offset: 96px" data-toc-container> <div class="lg:hidden mb-4 flex items-center justify-between gap-3"> <div> <p class="text-sm font-semibold">文章目录</p> <p class="text-xs text-gray-500">快速跳转到你关心的章节</p> </div> <button type="button" class="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-2 text-sm font-medium shadow-sm transition hover:border-blue-200 hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:border-gray-800 dark:bg-gray-900 dark:hover:border-blue-500/50 dark:hover:text-blue-300 dark:focus-visible:ring-offset-gray-900" data-toc-open aria-haspopup="dialog" aria-expanded="false">
+📑 目录
+</button> </div> <aside class="hidden lg:block"> <div class="sticky top-[calc(var(--toc-offset)+0.75rem)] max-h-[calc(100vh-var(--toc-offset)-2rem)] space-y-3 overflow-hidden rounded-xl border border-gray-200 bg-gray-50/80 p-4 shadow-md backdrop-blur-sm dark:border-gray-800 dark:bg-gray-800/50"> <div class="space-y-1"> <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">文章目录</p> <p class="text-xs text-gray-500 dark:text-gray-400">快速跳转到你关心的章节</p> </div> <nav aria-label="文章目录" class="max-h-[inherit] overflow-y-auto pr-1" data-toc-scroll> <ol class="space-y-2 text-sm"> <li> <a href="#" data-toc-link data-target title="一、系统思维：看到代码之外的系统¶" class="group flex items-start gap-2 truncate text-gray-700 underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:text-gray-200 dark:focus-visible:ring-offset-gray-900 "> <span class="mt-0.5 text-xs text-gray-400 transition-colors group-data-[active=true]:text-blue-600 dark:text-gray-500 dark:group-data-[active=true]:text-blue-400">#</span> <span class="flex-1 truncate" data-title>一、系统思维：看到代码之外的系统¶</span> </a> </li><li> <a href="#" data-toc-link data-target title="二、沟通意识：代码也是协作产物¶" class="group flex items-start gap-2 truncate text-gray-700 underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:text-gray-200 dark:focus-visible:ring-offset-gray-900 "> <span class="mt-0.5 text-xs text-gray-400 transition-colors group-data-[active=true]:text-blue-600 dark:text-gray-500 dark:group-data-[active=true]:text-blue-400">#</span> <span class="flex-1 truncate" data-title>二、沟通意识：代码也是协作产物¶</span> </a> </li><li> <a href="#" data-toc-link data-target title="三、重构意识：让代码随时间变得更好¶" class="group flex items-start gap-2 truncate text-gray-700 underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:text-gray-200 dark:focus-visible:ring-offset-gray-900 "> <span class="mt-0.5 text-xs text-gray-400 transition-colors group-data-[active=true]:text-blue-600 dark:text-gray-500 dark:group-data-[active=true]:text-blue-400">#</span> <span class="flex-1 truncate" data-title>三、重构意识：让代码随时间变得更好¶</span> </a> </li><li> <a href="#" data-toc-link data-target title="四、文档与知识共享：让思考留痕¶" class="group flex items-start gap-2 truncate text-gray-700 underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:text-gray-200 dark:focus-visible:ring-offset-gray-900 "> <span class="mt-0.5 text-xs text-gray-400 transition-colors group-data-[active=true]:text-blue-600 dark:text-gray-500 dark:group-data-[active=true]:text-blue-400">#</span> <span class="flex-1 truncate" data-title>四、文档与知识共享：让思考留痕¶</span> </a> </li><li> <a href="#" data-toc-link data-target title="五、可扩展性：为未来的演化留空间¶" class="group flex items-start gap-2 truncate text-gray-700 underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:text-gray-200 dark:focus-visible:ring-offset-gray-900 "> <span class="mt-0.5 text-xs text-gray-400 transition-colors group-data-[active=true]:text-blue-600 dark:text-gray-500 dark:group-data-[active=true]:text-blue-400">#</span> <span class="flex-1 truncate" data-title>五、可扩展性：为未来的演化留空间¶</span> </a> </li><li> <a href="#" data-toc-link data-target title="六、健壮性与可观察性：让系统值得信赖¶" class="group flex items-start gap-2 truncate text-gray-700 underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:text-gray-200 dark:focus-visible:ring-offset-gray-900 "> <span class="mt-0.5 text-xs text-gray-400 transition-colors group-data-[active=true]:text-blue-600 dark:text-gray-500 dark:group-data-[active=true]:text-blue-400">#</span> <span class="flex-1 truncate" data-title>六、健壮性与可观察性：让系统值得信赖¶</span> </a> </li><li> <a href="#" data-toc-link data-target title="总结¶" class="group flex items-start gap-2 truncate text-gray-700 underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:text-gray-200 dark:focus-visible:ring-offset-gray-900 "> <span class="mt-0.5 text-xs text-gray-400 transition-colors group-data-[active=true]:text-blue-600 dark:text-gray-500 dark:group-data-[active=true]:text-blue-400">#</span> <span class="flex-1 truncate" data-title>总结¶</span> </a> </li> </ol> </nav> </div> </aside> <div class="pointer-events-none fixed inset-0 z-40 bg-gray-900/40 opacity-0 backdrop-blur-sm transition data-[open=true]:pointer-events-auto data-[open=true]:opacity-100 lg:hidden" data-toc-overlay aria-hidden="true"> <div class="absolute inset-x-4 top-[calc(var(--toc-offset)+1rem)] max-h-[70vh] overflow-hidden rounded-2xl border border-gray-200 bg-white/95 p-4 shadow-xl ring-1 ring-black/5 transition dark:border-gray-800 dark:bg-gray-900/95 dark:ring-white/5" role="dialog" aria-modal="true" aria-label="文章目录"> <div class="mb-3 flex items-center justify-between gap-3"> <div> <p class="text-sm font-semibold">文章目录</p> <p class="text-xs text-gray-500">点击条目可跳转</p> </div> <button type="button" class="rounded-full border border-gray-200 bg-white px-3 py-1 text-sm font-medium shadow-sm transition hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:border-gray-800 dark:bg-gray-900 dark:hover:text-blue-300 dark:focus-visible:ring-offset-gray-900" data-toc-close>
+关闭
+</button> </div> <nav aria-label="文章目录" class="max-h-[60vh] overflow-y-auto pr-1" data-toc-scroll> <ol class="space-y-2 text-sm"> <li> <a href="#" data-toc-link data-target title="一、系统思维：看到代码之外的系统¶" class="group flex items-start gap-2 truncate rounded-lg px-2 py-1 text-gray-800 underline-offset-2 transition hover:bg-blue-50 hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:text-gray-100 dark:hover:bg-blue-500/10 dark:hover:text-blue-300 dark:focus-visible:ring-offset-gray-900 "> <span class="mt-0.5 text-xs text-gray-400 transition-colors group-data-[active=true]:text-blue-600 dark:text-gray-500 dark:group-data-[active=true]:text-blue-300">#</span> <span class="flex-1 truncate" data-title>一、系统思维：看到代码之外的系统¶</span> </a> </li><li> <a href="#" data-toc-link data-target title="二、沟通意识：代码也是协作产物¶" class="group flex items-start gap-2 truncate rounded-lg px-2 py-1 text-gray-800 underline-offset-2 transition hover:bg-blue-50 hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:text-gray-100 dark:hover:bg-blue-500/10 dark:hover:text-blue-300 dark:focus-visible:ring-offset-gray-900 "> <span class="mt-0.5 text-xs text-gray-400 transition-colors group-data-[active=true]:text-blue-600 dark:text-gray-500 dark:group-data-[active=true]:text-blue-300">#</span> <span class="flex-1 truncate" data-title>二、沟通意识：代码也是协作产物¶</span> </a> </li><li> <a href="#" data-toc-link data-target title="三、重构意识：让代码随时间变得更好¶" class="group flex items-start gap-2 truncate rounded-lg px-2 py-1 text-gray-800 underline-offset-2 transition hover:bg-blue-50 hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:text-gray-100 dark:hover:bg-blue-500/10 dark:hover:text-blue-300 dark:focus-visible:ring-offset-gray-900 "> <span class="mt-0.5 text-xs text-gray-400 transition-colors group-data-[active=true]:text-blue-600 dark:text-gray-500 dark:group-data-[active=true]:text-blue-300">#</span> <span class="flex-1 truncate" data-title>三、重构意识：让代码随时间变得更好¶</span> </a> </li><li> <a href="#" data-toc-link data-target title="四、文档与知识共享：让思考留痕¶" class="group flex items-start gap-2 truncate rounded-lg px-2 py-1 text-gray-800 underline-offset-2 transition hover:bg-blue-50 hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:text-gray-100 dark:hover:bg-blue-500/10 dark:hover:text-blue-300 dark:focus-visible:ring-offset-gray-900 "> <span class="mt-0.5 text-xs text-gray-400 transition-colors group-data-[active=true]:text-blue-600 dark:text-gray-500 dark:group-data-[active=true]:text-blue-300">#</span> <span class="flex-1 truncate" data-title>四、文档与知识共享：让思考留痕¶</span> </a> </li><li> <a href="#" data-toc-link data-target title="五、可扩展性：为未来的演化留空间¶" class="group flex items-start gap-2 truncate rounded-lg px-2 py-1 text-gray-800 underline-offset-2 transition hover:bg-blue-50 hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:text-gray-100 dark:hover:bg-blue-500/10 dark:hover:text-blue-300 dark:focus-visible:ring-offset-gray-900 "> <span class="mt-0.5 text-xs text-gray-400 transition-colors group-data-[active=true]:text-blue-600 dark:text-gray-500 dark:group-data-[active=true]:text-blue-300">#</span> <span class="flex-1 truncate" data-title>五、可扩展性：为未来的演化留空间¶</span> </a> </li><li> <a href="#" data-toc-link data-target title="六、健壮性与可观察性：让系统值得信赖¶" class="group flex items-start gap-2 truncate rounded-lg px-2 py-1 text-gray-800 underline-offset-2 transition hover:bg-blue-50 hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:text-gray-100 dark:hover:bg-blue-500/10 dark:hover:text-blue-300 dark:focus-visible:ring-offset-gray-900 "> <span class="mt-0.5 text-xs text-gray-400 transition-colors group-data-[active=true]:text-blue-600 dark:text-gray-500 dark:group-data-[active=true]:text-blue-300">#</span> <span class="flex-1 truncate" data-title>六、健壮性与可观察性：让系统值得信赖¶</span> </a> </li><li> <a href="#" data-toc-link data-target title="总结¶" class="group flex items-start gap-2 truncate rounded-lg px-2 py-1 text-gray-800 underline-offset-2 transition hover:bg-blue-50 hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:text-gray-100 dark:hover:bg-blue-500/10 dark:hover:text-blue-300 dark:focus-visible:ring-offset-gray-900 "> <span class="mt-0.5 text-xs text-gray-400 transition-colors group-data-[active=true]:text-blue-600 dark:text-gray-500 dark:group-data-[active=true]:text-blue-300">#</span> <span class="flex-1 truncate" data-title>总结¶</span> </a> </li> </ol> </nav> </div> </div> </div> <script type="module">const l=Array.from(document.querySelectorAll("[data-toc-link]")),n=document.querySelector("[data-toc-overlay]"),f=document.querySelector("[data-toc-container]"),d=document.querySelector("[data-toc-open]"),v=document.querySelector("[data-toc-close]"),y=document.body,c=t=>{n&&(n.dataset.open=String(t),d&&d.setAttribute("aria-expanded",t?"true":"false"),y.classList.toggle("overflow-hidden",t))};d?.addEventListener("click",()=>c(!0));v?.addEventListener("click",()=>c(!1));n?.addEventListener("click",t=>{t.target===n&&c(!1)});l.forEach(t=>t.addEventListener("click",()=>{c(!1)}));const i=l.map(t=>document.getElementById(t.dataset.target||"")).filter(t=>!!t),s=t=>{l.forEach(r=>{const e=r.dataset.target===t;r.dataset.active=e?"true":"false",r.setAttribute("aria-current",e?"true":"false")})};if(i.length>0){s(i[0].id);const t=f&&getComputedStyle(f).getPropertyValue("--toc-offset")||"96px",r=new IntersectionObserver(e=>{const u=e.filter(o=>o.isIntersecting).sort((o,a)=>o.target.getBoundingClientRect().top-a.target.getBoundingClientRect().top);if(u[0]){s(u[0].target.id);return}const g=e.filter(o=>o.boundingClientRect.top<0).sort((o,a)=>a.target.getBoundingClientRect().top-o.target.getBoundingClientRect().top);g[0]&&s(g[0].target.id)},{rootMargin:`-${t.trim()} 0% -55% 0%`,threshold:[0,.25,.5,1]});i.forEach(e=>r.observe(e))}</script> <article class="prose dark:prose-invert max-w-none prose-img:rounded-xl flex-1 min-w-0" data-article> <header class="mb-8 not-prose">  <h1 class="text-3xl md:text-4xl font-bold mb-4">Code is not only an implementation, but also a presentation of a way of thinking</h1> <div class="text-gray-500 text-sm flex items-center gap-4 flex-wrap"> <time class="flex items-center gap-1"> <span>📅</span> 12/25/2025 </time> <div class="flex items-center gap-1"> <span>✍️</span> 965 字
+</div> <div class="flex items-center gap-1" title="965 words"> <span>⏱️</span> 3 min read </div> </div> </header> <p><u><em><strong>在日常开发中，我们往往把重点放在“把功能实现出来”。但一个成熟工程师的代码，并不仅仅是代码本身，而是其思维方式、问题拆解能力、沟通意识与系统理解的外化形式。</strong></em></u></p>
+<h2 id="">一、系统思维：看到代码之外的系统<a href="#" class="heading-anchor" aria-label="Link to 一、系统思维：看到代码之外的系统">¶</a></h2>
+<p>优秀工程师写代码时并不是只盯着一个函数或一个类，而是思考：</p>
+<ol>
+<li>这个模块在整个系统中承担什么角色？</li>
+<li>它如何与其他模块协作？</li>
+<li>当模块演化时，哪些边界会受到影响？</li>
+<li>未来扩展时，能否复用当前设计？可能的瓶颈是什么？</li>
+</ol>
+<p><u><em>具备系统视角的代码更加稳健，也更容易在团队内被复用，不会因设计局限导致后续开发被“卡住”。</em></u></p>
+<h2 id="">二、沟通意识：代码也是协作产物<a href="#" class="heading-anchor" aria-label="Link to 二、沟通意识：代码也是协作产物">¶</a></h2>
+<p>软件工程本质上是团队协作。代码写好之后，不是给自己看的，而是给未来的团队成员看的。</p>
+<p>体现沟通意识的方式包括：</p>
+<ol>
+<li>接口设计是否直观？命名是否清晰？</li>
+<li>文档是否表达了输入、输出、限制和边界？</li>
+<li>模块内部逻辑是否容易理解？</li>
+<li>半年后再看还能否在几分钟内重建上下文？</li>
+</ol>
+<p><u><em>清晰、可阅读的代码，就是一种降低沟通成本的方式。</em></u></p>
+<h2 id="">三、重构意识：让代码随时间变得更好<a href="#" class="heading-anchor" aria-label="Link to 三、重构意识：让代码随时间变得更好">¶</a></h2>
+<p>重构是一种对代码健康度的主动维护，而不是“推倒重写”。重构意识体现为：</p>
+<ul>
+<li>发现重复逻辑就抽象；</li>
+<li>职责变复杂及时拆分模块；</li>
+<li>过长函数、过多参数及时整理；</li>
+<li><u><em>看到“坏味道（code smell）”主动修复；</em></u></li>
+<li>避免技术债务持续堆积。</li>
+</ul>
+<p><u><em>重构是成熟工程师的重要标志，是让系统可以长期迭代的重要能力。</em></u></p>
+<h2 id="">四、文档与知识共享：让思考留痕<a href="#" class="heading-anchor" aria-label="Link to 四、文档与知识共享：让思考留痕">¶</a></h2>
+<p>成熟工程师不会让重要思考只停留在脑中。优秀文档通常包含：</p>
+<ul>
+<li>为什么做这个设计？</li>
+<li>为什么不是另一种方案？</li>
+<li>模块的关键边界条件是什么？</li>
+<li>扩展点和限制在哪里？</li>
+</ul>
+<p><u><em>文档让隐性的思考变成团队可共享的资产，避免重复踩坑，加速新人上手。</em></u></p>
+<h2 id="">五、可扩展性：为未来的演化留空间<a href="#" class="heading-anchor" aria-label="Link to 五、可扩展性：为未来的演化留空间">¶</a></h2>
+<p>优秀代码不仅满足当前需求，也考虑未来变化。体现扩展性的方式包括：</p>
+<ul>
+<li>使用合适的设计模式抽象变化点；</li>
+<li>将业务逻辑与基础逻辑解耦；</li>
+<li>保留可扩展挂载点；</li>
+<li>避免写死逻辑或使用“强绑定”的实现。</li>
+</ul>
+<p><u><em>可扩展性好的模块，使团队在新增业务时成本更低、速度更快。</em></u></p>
+<h2 id="">六、健壮性与可观察性：让系统值得信赖<a href="#" class="heading-anchor" aria-label="Link to 六、健壮性与可观察性：让系统值得信赖">¶</a></h2>
+<p>专业工程师对系统稳定性负责，而不仅仅对“功能正确”负责。健壮代码通常包含：</p>
+<ul>
+<li>完整的异常处理；</li>
+<li>明确的错误提示与返回码；</li>
+<li>关键路径的日志记录；</li>
+<li>完整的监控指标（error rate / latency / load 等）；</li>
+<li>发生问题时能快速定位、快速恢复。</li>
+</ul>
+<p><u><em>可观察性好、异常可控的系统是工程化能力的核心体现。</em></u></p>
+<h2 id="">总结<a href="#" class="heading-anchor" aria-label="Link to 总结">¶</a></h2>
+<p>代码不仅给机器看，更是你思考方式的直接呈现。一个工程师的成熟度，不止体现在写功能的速度，而体现在：</p>
+<ul>
+<li>对系统的理解深度</li>
+<li>对逻辑的严谨程度</li>
+<li>对团队协作的贡献程度</li>
+<li>对未来演化的前瞻能力</li>
+<li>对系统稳定性的责任感</li>
+</ul>
+<p><u><em>这些思维在代码中的体现，最终累积成：可维护、可扩展、可协作、可托付生产的高质量软件。</em></u></p> <div class="grid md:grid-cols-2 gap-4 mt-10"> <a href="/blog-preview/previews/pr-52/flashattention/" class="block p-4 rounded-lg border border-gray-200 dark:border-gray-800 hover:border-blue-500"> <div class="text-xs uppercase text-gray-500">Previous</div> <div class="font-semibold">FlashAttention 原理与实现</div> </a> <a href="/blog-preview/previews/pr-52/long-context/" class="block p-4 rounded-lg border border-gray-200 dark:border-gray-800 hover:border-blue-500 text-right"> <div class="text-xs uppercase text-gray-500">Next</div> <div class="font-semibold">Long Context 推理优化技术梳理</div> </a> </div>  <section id="comments" class="mt-12"> <div class="border-t border-gray-200 dark:border-gray-700 pt-8"> <script src="https://giscus.app/client.js" data-repo="yuanlehome/blog" data-repo-id="R_kgDOQu2Jjw" data-category="General" data-category-id="DIC_kwDOQu2Jj84C0QDN" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="bottom" data-theme="preferred_color_scheme" data-lang="zh-CN" crossorigin="anonymous" async></script> </div> </section> <script>
+  // Mapping uses `pathname` to keep one discussion per URL path, which is stable for static sites.
+  const themeMap = {
+    light: 'light',
+    dark: 'dark_dimmed',
+  };
+
+  const getCurrentTheme = () =>
+    document.documentElement.classList.contains('dark') ||
+    document.documentElement.dataset.theme === 'dark'
+      ? 'dark'
+      : 'light';
+
+  let activeTheme = getCurrentTheme();
+
+  const postThemeMessage = () => {
+    const iframe = document.querySelector('iframe.giscus-frame');
+    if (!iframe) return;
+
+    const nextTheme = themeMap[activeTheme] ?? 'light';
+    iframe.contentWindow?.postMessage(
+      { giscus: { setConfig: { theme: nextTheme } } },
+      'https://giscus.app'
+    );
+  };
+
+  const applyTheme = () => {
+    const detected = getCurrentTheme();
+    if (detected === activeTheme) return;
+    activeTheme = detected;
+    postThemeMessage();
+  };
+
+  const observer = new MutationObserver(applyTheme);
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['class', 'data-theme'],
+  });
+
+  const ensureFrameAndSync = () => {
+    postThemeMessage();
+    if (!document.querySelector('iframe.giscus-frame')) {
+      requestAnimationFrame(ensureFrameAndSync);
+    }
+  };
+
+  // Run once after load to sync the initial theme.
+  ensureFrameAndSync();
+</script> </article> </div> </main> <footer class="py-8 mt-auto border-t border-gray-200 dark:border-gray-800"> <div class="container mx-auto px-4 text-center text-gray-500 max-w-4xl">
+&copy; 2025 Yuanle Liu‘s Blog. All rights reserved.
+</div> </footer>  <script type="module">const i=new WeakMap,c=(e,t)=>{e.dataset.state=t,t==="copied"?e.textContent="Copied":t==="error"?e.textContent="Failed":e.textContent="Copy";const o=i.get(e);if(o&&window.clearTimeout(o),t!=="idle"){const r=window.setTimeout(()=>c(e,"idle"),2e3);i.set(e,r)}},n=async e=>{const t=e.closest(".code-block");if(!t)return;const o=t.getAttribute("data-raw-code")??"";try{await navigator.clipboard.writeText(o),c(e,"copied")}catch(r){console.error("Copy failed",r),c(e,"error")}},s=()=>{document.addEventListener("click",e=>{const o=e.target?.closest("button.code-block__copy");o&&(e.preventDefault(),n(o))})};typeof document<"u"&&s();</script> </body> </html>
