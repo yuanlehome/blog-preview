@@ -1,0 +1,56 @@
+<!DOCTYPE html><html lang="en" data-astro-cid-sckkx6r4> <head><script>(() => {
+  const storageKey = 'theme';
+  const className = 'dark';
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  const validThemes = ['light', 'dark'];
+  let currentPreference = (() => {
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored && validThemes.includes(stored)) return stored;
+    } catch (error) {
+      console.warn('Unable to access localStorage for theme:', error);
+    }
+    return mediaQuery.matches ? 'dark' : 'light';
+  })();
+
+  const resolveTheme = (preference) => (preference === 'dark' ? 'dark' : 'light');
+
+  const applyTheme = (preference) => {
+    const effectiveTheme = resolveTheme(preference);
+    document.documentElement.classList.toggle(className, effectiveTheme === 'dark');
+    document.documentElement.dataset.theme = effectiveTheme;
+    return effectiveTheme;
+  };
+
+  const dispatchChange = (preference) => {
+    const resolved = document.documentElement.classList.contains(className) ? 'dark' : 'light';
+    window.dispatchEvent(
+      new CustomEvent('themechange', {
+        detail: { theme: preference, resolved },
+      }),
+    );
+  };
+
+  applyTheme(currentPreference);
+
+  window.__setTheme = (next) => {
+    const preference = validThemes.includes(String(next)) ? String(next) : resolveTheme(currentPreference);
+    currentPreference = preference;
+    try {
+      localStorage.setItem(storageKey, preference);
+    } catch (error) {
+      console.warn('Unable to persist theme selection:', error);
+    }
+    applyTheme(preference);
+    dispatchChange(preference);
+  };
+})();</script><meta charset="UTF-8"><meta name="description" content="A minimal Astro blog"><meta name="viewport" content="width=device-width"><link rel="icon" type="image/svg+xml" href="/blog-preview/previews/pr-46/favicon.svg"><meta name="generator" content="Astro v5.16.6"><link rel="canonical" href="https://yuanlehome.github.io/blog-preview/previews/pr-46/"><link rel="alternate" type="application/rss+xml" title="RSS" href="/blog-preview/previews/pr-46/rss.xml"><meta property="og:title" content="Yuanle Liu‘s Blog"><meta property="og:description" content="A minimal Astro blog"><meta property="og:image" content="/blog-preview/previews/pr-46/placeholder-social.jpg"><meta property="og:type" content="article"><meta property="og:url" content="https://yuanlehome.github.io/blog-preview/previews/pr-46/"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Yuanle Liu‘s Blog"><meta name="twitter:description" content="A minimal Astro blog"><meta name="twitter:image" content="/blog-preview/previews/pr-46/placeholder-social.jpg"><title>Yuanle Liu‘s Blog</title><link rel="stylesheet" href="/blog-preview/previews/pr-46/_astro/_slug_.DAY4gVoJ.css"></head> <body class="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300 min-h-screen flex flex-col" data-astro-cid-sckkx6r4>  <header class="py-6 border-b border-gray-200 dark:border-gray-800"> <div class="container mx-auto px-4 flex justify-between items-center max-w-4xl"> <a href="/blog-preview/previews/pr-46/" class="text-xl font-bold hover:text-blue-600 dark:hover:text-blue-400">Yuanle Liu‘s Blog</a> <nav class="flex items-center gap-3"> <a href="/blog-preview/previews/pr-46/" class="hover:underline">Home</a> <a href="/blog-preview/previews/pr-46/archive/" class="hover:underline">Archive</a> <a href="/blog-preview/previews/pr-46/about/" class="hover:underline">About</a> <a href="/blog-preview/previews/pr-46/rss.xml" class="hover:underline">RSS</a> <button id="theme-toggle" class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-800" aria-label="Toggle theme">
+🖥️☀️
+</button> </nav> </div> </header> <script type="module">const d="theme",o=["light","dark"],r=()=>{try{const e=localStorage.getItem(d);if(e&&o.includes(e))return e}catch(e){console.warn("Unable to read theme preference:",e)}return window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"},i=()=>document.documentElement.classList.contains("dark")?"dark":"light",m=e=>e==="dark"?"🌙":"☀️",h=e=>e==="dark"?"Dark":"Light",c=(e,t)=>{const n=document.getElementById("theme-toggle");if(!n)return;const s=t??i(),l=m(s),a=h(s);n.dataset.theme=e,n.textContent=`${l} ${a}`,n.setAttribute("aria-label",`Toggle theme (current: ${a})`)},g=e=>{if(typeof window.__setTheme=="function"){window.__setTheme(e);return}const t=e==="dark"?"dark":"light";document.documentElement.classList.toggle("dark",t==="dark");try{localStorage.setItem(d,e)}catch(n){console.warn("Unable to persist theme preference:",n)}window.dispatchEvent(new CustomEvent("themechange",{detail:{theme:e,resolved:t}}))},u=()=>{const e=r(),t=o[(o.indexOf(e)+1)%o.length];g(t),c(t)};document.getElementById("theme-toggle")?.addEventListener("click",u);c(r());window.addEventListener("themechange",e=>{const t=e.detail?.theme??r(),n=e.detail?.resolved;c(t,n)});</script> <main class="container mx-auto px-4 py-8 max-w-4xl"> <div class="flex flex-col gap-2 mb-6"> <h2 class="text-2xl font-bold">Recent Posts</h2> <p class="text-sm text-gray-500">9 published posts</p> </div> <ul class="space-y-8" id="post-list"> <li class="border-b border-gray-200 dark:border-gray-800 pb-8 last:border-0"> <a href="/blog-preview/previews/pr-46/flashattention/" class="group block">  <h3 class="text-xl font-semibold group-hover:text-blue-600 dark:group-hover:text-blue-400 mb-2"> FlashAttention 原理与实现 </h3> <div class="text-sm text-gray-500 mb-2 flex items-center gap-3 flex-wrap"> <span class="flex items-center gap-1">📅 12/26/2025</span> <span class="flex items-center gap-1">✍️ 8343 字</span> <span class="flex items-center gap-1" title="8343 words">
+⏱️ 19 min read </span> </div> </a> </li><li class="border-b border-gray-200 dark:border-gray-800 pb-8 last:border-0"> <a href="/blog-preview/previews/pr-46/code-is-not-only-an-implementation-but-also-a-presentation-of-a-way-of-thinking/" class="group block">  <h3 class="text-xl font-semibold group-hover:text-blue-600 dark:group-hover:text-blue-400 mb-2"> Code is not only an implementation, but also a presentation of a way of thinking </h3> <div class="text-sm text-gray-500 mb-2 flex items-center gap-3 flex-wrap"> <span class="flex items-center gap-1">📅 12/25/2025</span> <span class="flex items-center gap-1">✍️ 965 字</span> <span class="flex items-center gap-1" title="965 words">
+⏱️ 3 min read </span> </div> </a> </li><li class="border-b border-gray-200 dark:border-gray-800 pb-8 last:border-0"> <a href="/blog-preview/previews/pr-46/long-context/" class="group block">  <h3 class="text-xl font-semibold group-hover:text-blue-600 dark:group-hover:text-blue-400 mb-2"> Long Context 推理优化技术梳理 </h3> <div class="text-sm text-gray-500 mb-2 flex items-center gap-3 flex-wrap"> <span class="flex items-center gap-1">📅 12/25/2025</span> <span class="flex items-center gap-1">✍️ 6066 字</span> <span class="flex items-center gap-1" title="6066 words">
+⏱️ 14 min read </span> </div> </a> </li><li class="border-b border-gray-200 dark:border-gray-800 pb-8 last:border-0"> <a href="/blog-preview/previews/pr-46/rdma/" class="group block">  <h3 class="text-xl font-semibold group-hover:text-blue-600 dark:group-hover:text-blue-400 mb-2"> RDMA 在大模型推理框架中的应用 </h3> <div class="text-sm text-gray-500 mb-2 flex items-center gap-3 flex-wrap"> <span class="flex items-center gap-1">📅 12/25/2025</span> <span class="flex items-center gap-1">✍️ 13208 字</span> <span class="flex items-center gap-1" title="13208 words">
+⏱️ 30 min read </span> </div> </a> </li><li class="border-b border-gray-200 dark:border-gray-800 pb-8 last:border-0"> <a href="/blog-preview/previews/pr-46/understanding-conways-law/" class="group block">  <h3 class="text-xl font-semibold group-hover:text-blue-600 dark:group-hover:text-blue-400 mb-2"> Understanding Conway’s Law（康威定律） </h3> <div class="text-sm text-gray-500 mb-2 flex items-center gap-3 flex-wrap"> <span class="flex items-center gap-1">📅 12/25/2025</span> <span class="flex items-center gap-1">✍️ 815 字</span> <span class="flex items-center gap-1" title="815 words">
+⏱️ 2 min read </span> </div> </a> </li> </ul> <div class="flex justify-between items-center mt-10 text-sm"> <div>Page 1 / 2</div> <div class="flex gap-2"> <a href="/blog-preview/previews/pr-46/page/2/" class="px-3 py-2 rounded bg-gray-100 dark:bg-gray-800">Older →</a> </div> </div> </main> <footer class="py-8 mt-auto border-t border-gray-200 dark:border-gray-800"> <div class="container mx-auto px-4 text-center text-gray-500 max-w-4xl">
+&copy; 2025 Yuanle Liu‘s Blog. All rights reserved.
+</div> </footer>  <script type="module">const i=new WeakMap,c=(e,t)=>{e.dataset.state=t,t==="copied"?e.textContent="Copied":t==="error"?e.textContent="Failed":e.textContent="Copy";const o=i.get(e);if(o&&window.clearTimeout(o),t!=="idle"){const r=window.setTimeout(()=>c(e,"idle"),2e3);i.set(e,r)}},n=async e=>{const t=e.closest(".code-block");if(!t)return;const o=t.getAttribute("data-raw-code")??"";try{await navigator.clipboard.writeText(o),c(e,"copied")}catch(r){console.error("Copy failed",r),c(e,"error")}},s=()=>{document.addEventListener("click",e=>{const o=e.target?.closest("button.code-block__copy");o&&(e.preventDefault(),n(o))})};typeof document<"u"&&s();</script> </body> </html>
