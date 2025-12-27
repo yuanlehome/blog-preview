@@ -1,0 +1,196 @@
+<!DOCTYPE html><html lang="en" data-astro-cid-sckkx6r4> <head><script>(() => {
+  const storageKey = 'theme';
+  const className = 'dark';
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  const validThemes = ['light', 'dark'];
+  let currentPreference = (() => {
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored && validThemes.includes(stored)) return stored;
+    } catch (error) {
+      console.warn('Unable to access localStorage for theme:', error);
+    }
+    return mediaQuery.matches ? 'dark' : 'light';
+  })();
+
+  const resolveTheme = (preference) => (preference === 'dark' ? 'dark' : 'light');
+
+  const applyTheme = (preference) => {
+    const effectiveTheme = resolveTheme(preference);
+    document.documentElement.classList.toggle(className, effectiveTheme === 'dark');
+    document.documentElement.dataset.theme = effectiveTheme;
+    return effectiveTheme;
+  };
+
+  const dispatchChange = (preference) => {
+    const resolved = document.documentElement.classList.contains(className) ? 'dark' : 'light';
+    window.dispatchEvent(
+      new CustomEvent('themechange', {
+        detail: { theme: preference, resolved },
+      }),
+    );
+  };
+
+  applyTheme(currentPreference);
+
+  window.__setTheme = (next) => {
+    const preference = validThemes.includes(String(next)) ? String(next) : resolveTheme(currentPreference);
+    currentPreference = preference;
+    try {
+      localStorage.setItem(storageKey, preference);
+    } catch (error) {
+      console.warn('Unable to persist theme selection:', error);
+    }
+    applyTheme(preference);
+    dispatchChange(preference);
+  };
+})();</script><meta charset="UTF-8"><meta name="description" content="A minimal Astro blog"><meta name="viewport" content="width=device-width"><link rel="icon" type="image/svg+xml" href="/blog-preview/previews/pr-84/favicon.svg"><meta name="generator" content="Astro v5.16.6"><link rel="canonical" href="https://yuanlehome.github.io/blog-preview/previews/pr-84/understanding-conways-law/"><link rel="alternate" type="application/rss+xml" title="RSS" href="/blog-preview/previews/pr-84/rss.xml"><meta property="og:title" content="Understanding Conway’s Law（康威定律）"><meta property="og:description" content="A minimal Astro blog"><meta property="og:image" content><meta property="og:type" content="article"><meta property="og:url" content="https://yuanlehome.github.io/blog-preview/previews/pr-84/understanding-conways-law/"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Understanding Conway’s Law（康威定律）"><meta name="twitter:description" content="A minimal Astro blog"><meta name="twitter:image" content><title>Understanding Conway’s Law（康威定律）</title><link rel="stylesheet" href="/blog-preview/previews/pr-84/_astro/_slug_.BFYN7zZd.css">
+<style>.reading-progress[data-astro-cid-mu6cnre2]{position:fixed;inset:0 0 auto;height:3px;width:100%;background:transparent;z-index:50;pointer-events:none}.reading-progress__bar[data-astro-cid-mu6cnre2]{display:block;height:100%;width:100%;transform:scaleX(var(--progress-value, 0));transform-origin:left center;background:linear-gradient(90deg,var(--progress-color-start),var(--progress-color-end));transition:transform .1s linear}:root{--progress-color-start: #2563eb;--progress-color-end: #22d3ee}:root.dark{--progress-color-start: #38bdf8;--progress-color-end: #a855f7}@media(prefers-reduced-motion:reduce){.reading-progress__bar[data-astro-cid-mu6cnre2]{transition:none}}.reading-progress__controls[data-astro-cid-mu6cnre2]{position:fixed;inset:auto 1rem 1.5rem auto;display:flex;flex-direction:column;gap:.5rem;z-index:60;pointer-events:none}.reading-progress__control[data-astro-cid-mu6cnre2]{pointer-events:auto;border:1px solid var(--progress-control-border);background:var(--progress-control-bg);color:var(--progress-control-text);border-radius:9999px;padding:.5rem .75rem;font-size:.875rem;line-height:1.25rem;box-shadow:0 4px 12px #0000001f;transition:transform .15s ease,box-shadow .15s ease,background-color .15s ease}.reading-progress__control[data-astro-cid-mu6cnre2]:hover,.reading-progress__control[data-astro-cid-mu6cnre2]:focus-visible{transform:translateY(-2px);box-shadow:0 8px 20px #0000002e;outline:none}:root{--progress-control-bg: #ffffff;--progress-control-border: rgba(0, 0, 0, .08);--progress-control-text: #0f172a}:root.dark{--progress-control-bg: #0f172a;--progress-control-border: rgba(255, 255, 255, .08);--progress-control-text: #e2e8f0}@media(max-width:640px){.reading-progress__controls[data-astro-cid-mu6cnre2]{inset:auto .75rem 1rem auto}.reading-progress__control[data-astro-cid-mu6cnre2]{padding:.45rem .65rem;font-size:.8125rem}}@media(max-width:1023px){.reading-progress__controls[data-astro-cid-mu6cnre2]{display:none}}
+</style></head> <body class="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300 min-h-screen flex flex-col" data-astro-cid-sckkx6r4>  <div class="reading-progress" data-reading-progress data-target-selector="[data-article]" data-astro-cid-mu6cnre2> <span class="reading-progress__bar" data-reading-progress-bar data-astro-cid-mu6cnre2></span> </div> <div class="reading-progress__controls" data-reading-progress-controls hidden data-astro-cid-mu6cnre2> <button type="button" class="reading-progress__control" data-scroll-top aria-label="返回文章顶部" data-astro-cid-mu6cnre2>
+⬆️ 顶部
+</button> <button type="button" class="reading-progress__control" data-scroll-bottom aria-label="跳转文章底部" data-astro-cid-mu6cnre2>
+⬇️ 底部
+</button> </div>  <script type="module">const a=document.querySelector("[data-reading-progress]"),p=a?.dataset?.targetSelector||"[data-article]",w=a?.querySelector("[data-reading-progress-bar]"),l=document.querySelector(p),r=document.querySelector("[data-reading-progress-controls]"),h=r?.querySelector("[data-scroll-top]"),v=r?.querySelector("[data-scroll-bottom]");if(a&&w&&l){let e=0,s=0,n=!1;const m=(t,o,c)=>Math.min(Math.max(t,o),c),i=()=>{e=l.getBoundingClientRect().top+window.scrollY,s=l.scrollHeight},d=()=>{const t=Math.max(s-window.innerHeight,1),o=m((window.scrollY-e)/t,0,1);w.style.setProperty("--progress-value",o.toString()),n=!1},u=()=>{n||(n=!0,requestAnimationFrame(d))},g=()=>{i(),u()};if(i(),d(),window.addEventListener("scroll",u,{passive:!0}),window.addEventListener("resize",g),window.addEventListener("load",g,{once:!0}),r){r.hidden=!1;const t=()=>{window.scrollTo({top:e,behavior:"smooth"})},o=()=>{const c=Math.max(e+s-window.innerHeight,e);window.scrollTo({top:c,behavior:"smooth"})};h?.addEventListener("click",t),v?.addEventListener("click",o)}}</script> <header class="site-header header-variant-frosted" data-header> <div class="container mx-auto px-5 py-3 sm:py-4 flex justify-between items-center max-w-5xl"> <a href="/blog-preview/previews/pr-84/" class="text-xl font-bold hover:text-blue-600 dark:hover:text-blue-400">Yuanle Liu‘s Blog</a> <nav class="flex items-center gap-3"> <a href="/blog-preview/previews/pr-84/" class="hover:underline">Home</a> <a href="/blog-preview/previews/pr-84/archive/" class="hover:underline">Archive</a> <a href="/blog-preview/previews/pr-84/about/" class="hover:underline">About</a> <a href="/blog-preview/previews/pr-84/rss.xml" class="hover:underline">RSS</a> <button id="theme-toggle" class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-800" aria-label="Toggle theme">
+🖥️☀️
+</button> </nav> </div> </header> <script type="module">const l="theme",r=["light","dark"],s=()=>{try{const e=localStorage.getItem(l);if(e==="light"||e==="dark")return e}catch(e){console.warn("Unable to read theme preference:",e)}return window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"},h=()=>document.documentElement.classList.contains("dark")?"dark":"light",g=e=>e==="dark"?"🌙":"☀️",u=e=>e==="dark"?"Dark":"Light",d=(e,t)=>{const o=document.getElementById("theme-toggle");if(!o)return;const n=t??h(),m=g(n),a=u(n);o.dataset.theme=e,o.textContent=`${m} ${a}`,o.setAttribute("aria-label",`Toggle theme (current: ${a})`)},w=e=>{if(typeof window.__setTheme=="function"){window.__setTheme?.(e);return}const t=e==="dark"?"dark":"light";document.documentElement.classList.toggle("dark",t==="dark");try{localStorage.setItem(l,e)}catch(o){console.warn("Unable to persist theme preference:",o)}window.dispatchEvent(new CustomEvent("themechange",{detail:{theme:e,resolved:t}}))},k=()=>{const e=s(),t=r[(r.indexOf(e)+1)%r.length];w(t),d(t)},c=document.querySelector("[data-header]"),f=window.matchMedia("(prefers-reduced-motion: reduce)").matches,i=()=>{if(!c)return;const e=window.scrollY>6;c.classList.toggle("is-scrolled",e)};document.getElementById("theme-toggle")?.addEventListener("click",k);d(s());window.addEventListener("themechange",e=>{const t=e.detail,o=t?.theme??s(),n=t?.resolved;d(o,n)});i();const v=()=>i();window.addEventListener("scroll",v,{passive:!0});f&&c?.classList.add("reduce-motion");</script> <main class="container mx-auto px-4 py-8 max-w-6xl"> <div class="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start lg:gap-12" data-post-layout> <article class="prose dark:prose-invert max-w-none prose-img:rounded-xl min-w-0" data-article> <header class="mb-8 not-prose">  <h1 class="text-3xl md:text-4xl font-bold mb-4">Understanding Conway’s Law（康威定律）</h1> <div class="text-gray-500 text-sm flex items-center gap-4 flex-wrap"> <time class="flex items-center gap-1"> <span>📅</span> 12/25/2025 </time> <div class="flex items-center gap-1"> <span>✍️</span> 815 字
+</div> <div class="flex items-center gap-1" title="815 words"> <span>⏱️</span> 2 min read </div> </div>  </header> <p><u><em><strong>康威定律（Conway’s Law）：设计系统的组织，其产生的系统设计，必然反映该组织的沟通结构。</strong></em></u></p>
+<p>软件代码结构是部门组织形态的体现，分支管理则是这种组织形态在时间维度上的投影。组织如何沟通、如何划分责任、如何整合成果，都会直接在代码仓库的结构与分支策略中体现。优秀的组织会通过良好的分支策略促进协作，糟糕的分支策略则会放大组织壁垒。</p>
+<h3 id="一软件结构与组织形态的镜像关系">一、软件结构与组织形态的镜像关系<a href="#一软件结构与组织形态的镜像关系" class="heading-anchor" aria-label="Link to 一、软件结构与组织形态的镜像关系">¶</a></h3>
+<p>软件代码结构是部门组织形态的体现。换句话说，组织如何划分团队、沟通与协作，最终都会被固化在系统架构与代码模块中。</p>
+<p><u><em>组织是镜子，代码是倒影。</em></u></p>
+<h3 id="二分支管理组织协作的时间投影">二、分支管理：组织协作的时间投影<a href="#二分支管理组织协作的时间投影" class="heading-anchor" aria-label="Link to 二、分支管理：组织协作的时间投影">¶</a></h3>
+<p>如果说代码结构体现的是组织的空间结构，那么分支管理（Branch Management）体现的则是组织的时间结构。</p>
+<p><u><em>分支策略定义了：团队之间在“时间维度”上如何协作、整合与交付。</em></u></p>
+<p>分支策略是团队协作频率与信任程度的真实映射。</p>
+<h3 id="三分支策略如何反作用于组织协作">三、分支策略如何反作用于组织协作<a href="#三分支策略如何反作用于组织协作" class="heading-anchor" aria-label="Link to 三、分支策略如何反作用于组织协作">¶</a></h3>
+<p>康威定律并非单向的，它存在所谓的反康威效应（Inverse Conway Maneuver）：通过调整团队结构与协作方式，可以反过来优化系统架构。</p>
+<p>同样，分支管理策略也会反向塑造组织文化与沟通模式。</p>
+<p><u><em>好的分支策略能促进协作；糟糕的分支策略会放大壁垒。</em></u></p>
+<h3 id="四从组织到架构的演化链条">四、从组织到架构的演化链条<a href="#四从组织到架构的演化链条" class="heading-anchor" aria-label="Link to 四、从组织到架构的演化链条">¶</a></h3>
+<p>我们可以用一条逻辑链描述组织与系统的共进化关系：</p>
+<p><u><em>组织结构 → 沟通模式 → 分支策略 → 代码结构 → 系统架构 → 组织反馈。</em></u></p>
+<p>每个环节都会影响下一个环节：</p>
+<ul>
+<li>调整团队边界 → 改变沟通模式</li>
+<li>优化沟通模式 → 改善分支策略</li>
+<li>改变分支策略 → 推动架构解耦</li>
+<li>架构优化 → 反过来支撑组织演化</li>
+</ul>
+<p>这就是社会技术共进化（Sociotechnical Co-evolution）的核心思想：</p>
+<p><u><em>技术与组织不是独立存在的，而是相互塑造、共同进化的系统。</em></u></p>
+<h3 id="五让组织与架构良性共生">五、让组织与架构良性共生<a href="#五让组织与架构良性共生" class="heading-anchor" aria-label="Link to 五、让组织与架构良性共生">¶</a></h3>
+<p><u><em>组织边界 ≈ 系统模块边界</em></u></p>
+<ul>
+<li>在团队划分时考虑架构边界，减少跨团队依赖。</li>
+</ul>
+<p><u><em>保持沟通结构的可见性</em></u></p>
+<ul>
+<li>定期复盘信息流，识别协作阻塞点。</li>
+</ul>
+<p><u><em>让分支策略服务于组织节奏</em></u></p>
+<ul>
+<li>确保分支模型（主干/功能/发布）与交付节奏一致。</li>
+</ul>
+<p><u><em>自动化集成与代码审查机制</em></u></p>
+<ul>
+<li>用工具降低沟通成本，而非依赖层层审批。</li>
+</ul>
+<p><u><em>让技术架构反哺组织演化</em></u></p>
+<ul>
+<li>通过架构评审、接口标准化，引导团队自然对齐。</li>
+</ul>
+<h3 id="结语">结语<a href="#结语" class="heading-anchor" aria-label="Link to 结语">¶</a></h3>
+<p><u><em>软件结构不仅是技术问题，更是组织问题。</em></u></p>
+<p><u><em>代码如何生长，取决于团队如何协作。</em></u></p>
+<p><u><em>分支如何演化，取决于组织如何沟通。</em></u></p>
+<p><u><em>当我们优化代码结构时，也是在重新设计我们的组织。</em></u></p> <div class="grid md:grid-cols-2 gap-4 mt-10"> <a href="/blog-preview/previews/pr-84/rdma/" class="block p-4 rounded-lg border border-gray-200 dark:border-gray-800 hover:border-blue-500"> <div class="text-xs uppercase text-gray-500">Previous</div> <div class="font-semibold">RDMA 在大模型推理框架中的应用</div> </a> <a href="/blog-preview/previews/pr-84/tp-sp-ep/" class="block p-4 rounded-lg border border-gray-200 dark:border-gray-800 hover:border-blue-500 text-right"> <div class="text-xs uppercase text-gray-500">Next</div> <div class="font-semibold">一种 TP-SP-EP 混合并行策略</div> </a> </div>  <section id="comments" class="mt-12"> <div class="border-t border-gray-200 dark:border-gray-700 pt-8"> <script src="https://giscus.app/client.js" data-repo="yuanlehome/blog" data-repo-id="R_kgDOQu2Jjw" data-category="General" data-category-id="DIC_kwDOQu2Jj84C0QDN" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="bottom" data-theme="preferred_color_scheme" data-lang="zh-CN" crossorigin="anonymous" async></script> </div> </section> <script>
+  // Mapping uses `pathname` to keep one discussion per URL path, which is stable for static sites.
+  const themeMap = {
+    light: 'light',
+    dark: 'dark_dimmed',
+  };
+
+  const getCurrentTheme = () =>
+    document.documentElement.classList.contains('dark') ||
+    document.documentElement.dataset.theme === 'dark'
+      ? 'dark'
+      : 'light';
+
+  let activeTheme = getCurrentTheme();
+
+  const postThemeMessage = () => {
+    const iframe = document.querySelector('iframe.giscus-frame');
+    if (!iframe) return;
+
+    const nextTheme = themeMap[activeTheme] ?? 'light';
+    iframe.contentWindow?.postMessage(
+      { giscus: { setConfig: { theme: nextTheme } } },
+      'https://giscus.app',
+    );
+  };
+
+  const syncTheme = () => {
+    const detected = getCurrentTheme();
+    if (detected !== activeTheme) {
+      activeTheme = detected;
+    }
+    postThemeMessage();
+  };
+
+  const observer = new MutationObserver(syncTheme);
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['class', 'data-theme'],
+  });
+
+  const waitForFrame = () => {
+    const frame = document.querySelector('iframe.giscus-frame');
+    if (!frame) {
+      requestAnimationFrame(waitForFrame);
+      return;
+    }
+
+    const sendWhenReady = () => postThemeMessage();
+    if (frame instanceof HTMLIFrameElement) {
+      if (frame.complete) {
+        sendWhenReady();
+      } else {
+        frame.addEventListener('load', sendWhenReady, { once: true });
+      }
+    }
+    // Ensure we apply the current theme even if the iframe was already ready.
+    postThemeMessage();
+  };
+
+  // Run once after load to sync the initial theme and keep retrying until the iframe is present.
+  waitForFrame();
+  syncTheme();
+</script> </article> <div class="w-full" data-toc-shell> <aside class="hidden lg:block h-full"> <div class="flex h-full w-full flex-col gap-3 overflow-hidden rounded-xl border border-gray-200 bg-gray-50/80 p-4 shadow-md backdrop-blur-sm dark:border-gray-800 dark:bg-gray-800/50 lg:sticky lg:top-[calc(var(--toc-offset)+1rem)] lg:max-h-[calc(100vh-var(--toc-offset)-1.5rem)] lg:h-[calc(100vh-var(--toc-offset)-1.5rem)]" style="--toc-offset: 96px" data-toc-container> <div class="space-y-1"> <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">文章目录</p> <p class="text-xs text-gray-500 dark:text-gray-400">快速跳转到你关心的章节</p> </div> <nav aria-label="文章目录" class="flex-1 min-h-0 overflow-y-auto pr-1" data-toc-scroll> <ol class="space-y-2 text-sm"> <li> <a href="#一软件结构与组织形态的镜像关系" data-toc-link data-target="一软件结构与组织形态的镜像关系" title="一、软件结构与组织形态的镜像关系¶" class="group flex items-start gap-2 truncate text-gray-700 underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:text-gray-200 dark:focus-visible:ring-offset-gray-900 pl-4"> <span class="mt-0.5 text-xs text-gray-400 transition-colors group-data-[active=true]:text-blue-600 dark:text-gray-500 dark:group-data-[active=true]:text-blue-400">
+#
+</span> <span class="flex-1 truncate" data-title> 一、软件结构与组织形态的镜像关系¶ </span> </a> </li><li> <a href="#二分支管理组织协作的时间投影" data-toc-link data-target="二分支管理组织协作的时间投影" title="二、分支管理：组织协作的时间投影¶" class="group flex items-start gap-2 truncate text-gray-700 underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:text-gray-200 dark:focus-visible:ring-offset-gray-900 pl-4"> <span class="mt-0.5 text-xs text-gray-400 transition-colors group-data-[active=true]:text-blue-600 dark:text-gray-500 dark:group-data-[active=true]:text-blue-400">
+#
+</span> <span class="flex-1 truncate" data-title> 二、分支管理：组织协作的时间投影¶ </span> </a> </li><li> <a href="#三分支策略如何反作用于组织协作" data-toc-link data-target="三分支策略如何反作用于组织协作" title="三、分支策略如何反作用于组织协作¶" class="group flex items-start gap-2 truncate text-gray-700 underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:text-gray-200 dark:focus-visible:ring-offset-gray-900 pl-4"> <span class="mt-0.5 text-xs text-gray-400 transition-colors group-data-[active=true]:text-blue-600 dark:text-gray-500 dark:group-data-[active=true]:text-blue-400">
+#
+</span> <span class="flex-1 truncate" data-title> 三、分支策略如何反作用于组织协作¶ </span> </a> </li><li> <a href="#四从组织到架构的演化链条" data-toc-link data-target="四从组织到架构的演化链条" title="四、从组织到架构的演化链条¶" class="group flex items-start gap-2 truncate text-gray-700 underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:text-gray-200 dark:focus-visible:ring-offset-gray-900 pl-4"> <span class="mt-0.5 text-xs text-gray-400 transition-colors group-data-[active=true]:text-blue-600 dark:text-gray-500 dark:group-data-[active=true]:text-blue-400">
+#
+</span> <span class="flex-1 truncate" data-title> 四、从组织到架构的演化链条¶ </span> </a> </li><li> <a href="#五让组织与架构良性共生" data-toc-link data-target="五让组织与架构良性共生" title="五、让组织与架构良性共生¶" class="group flex items-start gap-2 truncate text-gray-700 underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:text-gray-200 dark:focus-visible:ring-offset-gray-900 pl-4"> <span class="mt-0.5 text-xs text-gray-400 transition-colors group-data-[active=true]:text-blue-600 dark:text-gray-500 dark:group-data-[active=true]:text-blue-400">
+#
+</span> <span class="flex-1 truncate" data-title> 五、让组织与架构良性共生¶ </span> </a> </li><li> <a href="#结语" data-toc-link data-target="结语" title="结语¶" class="group flex items-start gap-2 truncate text-gray-700 underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:text-gray-200 dark:focus-visible:ring-offset-gray-900 pl-4"> <span class="mt-0.5 text-xs text-gray-400 transition-colors group-data-[active=true]:text-blue-600 dark:text-gray-500 dark:group-data-[active=true]:text-blue-400">
+#
+</span> <span class="flex-1 truncate" data-title> 结语¶ </span> </a> </li> </ol> </nav> </div> </aside> </div> <script type="module">const u=Array.from(document.querySelectorAll("[data-toc-link]")),e=document.querySelector("[data-toc-container]"),r=document.querySelector("[data-toc-shell]"),f=e&&getComputedStyle(e).getPropertyValue("--toc-offset")||"96px",x=parseFloat(f)||0,a=window.matchMedia("(min-width: 1024px)"),c=u.map(t=>document.getElementById(t.dataset.target||"")).filter(t=>!!t),C=()=>{c.forEach(t=>{t.style.scrollMarginTop=`${x+12}px`})},w=t=>`#${encodeURIComponent(t)}`,v=t=>decodeURIComponent(t.replace(/^#/,"")),l=t=>{u.forEach(o=>{const n=o.dataset.target===t;o.dataset.active=n?"true":"false",o.setAttribute("aria-current",n?"true":"false")})},g=(t,o=!1)=>{const n=document.getElementById(t);if(!n)return;const s=window.scrollY+n.getBoundingClientRect().top-x-12;o?history.replaceState(null,"",w(t)):history.pushState(null,"",w(t)),window.scrollTo({top:s,behavior:"smooth"}),l(t)};u.forEach(t=>t.addEventListener("click",o=>{const n=t.dataset.target;n&&(o.preventDefault(),g(n))}));const p=()=>{e&&(e.dataset.fixed="false",e.style.position="",e.style.left="",e.style.width="",e.style.height="",e.style.maxHeight="",e.style.top="",r&&(r.style.minHeight=""))},E=()=>{if(!e||!r)return;const t=r.getBoundingClientRect(),o=`calc(100vh - ${f} - 1.5rem)`;e.dataset.fixed="true",r.style.minHeight=`${e.offsetHeight}px`,e.style.position="fixed",e.style.top=`calc(${f} + 1rem)`,e.style.left=`${t.left}px`,e.style.width=`${t.width}px`,e.style.height=o,e.style.maxHeight=o},d=()=>{if(!e||e.dataset.fixed==="true"||!a.matches)return;const t=parseFloat(getComputedStyle(e).top||"0"),o=e.offsetTop-t;if(Number.isNaN(t)||window.scrollY<o)return;const n=e.getBoundingClientRect().top;Math.abs(n-t)>2&&E()},R=()=>{if(!a.matches){p();return}e?.dataset.fixed==="true"&&E()};if(c.length>0){C(),l(c[0].id);const t=e&&getComputedStyle(e).getPropertyValue("--toc-offset")||"96px",o=new IntersectionObserver(s=>{const m=s.filter(i=>i.isIntersecting).sort((i,h)=>i.target.getBoundingClientRect().top-h.target.getBoundingClientRect().top);if(m[0]){l(m[0].target.id);return}const y=s.filter(i=>i.boundingClientRect.top<0).sort((i,h)=>h.target.getBoundingClientRect().top-i.target.getBoundingClientRect().top);y[0]&&l(y[0].target.id)},{rootMargin:`-${t.trim()} 0% -55% 0%`,threshold:[0,.25,.5,1]});c.forEach(s=>o.observe(s));const n=v(location.hash||"");n&&requestAnimationFrame(()=>g(n,!0)),window.addEventListener("hashchange",()=>{const s=v(location.hash||"");s&&g(s,!0)})}p();a.matches&&d();a.addEventListener("change",()=>{p(),requestAnimationFrame(()=>{a.matches&&d()})});window.addEventListener("scroll",d,{passive:!0});window.addEventListener("resize",R);window.addEventListener("load",()=>{d(),C()},{once:!0});</script> </div> <div class="fixed inset-0 z-50 pointer-events-none data-[open=true]:pointer-events-auto lg:hidden" data-mobile-toc data-open="false" aria-hidden="true"><div class="absolute inset-0 bg-gray-900/40 opacity-0 transition duration-200 data-[open=true]:opacity-100 dark:bg-black/50" data-mobile-toc-backdrop></div><div id="mobile-toc-drawer" role="dialog" aria-modal="true" aria-label="文章目录" class="absolute inset-x-0 bottom-0 translate-y-full rounded-t-2xl border border-gray-200 bg-white/95 shadow-2xl ring-1 ring-black/5 transition duration-200 data-[open=true]:translate-y-0 dark:border-gray-800 dark:bg-gray-900/95 dark:ring-white/10" data-mobile-toc-drawer><div class="flex items-center justify-between gap-3 px-4 pt-4 pb-3"><div><p class="text-sm font-semibold text-gray-900 dark:text-gray-50">文章目录</p><p class="text-xs text-gray-500 dark:text-gray-400">点击条目可跳转</p></div><button type="button" class="rounded-full border border-gray-200 bg-white px-3 py-1 text-sm font-medium text-gray-800 shadow-sm transition hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:border-gray-800 dark:bg-gray-800 dark:text-gray-100 dark:hover:text-blue-300 dark:focus-visible:ring-offset-gray-900" data-mobile-toc-close>
+关闭
+</button></div><div class="max-h-[60vh] overflow-y-auto px-4 pb-5" data-mobile-toc-scroll><ol class="space-y-2 text-sm"><li><a href="#一软件结构与组织形态的镜像关系" data-mobile-toc-link data-target="一软件结构与组织形态的镜像关系" class="group flex items-start gap-2 truncate text-gray-800 underline-offset-2 transition hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:text-gray-200 dark:hover:text-blue-300 dark:focus-visible:ring-offset-gray-900 pl-6"><span class="mt-0.5 text-xs text-gray-400 transition-colors group-data-[active=true]:text-blue-600 dark:text-gray-500 dark:group-data-[active=true]:text-blue-300">
+#
+</span><span class="flex-1 truncate" data-title>一、软件结构与组织形态的镜像关系¶</span></a></li><li><a href="#二分支管理组织协作的时间投影" data-mobile-toc-link data-target="二分支管理组织协作的时间投影" class="group flex items-start gap-2 truncate text-gray-800 underline-offset-2 transition hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:text-gray-200 dark:hover:text-blue-300 dark:focus-visible:ring-offset-gray-900 pl-6"><span class="mt-0.5 text-xs text-gray-400 transition-colors group-data-[active=true]:text-blue-600 dark:text-gray-500 dark:group-data-[active=true]:text-blue-300">
+#
+</span><span class="flex-1 truncate" data-title>二、分支管理：组织协作的时间投影¶</span></a></li><li><a href="#三分支策略如何反作用于组织协作" data-mobile-toc-link data-target="三分支策略如何反作用于组织协作" class="group flex items-start gap-2 truncate text-gray-800 underline-offset-2 transition hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:text-gray-200 dark:hover:text-blue-300 dark:focus-visible:ring-offset-gray-900 pl-6"><span class="mt-0.5 text-xs text-gray-400 transition-colors group-data-[active=true]:text-blue-600 dark:text-gray-500 dark:group-data-[active=true]:text-blue-300">
+#
+</span><span class="flex-1 truncate" data-title>三、分支策略如何反作用于组织协作¶</span></a></li><li><a href="#四从组织到架构的演化链条" data-mobile-toc-link data-target="四从组织到架构的演化链条" class="group flex items-start gap-2 truncate text-gray-800 underline-offset-2 transition hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:text-gray-200 dark:hover:text-blue-300 dark:focus-visible:ring-offset-gray-900 pl-6"><span class="mt-0.5 text-xs text-gray-400 transition-colors group-data-[active=true]:text-blue-600 dark:text-gray-500 dark:group-data-[active=true]:text-blue-300">
+#
+</span><span class="flex-1 truncate" data-title>四、从组织到架构的演化链条¶</span></a></li><li><a href="#五让组织与架构良性共生" data-mobile-toc-link data-target="五让组织与架构良性共生" class="group flex items-start gap-2 truncate text-gray-800 underline-offset-2 transition hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:text-gray-200 dark:hover:text-blue-300 dark:focus-visible:ring-offset-gray-900 pl-6"><span class="mt-0.5 text-xs text-gray-400 transition-colors group-data-[active=true]:text-blue-600 dark:text-gray-500 dark:group-data-[active=true]:text-blue-300">
+#
+</span><span class="flex-1 truncate" data-title>五、让组织与架构良性共生¶</span></a></li><li><a href="#结语" data-mobile-toc-link data-target="结语" class="group flex items-start gap-2 truncate text-gray-800 underline-offset-2 transition hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:text-gray-200 dark:hover:text-blue-300 dark:focus-visible:ring-offset-gray-900 pl-6"><span class="mt-0.5 text-xs text-gray-400 transition-colors group-data-[active=true]:text-blue-600 dark:text-gray-500 dark:group-data-[active=true]:text-blue-300">
+#
+</span><span class="flex-1 truncate" data-title>结语¶</span></a></li></ol></div></div></div><script type="module">const c=document.querySelector("[data-mobile-toc]"),l=document.querySelector("[data-mobile-toc-drawer]"),s=document.querySelector("[data-mobile-toc-backdrop]"),m=()=>Array.from(document.querySelectorAll("[data-mobile-toc-open]")),b=document.querySelector("[data-mobile-toc-close]"),p=Array.from(document.querySelectorAll("[data-mobile-toc-link]")),o=document.body,w=window.matchMedia("(prefers-reduced-motion: reduce)"),E=w.matches,f=96;let a=0;const v=e=>window.dispatchEvent(new CustomEvent("mobile-toc:toggle",{detail:{open:e}})),S=e=>{m().forEach(t=>t.setAttribute("aria-expanded",e?"true":"false"))},i=e=>{e.preventDefault(),r(!0)},y=()=>{m().forEach(e=>{e.removeEventListener("click",i),e.addEventListener("click",i)})},k=()=>{a=window.scrollY,o.style.position="fixed",o.style.width="100%",o.style.top=`-${a}px`},B=()=>{o.style.position="",o.style.width="",o.style.top="",window.scrollTo({top:a})},r=e=>{!c||!l||(c.dataset.open=String(e),l.dataset.open=String(e),s?.setAttribute("data-open",String(e)),c.setAttribute("aria-hidden",e?"false":"true"),S(e),v(e),e?k():B())},A=()=>{p.map(t=>document.getElementById(t.dataset.target||"")).filter(t=>!!t).forEach(t=>{t.style.scrollMarginTop=`${f+12}px`})},d=e=>`#${encodeURIComponent(e)}`,g=(e,t=!1)=>{const n=document.getElementById(e);if(!n)return;const h=window.scrollY+n.getBoundingClientRect().top-f-12;t?history.replaceState(null,"",d(e)):history.pushState(null,"",d(e)),window.scrollTo({top:h,behavior:E?"auto":"smooth"})};y();const L=new MutationObserver(y);L.observe(document.body,{subtree:!0,childList:!0,attributes:!0,attributeFilter:["data-mobile-toc-open"]});b?.addEventListener("click",()=>r(!1));s?.addEventListener("click",e=>{e.target===s&&r(!1)});p.forEach(e=>e.addEventListener("click",t=>{const n=e.dataset.target;n&&(t.preventDefault(),r(!1),g(n))}));window.addEventListener("keydown",e=>{e.key==="Escape"&&r(!1)});A();const u=decodeURIComponent(location.hash.replace(/^#/,""));u&&requestAnimationFrame(()=>g(u,!0));</script> <div class="floating-action-stack fixed z-40 flex flex-col items-end gap-3 lg:hidden pointer-events-auto transition-opacity data-[toc-open=true]:opacity-0 data-[toc-open=true]:pointer-events-none" data-floating-action-stack data-target-selector="[data-article]" style="inset-inline-end: calc(env(safe-area-inset-right, 0px) + 1rem); inset-block-end: calc(env(safe-area-inset-bottom, 0px) + 1rem);"><button type="button" class="floating-action-stack__button h-11 w-11 rounded-full border border-gray-200 bg-white/90 text-gray-900 shadow-lg backdrop-blur-sm ring-offset-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 hover:-translate-y-0.5 hover:border-blue-200 hover:text-blue-600 data-[visible=false]:opacity-0 data-[visible=false]:pointer-events-none data-[visible=true]:opacity-100 data-[visible=true]:pointer-events-auto dark:border-gray-800 dark:bg-gray-900/85 dark:text-gray-100 dark:ring-offset-gray-900 dark:hover:border-blue-500/50 dark:hover:text-blue-300" data-floating-action-button data-action="top" data-visible="false" style="transition-delay: 0ms;" aria-label="返回文章顶部"><span class="sr-only">顶部</span><span aria-hidden="true" class="text-base">⬆️</span></button><button type="button" class="floating-action-stack__button h-11 w-11 rounded-full border border-gray-200 bg-white/90 text-gray-900 shadow-lg backdrop-blur-sm ring-offset-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 hover:-translate-y-0.5 hover:border-blue-200 hover:text-blue-600 data-[visible=false]:opacity-0 data-[visible=false]:pointer-events-none data-[visible=true]:opacity-100 data-[visible=true]:pointer-events-auto dark:border-gray-800 dark:bg-gray-900/85 dark:text-gray-100 dark:ring-offset-gray-900 dark:hover:border-blue-500/50 dark:hover:text-blue-300" data-floating-action-button data-action="toc" data-visible="true" style="transition-delay: 10ms;" aria-label="打开目录抽屉" data-mobile-toc-open="true"><span class="sr-only">目录</span><span aria-hidden="true" class="text-base">📑</span></button><button type="button" class="floating-action-stack__button h-11 w-11 rounded-full border border-gray-200 bg-white/90 text-gray-900 shadow-lg backdrop-blur-sm ring-offset-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 hover:-translate-y-0.5 hover:border-blue-200 hover:text-blue-600 data-[visible=false]:opacity-0 data-[visible=false]:pointer-events-none data-[visible=true]:opacity-100 data-[visible=true]:pointer-events-auto dark:border-gray-800 dark:bg-gray-900/85 dark:text-gray-100 dark:ring-offset-gray-900 dark:hover:border-blue-500/50 dark:hover:text-blue-300" data-floating-action-button data-action="bottom" data-visible="true" style="transition-delay: 20ms;" aria-label="跳转文章底部"><span class="sr-only">底部</span><span aria-hidden="true" class="text-base">⬇️</span></button></div><script type="module">const o=document.querySelector("[data-floating-action-stack]"),v=o?.dataset.targetSelector||"[data-article]",h=o?.querySelector('[data-action="top"]'),p=o?.querySelector('[data-action="bottom"]'),m=o?.querySelector('[data-action="toc"]'),g=window.matchMedia("(prefers-reduced-motion: reduce)"),f=g.matches,c=document.querySelector("[data-mobile-toc]"),n=document.querySelector(v);let r=0,d=0,s=!1;const i=()=>{if(!n)return;r=n.getBoundingClientRect().top+window.scrollY,d=n.scrollHeight},S=(t,e,a)=>Math.min(Math.max(t,e),a),w=(t,e)=>{t&&(t.dataset.visible=e?"true":"false")},l=()=>{if(!n)return;const t=120,e=d>window.innerHeight+40,a=window.scrollY>r+t;w(h,a),w(p,e),s=!1},b=()=>{s||(s=!0,requestAnimationFrame(l))},y=()=>{const t=S(r,0,Number.MAX_SAFE_INTEGER);window.scrollTo({top:t,behavior:f?"auto":"smooth"})},E=()=>{const t=Math.max(r+d-window.innerHeight,r);window.scrollTo({top:t,behavior:f?"auto":"smooth"})},u=t=>{o&&(o.dataset.tocOpen=t?"true":"false")};u(c?.dataset.open==="true");o&&n&&(i(),l(),window.addEventListener("scroll",b,{passive:!0}),window.addEventListener("resize",()=>{i(),b()}),window.addEventListener("load",()=>{i(),l()},{once:!0}),h?.addEventListener("click",y),p?.addEventListener("click",E));m?.addEventListener("click",()=>{requestAnimationFrame(()=>m?.blur())});window.addEventListener("mobile-toc:toggle",t=>{const e=t.detail;e&&u(e.open)});c&&new MutationObserver(()=>{u(c.dataset.open==="true")}).observe(c,{attributes:!0,attributeFilter:["data-open"]});</script> </main> <footer class="py-8 mt-auto border-t border-gray-200 dark:border-gray-800"> <div class="container mx-auto px-4 text-center text-gray-500 max-w-4xl">
+&copy; 2025 Yuanle Liu‘s Blog. All rights reserved.
+</div> </footer>  <script type="module">const i=new WeakMap,c=(e,t)=>{e.dataset.state=t,t==="copied"?e.textContent="Copied":t==="error"?e.textContent="Failed":e.textContent="Copy";const o=i.get(e);if(o&&window.clearTimeout(o),t!=="idle"){const r=window.setTimeout(()=>c(e,"idle"),2e3);i.set(e,r)}},n=async e=>{const t=e.closest(".code-block");if(!t)return;const o=t.getAttribute("data-raw-code")??"";try{await navigator.clipboard.writeText(o),c(e,"copied")}catch(r){console.error("Copy failed",r),c(e,"error")}},s=()=>{document.addEventListener("click",e=>{const o=e.target?.closest("button.code-block__copy");o&&(e.preventDefault(),n(o))})};typeof document<"u"&&s();</script> </body> </html>
