@@ -35,12 +35,7 @@
 
 ## 二、并行原理解析
 
-### 2.1 前提：`qkv_ine</description><pubDate>Thu, 25 Dec 2025 00:00:00 GMT</pubDate></item><item><title>Context Parallel 技术解析</title><link>https://yuanlehome.github.io/blog/context-parallel/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/context-parallel/</guid><description>---
-
-## 学习链接
-
-- [[并行训练]Context Parallelism的原理与代码浅析 - 知乎](https://zhuanlan.zhihu.com/p/698447429?share_code=WwUutv3avJIE&amp;utm_psn=1983881801186444490)
-- [ring attention + flash atten</description><pubDate>Thu, 25 Dec 2025 00:00:00 GMT</pubDate></item><item><title>DeepGEMM 学习指南：面向初学者的 FP8 GEMM 库解析</title><link>https://yuanlehome.github.io/blog/deepgemm-fp8-gemm/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/deepgemm-fp8-gemm/</guid><description>---
+### 2.1 前提：`qkv_ine</description><pubDate>Thu, 25 Dec 2025 00:00:00 GMT</pubDate></item><item><title>DeepGEMM 学习指南：面向初学者的 FP8 GEMM 库解析</title><link>https://yuanlehome.github.io/blog/deepgemm-fp8-gemm/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/deepgemm-fp8-gemm/</guid><description>---
 
 ## 优质博客
 
@@ -50,7 +45,12 @@
 
 ### 1.1 DeepGEMM 是什么？
 
-DeepGEMM 是由 DeepSeek </description><pubDate>Thu, 25 Dec 2025 00:00:00 GMT</pubDate></item><item><title>RoPE 究竟是怎么计算的</title><link>https://yuanlehome.github.io/blog/rope/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/rope/</guid><description>---
+DeepGEMM 是由 DeepSeek </description><pubDate>Thu, 25 Dec 2025 00:00:00 GMT</pubDate></item><item><title>Context Parallel 技术解析</title><link>https://yuanlehome.github.io/blog/context-parallel/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/context-parallel/</guid><description>---
+
+## 学习链接
+
+- [[并行训练]Context Parallelism的原理与代码浅析 - 知乎](https://zhuanlan.zhihu.com/p/698447429?share_code=WwUutv3avJIE&amp;utm_psn=1983881801186444490)
+- [ring attention + flash atten</description><pubDate>Thu, 25 Dec 2025 00:00:00 GMT</pubDate></item><item><title>RoPE 究竟是怎么计算的</title><link>https://yuanlehome.github.io/blog/rope/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/rope/</guid><description>---
 
 ## 一、RoPE 到底改了什么？
 
