@@ -33,7 +33,22 @@
 为保证吞吐和延迟，推理框架需要极为高效的跨 GPU / 跨节点通信，而 **RDMA（Remot</description><pubDate>Thu, 25 Dec 2025 00:00:00 GMT</pubDate></item><item><title>Understanding Conway’s Law（康威定律）</title><link>https://yuanlehome.github.io/blog/understanding-conways-law/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/understanding-conways-law/</guid><description>&lt;u&gt;_**康威定律（Conway’s Law）：设计系统的组织，其产生的系统设计，必然反映该组织的沟通结构。**_&lt;/u&gt;
 
 
-软件代码结构是部门组织形态的体现，分支管理则是这种组织形态在时间维度上的投影。组织如何沟通、如何划分责任、如何整合成果，都会直接在代码仓库的结构与分支策略中体现。优秀的组织会通过良好的分支策略促进协作，糟糕的分支策略则会放大组织壁</description><pubDate>Thu, 25 Dec 2025 00:00:00 GMT</pubDate></item><item><title>Context Parallel 技术解析</title><link>https://yuanlehome.github.io/blog/context-parallel/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/context-parallel/</guid><description>---
+软件代码结构是部门组织形态的体现，分支管理则是这种组织形态在时间维度上的投影。组织如何沟通、如何划分责任、如何整合成果，都会直接在代码仓库的结构与分支策略中体现。优秀的组织会通过良好的分支策略促进协作，糟糕的分支策略则会放大组织壁</description><pubDate>Thu, 25 Dec 2025 00:00:00 GMT</pubDate></item><item><title>一种 TP-SP-EP 混合并行策略</title><link>https://yuanlehome.github.io/blog/tp-sp-ep/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/tp-sp-ep/</guid><description>---
+
+
+## 一、两种混合并行图示
+
+
+![非完整图示，不含后续 EP 并行 MoE 层。](/images/notion/2a122dca-4210-805b-ae7e-fb6b09a2e44f/2b222dca-4210-80d9-98fb-cf78ef53eb91.jpeg)
+
+
+---
+
+
+## 二、并行原理解析
+
+
+### 2.1 前提：`qk</description><pubDate>Thu, 25 Dec 2025 00:00:00 GMT</pubDate></item><item><title>Context Parallel 技术解析</title><link>https://yuanlehome.github.io/blog/context-parallel/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/context-parallel/</guid><description>---
 
 
 ## 学习链接
@@ -66,19 +81,4 @@ RoPE 做的是把 **Q/K 先旋转**：
 
 - $Q&apos; = \text{RoPE}(Q, \text{pos})$
 - $K&apos; = \text{RoPE}(K, \text{pos})$
-</description><pubDate>Thu, 25 Dec 2025 00:00:00 GMT</pubDate></item><item><title>一种 TP-SP-EP 混合并行策略</title><link>https://yuanlehome.github.io/blog/tp-sp-ep/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/tp-sp-ep/</guid><description>---
-
-
-## 一、两种混合并行图示
-
-
-![非完整图示，不含后续 EP 并行 MoE 层。](/images/notion/2a122dca-4210-805b-ae7e-fb6b09a2e44f/2b222dca-4210-80d9-98fb-cf78ef53eb91.jpeg)
-
-
----
-
-
-## 二、并行原理解析
-
-
-### 2.1 前提：`qk</description><pubDate>Thu, 25 Dec 2025 00:00:00 GMT</pubDate></item></channel></rss>
+</description><pubDate>Thu, 25 Dec 2025 00:00:00 GMT</pubDate></item></channel></rss>
