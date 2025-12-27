@@ -1,4 +1,12 @@
-<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>Yuanle Liu‘s Blog</title><description>Engineering notes from Astro + Notion</description><link>https://yuanlehome.github.io/blog/</link><language>en-us</language><item><title>Code is not only an implementation, but also a presentation of a way of thinking</title><link>https://yuanlehome.github.io/blog/code-is-not-only-an-implementation-but-also-a-presentation-of-a-way-of-thinking/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/code-is-not-only-an-implementation-but-also-a-presentation-of-a-way-of-thinking/</guid><description>&lt;u&gt;_**在日常开发中，我们往往把重点放在“把功能实现出来”。但一个成熟工程师的代码，并不仅仅是代码本身，而是其思维方式、问题拆解能力、沟通意识与系统理解的外化形式。**_&lt;/u&gt;
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>Yuanle Liu‘s Blog</title><description>Engineering notes from Astro + Notion</description><link>https://yuanlehome.github.io/blog/</link><language>en-us</language><item><title>CUDA Graph 学习笔记</title><link>https://yuanlehome.github.io/blog/cuda-graph/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/cuda-graph/</guid><description>**目录**：为什么需要 - 核心抽象 - 生命周期与执行语义 - 静态性 - 性能收益 - torch.compile - 推理系统
+
+---
+
+# 为什么需要 CUDA Graph
+
+一个 GPU 程序的执行可以分成两个层面来看：
+
+**数据面**是我们通常关注的那部分，也就是 kernel 在 GPU 上的实际计算。矩阵乘、卷积、attention 等</description><pubDate>Sat, 27 Dec 2025 00:00:00 GMT</pubDate><category>wechat</category></item><item><title>Code is not only an implementation, but also a presentation of a way of thinking</title><link>https://yuanlehome.github.io/blog/code-is-not-only-an-implementation-but-also-a-presentation-of-a-way-of-thinking/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/code-is-not-only-an-implementation-but-also-a-presentation-of-a-way-of-thinking/</guid><description>&lt;u&gt;_**在日常开发中，我们往往把重点放在“把功能实现出来”。但一个成熟工程师的代码，并不仅仅是代码本身，而是其思维方式、问题拆解能力、沟通意识与系统理解的外化形式。**_&lt;/u&gt;
 
 ---
 
