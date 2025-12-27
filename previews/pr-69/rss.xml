@@ -54,7 +54,20 @@
 ## 学习链接
 
 - [[并行训练]Context Parallelism的原理与代码浅析 - 知乎](https://zhuanlan.zhihu.com/p/698447429?share_code=WwUutv3avJIE&amp;utm_psn=1983881801186444490)
-- [ring attention + flash atte</description><pubDate>Thu, 25 Dec 2025 00:00:00 GMT</pubDate></item><item><title>RoPE 究竟是怎么计算的</title><link>https://yuanlehome.github.io/blog/rope/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/rope/</guid><description>---
+- [ring attention + flash atte</description><pubDate>Thu, 25 Dec 2025 00:00:00 GMT</pubDate></item><item><title>DeepGEMM 学习指南：面向初学者的 FP8 GEMM 库解析</title><link>https://yuanlehome.github.io/blog/deepgemm-fp8-gemm/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/deepgemm-fp8-gemm/</guid><description>---
+
+
+## 优质博客
+
+- CUTLASS &amp; GPU CUDA 编程解析 [https://research.colfax-intl.com/blog/](https://research.colfax-intl.com/blog/)
+
+## 一、总体设计与原理
+
+
+### 1.1 DeepGEMM 是什么？
+
+
+DeepGEMM 是由 DeepSe</description><pubDate>Thu, 25 Dec 2025 00:00:00 GMT</pubDate></item><item><title>RoPE 究竟是怎么计算的</title><link>https://yuanlehome.github.io/blog/rope/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/rope/</guid><description>---
 
 
 ## 一、RoPE 到底改了什么？
@@ -68,17 +81,4 @@ RoPE 做的是把 **Q/K 先旋转**：
 
 - $Q&apos; = \text{RoPE}(Q, \text{pos})$
 - $K&apos; = \text{RoPE}(K, \text{pos})$
-</description><pubDate>Thu, 25 Dec 2025 00:00:00 GMT</pubDate></item><item><title>DeepGEMM 学习指南：面向初学者的 FP8 GEMM 库解析</title><link>https://yuanlehome.github.io/blog/deepgemm-fp8-gemm/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/deepgemm-fp8-gemm/</guid><description>---
-
-
-## 优质博客
-
-- CUTLASS &amp; GPU CUDA 编程解析 [https://research.colfax-intl.com/blog/](https://research.colfax-intl.com/blog/)
-
-## 一、总体设计与原理
-
-
-### 1.1 DeepGEMM 是什么？
-
-
-DeepGEMM 是由 DeepSe</description><pubDate>Thu, 25 Dec 2025 00:00:00 GMT</pubDate></item></channel></rss>
+</description><pubDate>Thu, 25 Dec 2025 00:00:00 GMT</pubDate></item></channel></rss>
