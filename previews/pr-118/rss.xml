@@ -3,7 +3,11 @@
 ## 优质博客
 
 - [[LLM性能优化] 聊聊长文本推理性能优化方向 - 知乎](https://zhuanlan.zhihu.com/p/698308542)
-- [Deploying DeepSeek with PD Disaggregation and Large-Scale Expert Parallelism on 96 H100 GP</description><pubDate>Sun, 28 Dec 2025 00:00:00 GMT</pubDate></item><item><title>一种 TP-SP-EP 混合并行策略</title><link>https://yuanlehome.github.io/blog/tp-sp-ep/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/tp-sp-ep/</guid><description>---
+- [Deploying DeepSeek with PD Disaggregation and Large-Scale Expert Parallelism on 96 H100 GP</description><pubDate>Sun, 28 Dec 2025 00:00:00 GMT</pubDate></item><item><title>Inside NVIDIA GPUs: Anatomy of high performance matmul kernels</title><link>https://yuanlehome.github.io/blog/inside-nvidia-gpus-anatomy-of-high-performance-matmul-kernels/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/inside-nvidia-gpus-anatomy-of-high-performance-matmul-kernels/</guid><description># Inside NVIDIA GPUs: Anatomy of high performance matmul kernels
+
+## From GPU architecture and PTX/SASS to warp-tiling and deep asynchronous tensor core pipelines
+
+September 29, 20</description><pubDate>Sun, 28 Dec 2025 00:00:00 GMT</pubDate></item><item><title>一种 TP-SP-EP 混合并行策略</title><link>https://yuanlehome.github.io/blog/tp-sp-ep/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/tp-sp-ep/</guid><description>---
 
 ## 一、两种混合并行图示
 
@@ -13,11 +17,7 @@
 
 ## 二、并行原理解析
 
-### 2.1 前提：`qkv_ine</description><pubDate>Sun, 28 Dec 2025 00:00:00 GMT</pubDate></item><item><title>Inside NVIDIA GPUs: Anatomy of high performance matmul kernels</title><link>https://yuanlehome.github.io/blog/inside-nvidia-gpus-anatomy-of-high-performance-matmul-kernels/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/inside-nvidia-gpus-anatomy-of-high-performance-matmul-kernels/</guid><description># Inside NVIDIA GPUs: Anatomy of high performance matmul kernels
-
-## From GPU architecture and PTX/SASS to warp-tiling and deep asynchronous tensor core pipelines
-
-September 29, 20</description><pubDate>Sun, 28 Dec 2025 00:00:00 GMT</pubDate></item><item><title>Context Parallel 技术解析</title><link>https://yuanlehome.github.io/blog/context-parallel/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/context-parallel/</guid><description>---
+### 2.1 前提：`qkv_ine</description><pubDate>Sun, 28 Dec 2025 00:00:00 GMT</pubDate></item><item><title>Context Parallel 技术解析</title><link>https://yuanlehome.github.io/blog/context-parallel/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/context-parallel/</guid><description>---
 
 ## 学习链接
 
@@ -72,9 +72,7 @@ RoPE 做的是把 **Q/K 先旋转**：
 
 在现代大规模 LLM 推理系统中，**多 GPU / 多节点推理已成为必然**。无论是模型本身的体积（70B/405B/1T+）还是长上下文（128k~1M tokens），都远超单节点能力。
 
-为保证吞吐和延迟，推理框架需要极为高效的跨 GPU / 跨节点通信，而 **RDMA（Remote </description><pubDate>Thu, 25 Dec 2025 00:00:00 GMT</pubDate></item><item><title>Understanding Conway’s Law（康威定律）</title><link>https://yuanlehome.github.io/blog/understanding-conways-law/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/understanding-conways-law/</guid><description>&lt;u&gt;_**康威定律（Conway’s Law）：设计系统的组织，其产生的系统设计，必然反映该组织的沟通结构。**_&lt;/u&gt;
-
-软件代码结构是部门组织形态的体现，分支管理则是这种组织形态在时间维度上的投影。组织如何沟通、如何划分责任、如何整合成果，都会直接在代码仓库的结构与分支策略中体现。优秀的组织会通过良好的分支策略促进协作，糟糕的分支策略则会放大组织壁垒</description><pubDate>Thu, 25 Dec 2025 00:00:00 GMT</pubDate></item><item><title>DeepGEMM 学习指南：面向初学者的 FP8 GEMM 库解析</title><link>https://yuanlehome.github.io/blog/deepgemm-fp8-gemm/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/deepgemm-fp8-gemm/</guid><description>---
+为保证吞吐和延迟，推理框架需要极为高效的跨 GPU / 跨节点通信，而 **RDMA（Remote </description><pubDate>Thu, 25 Dec 2025 00:00:00 GMT</pubDate></item><item><title>DeepGEMM 学习指南：面向初学者的 FP8 GEMM 库解析</title><link>https://yuanlehome.github.io/blog/deepgemm-fp8-gemm/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/deepgemm-fp8-gemm/</guid><description>---
 
 ## 优质博客
 
@@ -84,4 +82,6 @@ RoPE 做的是把 **Q/K 先旋转**：
 
 ### 1.1 DeepGEMM 是什么？
 
-DeepGEMM 是由 DeepSeek </description><pubDate>Thu, 25 Dec 2025 00:00:00 GMT</pubDate></item></channel></rss>
+DeepGEMM 是由 DeepSeek </description><pubDate>Thu, 25 Dec 2025 00:00:00 GMT</pubDate></item><item><title>Understanding Conway’s Law（康威定律）</title><link>https://yuanlehome.github.io/blog/understanding-conways-law/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/understanding-conways-law/</guid><description>&lt;u&gt;_**康威定律（Conway’s Law）：设计系统的组织，其产生的系统设计，必然反映该组织的沟通结构。**_&lt;/u&gt;
+
+软件代码结构是部门组织形态的体现，分支管理则是这种组织形态在时间维度上的投影。组织如何沟通、如何划分责任、如何整合成果，都会直接在代码仓库的结构与分支策略中体现。优秀的组织会通过良好的分支策略促进协作，糟糕的分支策略则会放大组织壁垒</description><pubDate>Thu, 25 Dec 2025 00:00:00 GMT</pubDate></item></channel></rss>
