@@ -20,18 +20,18 @@
 ## 学习链接
 
 - [图解大模型计算加速系列：FlashAttention V1，从硬件到计算逻辑 - 知乎](https://zhuanlan.zhihu.com/p/669926191)
-- [图解大模型计算加速系列：FlashAttention V2，从原理到并行计算 - 知乎](https://zhuanlan.zhihu.com/p/6</description><pubDate>Fri, 26 Dec 2025 00:00:00 GMT</pubDate></item><item><title>Long Context 推理优化技术梳理</title><link>https://yuanlehome.github.io/blog/long-context/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/long-context/</guid><description>---
-
-## 优质博客
-
-- [[LLM性能优化] 聊聊长文本推理性能优化方向 - 知乎](https://zhuanlan.zhihu.com/p/698308542)
-- [Deploying DeepSeek with PD Disaggregation and Large-Scale Expert Parallelism on 96 H100 GP</description><pubDate>Thu, 25 Dec 2025 00:00:00 GMT</pubDate></item><item><title>RDMA 在大模型推理框架中的应用</title><link>https://yuanlehome.github.io/blog/rdma/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/rdma/</guid><description>## [极简] RDMA 在大模型推理框架中的应用
+- [图解大模型计算加速系列：FlashAttention V2，从原理到并行计算 - 知乎](https://zhuanlan.zhihu.com/p/6</description><pubDate>Fri, 26 Dec 2025 00:00:00 GMT</pubDate></item><item><title>RDMA 在大模型推理框架中的应用</title><link>https://yuanlehome.github.io/blog/rdma/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/rdma/</guid><description>## [极简] RDMA 在大模型推理框架中的应用
 
 ---
 
 在现代大规模 LLM 推理系统中，**多 GPU / 多节点推理已成为必然**。无论是模型本身的体积（70B/405B/1T+）还是长上下文（128k~1M tokens），都远超单节点能力。
 
-为保证吞吐和延迟，推理框架需要极为高效的跨 GPU / 跨节点通信，而 **RDMA（Remote </description><pubDate>Thu, 25 Dec 2025 00:00:00 GMT</pubDate></item><item><title>Understanding Conway’s Law（康威定律）</title><link>https://yuanlehome.github.io/blog/understanding-conways-law/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/understanding-conways-law/</guid><description>&lt;u&gt;_**康威定律（Conway’s Law）：设计系统的组织，其产生的系统设计，必然反映该组织的沟通结构。**_&lt;/u&gt;
+为保证吞吐和延迟，推理框架需要极为高效的跨 GPU / 跨节点通信，而 **RDMA（Remote </description><pubDate>Thu, 25 Dec 2025 00:00:00 GMT</pubDate></item><item><title>Long Context 推理优化技术梳理</title><link>https://yuanlehome.github.io/blog/long-context/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/long-context/</guid><description>---
+
+## 优质博客
+
+- [[LLM性能优化] 聊聊长文本推理性能优化方向 - 知乎](https://zhuanlan.zhihu.com/p/698308542)
+- [Deploying DeepSeek with PD Disaggregation and Large-Scale Expert Parallelism on 96 H100 GP</description><pubDate>Thu, 25 Dec 2025 00:00:00 GMT</pubDate></item><item><title>Understanding Conway’s Law（康威定律）</title><link>https://yuanlehome.github.io/blog/understanding-conways-law/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/understanding-conways-law/</guid><description>&lt;u&gt;_**康威定律（Conway’s Law）：设计系统的组织，其产生的系统设计，必然反映该组织的沟通结构。**_&lt;/u&gt;
 
 软件代码结构是部门组织形态的体现，分支管理则是这种组织形态在时间维度上的投影。组织如何沟通、如何划分责任、如何整合成果，都会直接在代码仓库的结构与分支策略中体现。优秀的组织会通过良好的分支策略促进协作，糟糕的分支策略则会放大组织壁垒</description><pubDate>Thu, 25 Dec 2025 00:00:00 GMT</pubDate></item><item><title>一种 TP-SP-EP 混合并行策略</title><link>https://yuanlehome.github.io/blog/tp-sp-ep/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/tp-sp-ep/</guid><description>---
 
