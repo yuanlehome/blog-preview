@@ -1,0 +1,667 @@
+<!DOCTYPE html><html lang="en" data-astro-cid-sckkx6r4> <head><script>(() => {
+  const storageKey = 'theme';
+  const className = 'dark';
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  const validThemes = ['light', 'dark'];
+  let currentPreference = (() => {
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored && validThemes.includes(stored)) return stored;
+    } catch (error) {
+      console.warn('Unable to access localStorage for theme:', error);
+    }
+    return mediaQuery.matches ? 'dark' : 'light';
+  })();
+
+  const resolveTheme = (preference) => (preference === 'dark' ? 'dark' : 'light');
+
+  const applyTheme = (preference) => {
+    const effectiveTheme = resolveTheme(preference);
+    document.documentElement.classList.toggle(className, effectiveTheme === 'dark');
+    document.documentElement.dataset.theme = effectiveTheme;
+    return effectiveTheme;
+  };
+
+  const dispatchChange = (preference) => {
+    const resolved = document.documentElement.classList.contains(className) ? 'dark' : 'light';
+    window.dispatchEvent(
+      new CustomEvent('themechange', {
+        detail: { theme: preference, resolved },
+      }),
+    );
+  };
+
+  applyTheme(currentPreference);
+
+  window.__setTheme = (next) => {
+    const preference = validThemes.includes(String(next)) ? String(next) : resolveTheme(currentPreference);
+    currentPreference = preference;
+    try {
+      localStorage.setItem(storageKey, preference);
+    } catch (error) {
+      console.warn('Unable to persist theme selection:', error);
+    }
+    applyTheme(preference);
+    dispatchChange(preference);
+  };
+})();</script><meta charset="UTF-8"><meta name="description" content="A minimal Astro blog"><meta name="viewport" content="width=device-width"><link rel="icon" type="image/svg+xml" href="/blog-preview/previews/pr-130/favicon.svg"><meta name="generator" content="Astro v5.16.6"><link rel="canonical" href="https://yuanlehome.github.io/blog-preview/previews/pr-130/cutlass-tutorial-mastering-the-nvidiar-tensor-memory-accelerator-tma/"><link rel="alternate" type="application/rss+xml" title="RSS" href="/blog-preview/previews/pr-130/rss.xml"><meta property="og:title" content="CUTLASS Tutorial: Mastering the NVIDIA® Tensor Memory Accelerator (TMA)"><meta property="og:description" content="A minimal Astro blog"><meta property="og:image" content="/blog-preview/previews/pr-130/placeholder-social.jpg"><meta property="og:type" content="article"><meta property="og:url" content="https://yuanlehome.github.io/blog-preview/previews/pr-130/cutlass-tutorial-mastering-the-nvidiar-tensor-memory-accelerator-tma/"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="CUTLASS Tutorial: Mastering the NVIDIA® Tensor Memory Accelerator (TMA)"><meta name="twitter:description" content="A minimal Astro blog"><meta name="twitter:image" content="/blog-preview/previews/pr-130/placeholder-social.jpg"><title>CUTLASS Tutorial: Mastering the NVIDIA® Tensor Memory Accelerator (TMA)</title><link rel="stylesheet" href="/blog-preview/previews/pr-130/_astro/_slug_.B-4TjvzF.css">
+<style>.reading-progress[data-astro-cid-mu6cnre2]{position:fixed;inset:0 0 auto;height:3px;width:100%;background:transparent;z-index:50;pointer-events:none}.reading-progress__bar[data-astro-cid-mu6cnre2]{display:block;height:100%;width:100%;transform:scaleX(var(--progress-value, 0));transform-origin:left center;background:linear-gradient(90deg,var(--progress-color-start),var(--progress-color-end));transition:transform .1s linear}:root{--progress-color-start: #2563eb;--progress-color-end: #22d3ee}:root.dark{--progress-color-start: #38bdf8;--progress-color-end: #a855f7}@media(prefers-reduced-motion:reduce){.reading-progress__bar[data-astro-cid-mu6cnre2]{transition:none}}.reading-progress__controls[data-astro-cid-mu6cnre2]{position:fixed;inset:auto 1rem 1.5rem auto;display:flex;flex-direction:column;gap:.5rem;z-index:60;pointer-events:none}.reading-progress__control[data-astro-cid-mu6cnre2]{pointer-events:auto;border:1px solid var(--progress-control-border);background:var(--progress-control-bg);color:var(--progress-control-text);border-radius:9999px;padding:.5rem .75rem;font-size:.875rem;line-height:1.25rem;box-shadow:0 4px 12px #0000001f;transition:transform .15s ease,box-shadow .15s ease,background-color .15s ease}.reading-progress__control[data-astro-cid-mu6cnre2]:hover,.reading-progress__control[data-astro-cid-mu6cnre2]:focus-visible{transform:translateY(-2px);box-shadow:0 8px 20px #0000002e;outline:none}:root{--progress-control-bg: #ffffff;--progress-control-border: rgba(0, 0, 0, .08);--progress-control-text: #0f172a}:root.dark{--progress-control-bg: #0f172a;--progress-control-border: rgba(255, 255, 255, .08);--progress-control-text: #e2e8f0}@media(max-width:640px){.reading-progress__controls[data-astro-cid-mu6cnre2]{inset:auto .75rem 1rem auto}.reading-progress__control[data-astro-cid-mu6cnre2]{padding:.45rem .65rem;font-size:.8125rem}}@media(max-width:1023px){.reading-progress__controls[data-astro-cid-mu6cnre2]{display:none}}
+</style></head> <body class="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300 min-h-screen flex flex-col" data-astro-cid-sckkx6r4>  <div class="reading-progress" data-reading-progress data-target-selector="[data-article]" data-astro-cid-mu6cnre2> <span class="reading-progress__bar" data-reading-progress-bar data-astro-cid-mu6cnre2></span> </div> <div class="reading-progress__controls" data-reading-progress-controls hidden data-astro-cid-mu6cnre2> <button type="button" class="reading-progress__control" data-scroll-top aria-label="返回文章顶部" data-astro-cid-mu6cnre2>
+⬆️ 顶部
+</button> <button type="button" class="reading-progress__control" data-scroll-bottom aria-label="跳转文章底部" data-astro-cid-mu6cnre2>
+⬇️ 底部
+</button> </div>  <script type="module">const a=document.querySelector("[data-reading-progress]"),p=a?.dataset?.targetSelector||"[data-article]",w=a?.querySelector("[data-reading-progress-bar]"),l=document.querySelector(p),r=document.querySelector("[data-reading-progress-controls]"),h=r?.querySelector("[data-scroll-top]"),v=r?.querySelector("[data-scroll-bottom]");if(a&&w&&l){let e=0,s=0,n=!1;const m=(t,o,c)=>Math.min(Math.max(t,o),c),i=()=>{e=l.getBoundingClientRect().top+window.scrollY,s=l.scrollHeight},d=()=>{const t=Math.max(s-window.innerHeight,1),o=m((window.scrollY-e)/t,0,1);w.style.setProperty("--progress-value",o.toString()),n=!1},u=()=>{n||(n=!0,requestAnimationFrame(d))},g=()=>{i(),u()};if(i(),d(),window.addEventListener("scroll",u,{passive:!0}),window.addEventListener("resize",g),window.addEventListener("load",g,{once:!0}),r){r.hidden=!1;const t=()=>{window.scrollTo({top:e,behavior:"smooth"})},o=()=>{const c=Math.max(e+s-window.innerHeight,e);window.scrollTo({top:c,behavior:"smooth"})};h?.addEventListener("click",t),v?.addEventListener("click",o)}}</script> <header class="site-header header-variant-frosted" data-header> <div class="container mx-auto px-5 py-3 sm:py-4 flex justify-between items-center max-w-5xl"> <a href="/blog-preview/previews/pr-130/" class="text-xl font-bold hover:text-blue-600 dark:hover:text-blue-400">Yuanle Liu‘s Blog</a> <nav class="flex items-center gap-3"> <a href="/blog-preview/previews/pr-130/" class="hover:underline">Home</a> <a href="/blog-preview/previews/pr-130/archive/" class="hover:underline">Archive</a> <a href="/blog-preview/previews/pr-130/about/" class="hover:underline">About</a> <a href="/blog-preview/previews/pr-130/rss.xml" class="hover:underline">RSS</a> <button id="theme-toggle" class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-800" aria-label="Toggle theme">
+🖥️☀️
+</button> </nav> </div> </header> <script type="module">const l="theme",r=["light","dark"],s=()=>{try{const e=localStorage.getItem(l);if(e==="light"||e==="dark")return e}catch(e){console.warn("Unable to read theme preference:",e)}return window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"},h=()=>document.documentElement.classList.contains("dark")?"dark":"light",g=e=>e==="dark"?"🌙":"☀️",u=e=>e==="dark"?"Dark":"Light",d=(e,t)=>{const o=document.getElementById("theme-toggle");if(!o)return;const n=t??h(),m=g(n),a=u(n);o.dataset.theme=e,o.textContent=`${m} ${a}`,o.setAttribute("aria-label",`Toggle theme (current: ${a})`)},w=e=>{if(typeof window.__setTheme=="function"){window.__setTheme?.(e);return}const t=e==="dark"?"dark":"light";document.documentElement.classList.toggle("dark",t==="dark");try{localStorage.setItem(l,e)}catch(o){console.warn("Unable to persist theme preference:",o)}window.dispatchEvent(new CustomEvent("themechange",{detail:{theme:e,resolved:t}}))},k=()=>{const e=s(),t=r[(r.indexOf(e)+1)%r.length];w(t),d(t)},c=document.querySelector("[data-header]"),f=window.matchMedia("(prefers-reduced-motion: reduce)").matches,i=()=>{if(!c)return;const e=window.scrollY>6;c.classList.toggle("is-scrolled",e)};document.getElementById("theme-toggle")?.addEventListener("click",k);d(s());window.addEventListener("themechange",e=>{const t=e.detail,o=t?.theme??s(),n=t?.resolved;d(o,n)});i();const v=()=>i();window.addEventListener("scroll",v,{passive:!0});f&&c?.classList.add("reduce-motion");</script> <main class="container mx-auto px-4 py-8 max-w-6xl"> <div class="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start lg:gap-12" data-post-layout> <article class="prose dark:prose-invert max-w-none prose-img:rounded-xl min-w-0" data-article> <header class="mb-8 not-prose"> <div class="flex flex-col gap-6 md:grid md:grid-cols-1"> <div class="flex flex-col gap-4 "> <h1 class="text-3xl md:text-4xl font-bold leading-tight">CUTLASS Tutorial: Mastering the NVIDIA® Tensor Memory Accelerator (TMA)</h1> <div class="text-gray-500 text-sm flex items-center gap-3 flex-wrap "> <time class="flex items-center gap-1" datetime="2024-06-24T00:00:00.000Z" title="发布于 2024-06-24"> <span aria-hidden="true">📅</span> <span>
+发布于 <span class="font-medium">2024-06-24</span> </span> </time> <span aria-hidden="true">·</span> <time class="flex items-center gap-1" datetime="2025-11-12T00:00:00.000Z" title="更新于 2025-11-12"> <span aria-hidden="true">🔄</span> <span>
+更新于 <span class="font-medium">2025-11-12</span> </span> </time> <div class="flex items-center gap-1"> <span aria-hidden="true">✍️</span> 7075 字
+</div> <div class="flex items-center gap-1" title="7075 words"> <span aria-hidden="true">⏱️</span> 16 min read </div> </div> </div>  <div class="w-full rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 dark:border-blue-900 dark:bg-blue-950 "> <p class="text-sm text-gray-700 dark:text-gray-300 break-words"> <span class="font-semibold">📝 转载 / 引用来源：</span> <span>
+作者 <span class="font-medium">research.colfax-intl.com</span> ·  </span> <a href="https://research.colfax-intl.com/tutorial-hopper-tma/" target="_blank" rel="noopener noreferrer" class="text-blue-600 underline hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
+查看原文
+</a> </p> </div> </div> </header> <h1 id="cutlass-tutorial-mastering-the-nvidia-tensor-memory-accelerator-tma">CUTLASS Tutorial: Mastering the NVIDIA® Tensor Memory Accelerator (TMA)<a href="#cutlass-tutorial-mastering-the-nvidia-tensor-memory-accelerator-tma" class="heading-anchor" aria-label="Link to CUTLASS Tutorial: Mastering the NVIDIA® Tensor Memory Accelerator (TMA)">¶</a></h1>
+<p>TMA (Tensor Memory Accelerator) is a new feature introduced in the NVIDIA Hopper™ architecture for doing asynchronous memory copy between a GPU’s global memory (GMEM) and the shared memory (SMEM) of its threadblocks (i.e., CTAs). Compared to prior approaches, TMA offers a number of advantages, such as (1) improving GPU utilization through facilitating <a href="https://github.com/NVIDIA/cutlass/blob/main/media/docs/efficient_gemm.md#warp-specialization" target="_blank" rel="noopener noreferrer">warp-specialized</a> kernel schedules via asynchrony, and (2) handling the computation of auxiliary copy data such as addresses and strides in a single-threaded manner via the TMA copy descriptor, which is both more register-efficient and necessarily handles predication (e.g., out-of-bounds checks). These advantages are well articulated in NVIDIA’s <a href="https://developer.nvidia.com/blog/nvidia-hopper-architecture-in-depth/" target="_blank" rel="noopener noreferrer">technical blog</a> and <a href="https://docs.nvidia.com/cuda/hopper-tuning-guide/index.html#tensor-memory-accelerator" target="_blank" rel="noopener noreferrer">Hopper tuning guide</a>, which we highly recommend to readers for understanding the rationales behind the design of TMA.</p>
+<p>In contrast to those sources, this blog post is focused on achieving an operational understanding of how to write kernels that use TMA. Throughout, we rely on the <a href="https://github.com/NVIDIA/cutlass/blob/main/media/docs/cute/00_quickstart.md" target="_blank" rel="noopener noreferrer">CuTe library</a>, in which TMA is exposed through APIs wrapping lower-level GPU instructions. These instructions include PTX instructions <code>cp.async.bulk.tensor</code> and <a href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-reduce-async-bulk-tensor" target="_blank" rel="noopener noreferrer"><code>cp.reduce.async.bulk.tensor</code></a>, as well as the <a href="https://docs.nvidia.com/cuda/cuda-driver-api/group__CUDA__TENSOR__MEMORY.html" target="_blank" rel="noopener noreferrer">cuTensorMap</a> operand, which we will also discuss in this post.</p>
+<p>We organize this blog post into three main sections: the first about TMA load, the second about TMA store, and lastly the third covering more advanced operations such as TMA store reduce and TMA load multicast. In essence, TMA load copies (“loads”) data from the GPU’s GMEM into one of its CTA’s SMEM, while TMA store copies (“stores”) data from a CTA’s SMEM to the GPU’s GMEM. Since TMA load, TMA store, and the more advanced variants share many concepts, we will introduce the bulk of the necessary concepts in the TMA load section and only focus on the remaining differences in the subsequent sections.</p>
+<p>Also, given that TMA is an asynchronous operation (executed in the <a href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#async-proxy" target="_blank" rel="noopener noreferrer">async proxy</a>), we will need to use certain memory consistency enforcement tools, such as async memory barrier (i.e., <a href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier" target="_blank" rel="noopener noreferrer"><code>mbarrier</code></a>) and async memory fence (i.e., <a href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-membar-fence" target="_blank" rel="noopener noreferrer"><code>fence.proxy.async</code></a>), to ensure correct behavior of the kernel. Synchronization is a vast topic of discussion by itself, so we will only cover these concepts to the degree needed for their practical use.</p>
+<p>Finally, for readers looking for a resource that covers many of the same points with no reference to CUTLASS or CuTe concepts, we recommend <a href="https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#tensor-memory-access" target="_blank" rel="noopener noreferrer">the treatment of TMA</a> in the CUDA® programming guide.</p>
+<h2 id="tma-load">TMA Load<a href="#tma-load" class="heading-anchor" aria-label="Link to TMA Load">¶</a></h2>
+<p>TMA load copies data from GMEM into SMEM. In this section, we demonstrate how to write a kernel that uses TMA load for this goal. A kernel that uses TMA load is quite different from a kernel that uses other memory copy methods, so we will first show how to write such a kernel for a simple example task. Then, we will explain the involved concepts.</p>
+<h4 id="example-task"><strong>Example task</strong><a href="#example-task" class="heading-anchor" aria-label="Link to Example task">¶</a></h4>
+<p>To demonstrate the usage of TMA load, we consider a simple task of tiling a 2D row-major matrix. We are given a matrix <code>A</code> of shape <code>[m,n]</code> and two positive integers <code>CTA_M</code> and <code>CTA_N</code>. Note that <code>CTA_M</code> and <code>CTA_N</code> are known at compilation time, while <code>m</code> and <code>n</code> are given to us at runtime via the matrix <code>A</code>. For simplicity, let’s also assume that <code>m % CTA_M == n % CTA_N == 0</code>, though we will see later that this requirement can be relaxed.</p>
+<p>We launch a grid of CTAs with size <code>{m/CTA_M, n/CTA_N, 1}</code>, where the SMEM of the <code>(i,j)</code>-th CTA holds the <code>(i,j)</code>-th tile with shape <code>[CTA_M, CTA_N]</code> from <code>A</code>. We can depict this assignment in <code>numpy</code> pseudocode as:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th></th><th></th></tr></thead><tbody><tr><td>1234</td><td><code>A ``=</code> <code>np.random.uniform(M, N)``for</code> <code>i ``in</code> <code>range``(M):``  ``for</code> <code>j ``in</code> <code>range``(N):``    ``cta_i_j ``=</code> <code>A.reshape(M ``/``/</code> <code>CTA_M, CTA_M, N ``/``/</code> <code>CTA_N, N)[i, :, j, :]</code></td></tr></tbody></table>
+<p><strong>The two-step process.</strong> To perform this task, we use TMA load. In CuTe, a TMA load operation is implemented in two steps. The first step is the construction of the TMA copy descriptor in the <em>host code</em>, while the second step is the execution of the actual TMA load using this descriptor inside the <em>kernel code.</em> Note that this two-step process is different from what we normally do with CuTe’s TiledCopy — where all the copy steps are written in the kernel code — as shown in <a href="https://github.com/NVIDIA/cutlass/blob/637b15906358191cb4238af419d408a65819d7ec/examples/cute/tutorial/tiled_copy.cu#L120-L124" target="_blank" rel="noopener noreferrer">this tutorial</a>.</p>
+<h4 id="host-code"><strong>Host code</strong><a href="#host-code" class="heading-anchor" aria-label="Link to Host code">¶</a></h4>
+<p>On the host, we create three objects: the GMEM tensor which we copy <em>from</em>, the layout of the SMEM tensor on <em>each</em> of the CTAs that we copy <em>into</em>, and a <code>tma_load</code> object that takes these two as arguments. Note that since we create the SMEM layout on the host, all CTAs will share the same SMEM layout for the purposes of the TMA load. Once we have these objects, they can be passed to the kernel on device, inside of which the TMA load operation is invoked.</p>
+<p>The entire code block on the host is:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th></th><th></th></tr></thead><tbody><tr><td>12345678910111213141516171819</td><td><code>template</code> <code>&#x3C;``typename</code> <code>T, ``int</code> <code>CTA_M, ``int</code> <code>CTA_N>``void</code> <code>host_fn(T* data, ``int</code> <code>M, ``int</code> <code>N) {``  ``using</code> <code>namespace</code> <code>cute;</code> <code>  ``  ``auto</code> <code>gmem_layout = make_layout(make_shape(M, N), LayoutRight{});``  ``auto</code> <code>gmem_tensor = make_tensor(make_gmem_ptr(T), gmem_layout);</code> <code>  ``  ``auto</code> <code>smem_layout = make_layout(make_shape(CTA_M, CTA_N), LayoutRight{});</code> <code>  ``  ``auto</code> <code>tma_load = make_tma_copy(SM90_TMA_LOAD{}, gmem_tensor, smem_layout);</code> <code>  ``  ``tma_load_kernel&#x3C;CTA_M, CTA_N>``                 ``&#x3C;&#x3C;&#x3C;dim3{M / CTA_M, N / CTA_N, 1}, 1>>>``                 ``(tma_load, gmem_tensor, smem_layout);``}</code></td></tr></tbody></table>
+<p>The lines that create <code>gmem_layout</code>, <code>gmem_tensor</code>, and <code>smem_tensor</code> simply use basic CuTE concepts, so we refer readers to <a href="https://github.com/NVIDIA/cutlass/blob/637b15906358191cb4238af419d408a65819d7ec/media/docs/cute/01_layout.md" target="_blank" rel="noopener noreferrer">these</a> <a href="https://github.com/NVIDIA/cutlass/blob/637b15906358191cb4238af419d408a65819d7ec/media/docs/cute/02_layout_algebra.md" target="_blank" rel="noopener noreferrer">CuTe</a> <a href="https://github.com/NVIDIA/cutlass/blob/637b15906358191cb4238af419d408a65819d7ec/media/docs/cute/03_tensor.md" target="_blank" rel="noopener noreferrer">tutorials</a> for a memory refresh. Here, we focus on explaining the <code>tma_load</code> object. This object is an instance of <code>cute::TiledCopy</code>, which holds the information and implements the methods to perform a CTA-wide copy operation. In the code snippet, the <code>tma_load</code> object is created via <a href="https://github.com/NVIDIA/cutlass/blob/637b15906358191cb4238af419d408a65819d7ec/include/cute/atom/copy_traits_sm90_tma.hpp#L1206-L1217" target="_blank" rel="noopener noreferrer">this explicit default</a> of the <code>cute::make_tma_copy</code> function. This function’s full implementation has some nuances, which we will dive into when we discuss <code>MULTICAST</code> later in this blog post, but the explicit default suffices for most use cases, such as our example task. We recommend using the explicit default to avoid unnecessary complications (and bugs).</p>
+<p>Let’s look into the signature that we used for <code>make_tma_copy</code>:</p>
+<ul>
+<li>Its last two arguments are <code>gmem_tensor</code> and <code>smem_layout</code>. Under the hood, <code>make_tma_copy</code> uses this information to create a <code>TmaDescriptor</code>, which is just an alias for <a href="https://github.com/NVIDIA/cutlass/blob/637b15906358191cb4238af419d408a65819d7ec/include/cute/arch/copy_sm90_desc.hpp#L178" target="_blank" rel="noopener noreferrer">CUtensorMap</a>. This descriptor object is used inside the TMA kernel.</li>
+<li>Its first argument is an instance of <code>SM90_TMA_LOAD</code>. This object dispatches the copy operation to the desired <code>cp.async.bulk.tensor</code> PTX call, which we will go into deeper in the third section below.</li>
+</ul>
+<h4 id="kernel-code"><strong>Kernel code</strong><a href="#kernel-code" class="heading-anchor" aria-label="Link to Kernel code">¶</a></h4>
+<p>The relevant kernel code snippet looks like this. These lines pack many important TMA concepts, which we will explain below.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th></th><th></th></tr></thead><tbody><tr><td>123456789101112131415161718192021222324252627282930313233</td><td><code>template</code> <code>&#x3C;``typename</code> <code>T, ``int</code> <code>CTA_M, ``int</code> <code>CTA_N, ``class</code> <code>TmaLoad, ``class</code> <code>GmemTensor>``void</code> <code>tma_load_kernel(__grid_constant__ ``const</code> <code>TmaLoad tma_load, GmemTensor gmem_tensor) {``  ``using</code> <code>namespace</code> <code>cute;``  ``constexpr</code> <code>int</code> <code>tma_transaction_bytes = CTA_M * CTA_N * ``sizeof``(T);</code> <code>  ``__shared__ T smem_data[CTA_M * CTA_N];``  ``__shared__ ``uint64_t</code> <code>tma_load_mbar;</code> <code>  ``auto</code> <code>smem_layout = make_layout(make_shape(CTA_M, CTA_N), LayoutRight{});``  ``auto</code> <code>smem_tensor = make_tensor(make_smem_ptr(smem_data), smem_layout);</code> <code>  ``if</code> <code>(threadIdx.x == 0) {``    ``auto</code> <code>gmem_tensor_coord = tma_load.get_tma_tensor(shape(gmem_tensor));</code> <code>    ``auto</code> <code>gmem_tensor_coord_cta = local_tile(``        ``gmem_tensor_coord,``        ``Tile&#x3C;Int&#x3C;CTA_M>, Int&#x3C;CTA_N>>{},``        ``make_coord(blockIdx.x, blockIdx.y));</code> <code>    ``initialize_barrier(tma_load_mbar, ``1);</code> <code>    ``set_barrier_transaction_bytes(tma_load_mbar, tma_transaction_bytes);</code> <code>    ``auto</code> <code>tma_load_per_cta = tma_load.get_slice(0);``    ``copy(tma_load.with(tma_load_mbar),``         ``tma_load_per_cta.partition_S(gmem_tensor_coord_cta),``         ``tma_load_per_cta.partition_D(smem_tensor));``  ``}``  ``__syncthreads();``  ``wait_barrier(tma_load_mbar, ``0);</code> <code>  ``}</code></td></tr></tbody></table>
+<p>First, at line 2, the <code>tma_load</code> argument for the kernel must be annotated with __<code>grid_constant__ const</code>. If we have two tensors that we want to copy from GMEM into SMEM, <em>each</em> of them must have its own <code>TiledCopy</code> instance, and each instance must be __<code>grid_constant__ const</code>. This is a requirement for passing a <code>cuTensorMap</code> from host to device as documented <a href="https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#asynchronous-data-copies-using-tensor-memory-access-tma" target="_blank" rel="noopener noreferrer">here</a>, for instance.</p>
+<p>The next important point is that for a TMA copy, only one thread will be responsible for issuing the TMA operation. In the code snippet, all the TMA-related variables and instructions are contained in the <code>if</code> block starting at line 12, which is only executed by thread 0. On the other hand, line 30 contains an instruction for all threads in the CTA to wait for the TMA operations to finish.</p>
+<h5 id="coordinates-and-arithmetic-tuples">Coordinates and Arithmetic tuples<a href="#coordinates-and-arithmetic-tuples" class="heading-anchor" aria-label="Link to Coordinates and Arithmetic tuples">¶</a></h5>
+<p>For now, let’s look into the TMA load logic. This starts at line 13, where we create a <code>gmem_tensor_coord</code> object that holds <em>the coordinates</em> of the GMEM tensor to be copied. If we try the following:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th></th><th></th></tr></thead><tbody><tr><td>1</td><td><code>if (cute::thread(0)) { cute::print(gmem_tensor_coord); }</code></td></tr></tbody></table>
+<p>then we see the output like so (for <code>M=N=1024</code>):</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th></th><th></th></tr></thead><tbody><tr><td>1</td><td><code>ArithTuple(_0,_0) o (1024,1024):(_1@1,_1@0)</code></td></tr></tbody></table>
+<p>Lines 15-18 are self-explanatory for readers familiar with the way tiled copy works in CuTe, where a GMEM tensor is tiled into smaller partitions, and each CTA slices into the tiled tensor according to the block coordinate to obtain its view of GMEM. Note however that the partitioning applies to the aforementioned <code>ArithTuple</code> representing the coordinates of <code>gmem_tensor</code>, instead of to <code>gmem_tensor</code> itself. In particular, the <code>ArithTuple</code> is partitioned into tiles of shape <code>[CTA_M,CTA_N]</code>, and then each CTA takes its tile.</p>
+<p>If we print <code>gmem_tensor_coord_cta</code> using <code>print_tensor</code> as follows:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th></th><th></th></tr></thead><tbody><tr><td>1</td><td><code>if (cute::block(7)) { cute::print_tensor(gmem_tensor_coord_cta); }</code></td></tr></tbody></table>
+<p>then for <code>CTA_M == CTA_N == 16</code>, we see:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th></th><th></th></tr></thead><tbody><tr><td>12345</td><td><code>ArithTuple(0,112) o (_16,_16):(_1@1,_1@0):``  ``(0,112)  (1,112)  (2,112)  (3,112)  (4,112)  (5,112)  (6,112)  (7,112)  (8,112)  (9,112)  (10,112)  (11,112)  (12,112)  (13,112)  (14,112)  (15,112)``  ``(0,113)  (1,113)  (2,113)  (3,113)  (4,113)  (5,113)  (6,113)  (7,113)  (8,113)  (9,113)  (10,113)  (11,113)  (12,113)  (13,113)  (14,113)  (15,113)``  ``// more lines``  ``(0,127)  (1,127)  (2,127)  (3,127)  (4,127)  (5,127)  (6,127)  (7,127)  (8,127)  (9,127)  (10,127)  (11,127)  (12,127)  (13,127)  (14,127)  (15,127)</code></td></tr></tbody></table>
+<p>These numbers are the <em>coordinates</em> in <code>gmem_tensor</code> whose values will be copied into the <code>smem_tensor</code> of CTA 7. We encourage readers to try running this code snippet while replacing <code>cute::block(7)</code> with other indices to understand which CTAs copy from which coordinates in <code>gmem_tensor</code>.</p>
+<p>Next, the copy operation itself, issued in lines 25-27, has the usual signature of a TiledCopy operation, where the source tensor is replaced by the partitioned coordinates.</p>
+<h5 id="memory-barrier">Memory barrier<a href="#memory-barrier" class="heading-anchor" aria-label="Link to Memory barrier">¶</a></h5>
+<p>We have left out lines 20, 22, and 30, all of which involve the <code>uint64_t</code> variable <code>tma_load_mbar</code> which lives in SMEM. This is the <strong>asynchronous transaction barrier</strong> that we use to synchronize the TMA load with the rest of the kernel that consumes the resulting data loaded into SMEM. A high-level description of this type of barrier is given in the NVIDIA <a href="https://developer.nvidia.com/blog/nvidia-hopper-architecture-in-depth/" target="_blank" rel="noopener noreferrer">technical blog</a> on Hopper architecture. In terms of our kernel, the important points are as follows:</p>
+<ol>
+<li>We initialize the mbarrier object in shared memory on line 20. The CuTe method <code>initialize_barrier</code> wraps the PTX instruction <code>mbarrier.init.shared.b64</code>, which takes in an additional <em>arrival count</em> parameter. In our context, since a single thread will initiate the TMA load, we should set the arrival count to 1. Moreover, the starting phase of the mbarrier will always be set to 0.\</li>
+<li>We both perform an arrive-on operation and set the expected transaction count for the mbarrier object on line 22 with the CuTe method <code>set_barrier_transaction_bytes</code>, which wraps the PTX instruction <code>mbarrier.arrive.expect_tx.shared::cta.b64</code>. The transaction count is set to equal the number of bytes transferred by the TMA load, which we compute on line 4.</li>
+<li>On lines 25-27, the copy instruction, which dispatches to the desired flavor of <code>cp.async.bulk.tensor</code>, always has for its completion mechanism <code>mbarrier::complete_tx::bytes</code> with the provided mbarrier object.</li>
+<li>On line 30, we execute the wait operation on the mbarrier object. Note that all threads wait on the mbarrier, in contrast to only thread 0 arriving at the mbarrier, and the invocation of <code>__syncthreads()</code> is necessary prior to the <code>wait_barrier</code> to resolve the thread divergence.<br>
+<br>
+Here, <code>wait_barrier</code> wraps the PTX instruction <code>mbarrier.try_wait.parity.shared::cta.b64</code>. The <code>try_wait</code> qualifier (as opposed to <code>test_wait</code>) indicates that the wait is a blocking instruction. The <code>parity</code> qualifier, whose use entails providing a phase bit, indicates that the thread sleeps until that phase bit of the mbarrier flips. Because this is the first use of the mbarrier post-initialization to track completion, we supply 0 as the phase. If we were doing another TMA load, we would then have to flip the phase to reuse the mbarrier.<br>
+<br>
+In general, the CUTLASS <a href="https://github.com/NVIDIA/cutlass/blob/main/media/docs/pipeline.md" target="_blank" rel="noopener noreferrer">Pipeline APIs</a> offer a higher-level way to handle the lifecycle of the mbarrier objects when doing a series of TMA loads, as one might do in a <a href="https://github.com/NVIDIA/cutlass/blob/main/media/docs/efficient_gemm.md#pipelining" target="_blank" rel="noopener noreferrer">software pipelining</a> scheme.</li>
+<li>After <code>wait_barrier</code>, the memory consistency model furnishes us the following guarantee: the write to SMEM done by the TMA load is made visible to all threads that invoked the mbarrier wait (so in our example kernel, all threads in the CTA).</li>
+</ol>
+<h5 id="remainder-tiles-with-tma-and-stride-requirements">REMAINDER TILES WITH TMA and STRIDE REQUIREMENTS<a href="#remainder-tiles-with-tma-and-stride-requirements" class="heading-anchor" aria-label="Link to REMAINDER TILES WITH TMA and STRIDE REQUIREMENTS">¶</a></h5>
+<p>In our above example, we supposed that <code>m%CTA_M==0</code> and <code>n%CTA_N==0</code>. However, for the purposes of doing a TMA load, we can dispense with this assumption entirely. Instead of needing to handle the out-of-bounds logic ourselves when loading in remainder tiles from GMEM to SMEM, the TMA copy unit will necessarily <a href="https://github.com/NVIDIA/cutlass/blob/main/media/docs/cute/0y_predication.md" target="_blank" rel="noopener noreferrer">predicate</a> the memory copy to not read out-of-bounds. This is consistent with the use of special “implicit” CuTe tensors with <code>ArithTuple</code> as described above in the TMA load — if we used ordinary CuTe tensors instead, then they could be sliced to produce new CuTe tensors with possibly out-of-bounds pointers to GMEM, invariably leading to bugs.</p>
+<p>However, there is one important requirement on the strides of the GMEM tensor itself to bear in mind for TMA, which is the <strong>16-byte boundary</strong> requirement. As one might expect, TMA doesn’t support copying arbitrarily strided regions of GMEM. Rather, we need to assume that the tile being copied has (i) a contiguous direction (stride 1), and (ii) other strides as multiples of 16 bytes. This is <a href="https://github.com/NVIDIA/cutlass/blob/7d49e6c7e2f8896c47f586706e67e1fb215529dc/include/cute/atom/copy_traits_sm90_tma.hpp#L846" target="_blank" rel="noopener noreferrer">asserted</a> in the CUTLASS codebase.</p>
+<p>For example, for our row-major GMEM tensor of floats, with shape <code>(m, n)</code> and stride <code>(n, 1)</code>, this imposes the requirement that <code>n%4==0</code>. If this isn’t satisfied, then one can pad the input tensors to be of the right extent before invoking the kernel.</p>
+<h2 id="tma-store">TMA Store<a href="#tma-store" class="heading-anchor" aria-label="Link to TMA Store">¶</a></h2>
+<p>Equipped with the basics of TMA load, studying TMA store is a lot easier thanks to the many similarities between the two operations. Similar to TMA load, implementing TMA store is a two-step process: defining the TMA copy descriptor on the host, and then issuing the TMA store operation inside the kernel.</p>
+<h4 id="example-task-and-code">Example task and code<a href="#example-task-and-code" class="heading-anchor" aria-label="Link to Example task and code">¶</a></h4>
+<p>For illustration purposes, let’s consider the reverse example of TMA load, where we copy from the SMEM in multiple CTAs to corresponding tiles in a partitioned GMEM tensor. A difference here is that we will fill the SMEM tiles in the CTAs with a simple pattern of numbers before copying them to GMEM (otherwise, we would be copying undefined values). A functional code snippet is as follows:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th></th><th></th></tr></thead><tbody><tr><td>12345678910111213141516171819202122232425262728293031323334353637383940414243444546474849505152</td><td><code>template</code> <code>&#x3C;``typename</code> <code>T, ``int</code> <code>CTA_M=32, ``int</code> <code>CTA_N=32>``void</code> <code>host_fn(T* data, ``int</code> <code>M, ``int</code> <code>N) {``  ``using</code> <code>namespace</code> <code>cute;</code> <code>  ``  ``auto</code> <code>gmem_layout = make_layout(make_shape(M, N), LayoutRight{});``  ``auto</code> <code>gmem_tensor = make_tensor(make_gmem_ptr(T), gmem_layout);</code> <code>  ``  ``auto</code> <code>smem_layout = make_layout(make_shape(CTA_M, CTA_N), LayoutRight{});</code> <code>  ``  ``auto</code> <code>tma_store = make_tma_copy(SM90_TMA_STORE{}, gmem_tensor, smem_layout);</code> <code>  ``  ``tma_store_kernel&#x3C;CTA_M, CTA_N>``                  ``&#x3C;&#x3C;&#x3C;dim3{M / CTA_M, N / CTA_N, 1}, CTA_M>>>``                  ``(tma_store, gmem_tensor, smem_layout);``}</code> <code>template</code> <code>&#x3C;``typename</code> <code>T, ``int</code> <code>CTA_M, ``int</code> <code>CTA_N, ``class</code> <code>TmaStore, ``class</code> <code>GmemTensor>``void</code> <code>tma_store_kernel(__grid_constant__ ``const</code> <code>TmaStore tma_store, GmemTensor gmem_tensor) {``  ``using</code> <code>namespace</code> <code>cute;``  ``__shared__ T smem_data[CTA_M * CTA_N];</code> <code>  ``auto</code> <code>smem_layout = make_layout(make_shape(CTA_M, CTA_N), LayoutRight{});``  ``auto</code> <code>smem_tensor = make_tensor(make_smem_ptr(T), smem_layout);</code> <code>  ``  ``for</code> <code>(``int</code> <code>j = 0; j &#x3C; CTA_N; ++j) {``    ``smem_data(threadIdx.x, j) = threadIdx.x;``  ``}`` </code> <code>  ``__syncthreads();``  ``tma_store_fence();</code> <code>  ``if</code> <code>(threadIdx.x == 0) {``    ``auto</code> <code>gmem_tensor_coord = tma_store.get_tma_tensor(shape(gmem_tensor));</code> <code>    ``auto</code> <code>gmem_tensor_coord_cta = local_tile(``      ``gmem_tensor_coord,``      ``Tile&#x3C;Int&#x3C;CTA_M>, Int&#x3C;CTA_N>>{},``      ``make_coord(blockIdx.x, blockIdx.y));</code> <code>    ``auto</code> <code>tma_store_per_cta = tma_store.get_slice(0);``    ``copy(tma_store,``         ``tma_store_per_cta.partition_S(smem_tensor),``         ``tma_store_per_cta.partition_D(gmem_tensor_coord_per_cta));``    ``  ``}``  ``}</code></td></tr></tbody></table>
+<p>The host code looks almost identical to that of TMA load, except for the call to <code>tma_store_kernel</code>. Note that we have arranged for each CTA to have <code>CTA_M</code> threads. Our example then has each CTA hold a<code>[CTA_M,CTA_N]</code>tile in SMEM such that in lines 29-32, thread <code>i</code> fills row <code>i</code> with the value <code>i</code>.</p>
+<p>In the kernel code, the <code>if</code> block in lines 39-49 is similar to the <code>if</code> block in the <code>tma_load_kernel</code>. In particular, only thread <code>0</code> issues the TMA store operation. All of the tensor tiling logic is conceptually the same. However, the copying direction is reversed: for TMA store, the <code>tma_store_per_cta.partition_S</code> method is applied to <code>smem_tensor</code>, while the <code>tma_store_per_cta.partition_D</code> method is applied to the coordinates of the GMEM tensor. Note that the coordinates are also represented as an <code>ArithTuple</code>, similar to TMA load.</p>
+<h5 id="memory-fence">Memory fence<a href="#memory-fence" class="heading-anchor" aria-label="Link to Memory fence">¶</a></h5>
+<p>The most important difference between the code for TMA load and store is that we no longer see any mbarrier object being used with TMA store. This is because TMA store uses another mechanism to enforce memory consistency: a <em>memory fence</em>.</p>
+<p>The intention of a memory fence is to establish a guaranteed ordering between memory accesses requested by the executing thread before and after the fence. In our example, we need to ensure that all the writes to SMEM done in lines 29-32 are visible to the TMA store executed by thread 0. To this end, on line 35 we have the CuTe method <code>tma_store_fence()</code> that wraps the PTX instruction <code>fence.proxy.async.shared::cta</code>.</p>
+<p>This instruction contains two important qualifiers that describe the effect of the fence: the <em>scope</em> and the <em>proxykind</em>. The <a href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#scope" target="_blank" rel="noopener noreferrer">scope</a> indicates the set of threads that participate in the ordering enforced by the fence. In our case, the qualifier <code>cta</code> defines the scope as given by all threads in the CTA (which is the smallest possible scope for the purposes of the memory consistency model). The <a href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#proxies" target="_blank" rel="noopener noreferrer">proxykind</a> indicates the type of proxy that will participate in the ordering enforced by the fence, in addition to the generic proxy. In our case, we choose the proxykind to be <code>async.shared</code> since the TMA store is executed in the async proxy (with respect to each CTA). If we replaced the async fence by a different memory fence primitive such as <code>__threadfence_block()</code> that doesn’t involve the async proxy, we would destroy the guarantee needed for correct behavior of the kernel, leading to race conditions in practice.</p>
+<h5 id="tma-store-arrive-and-wait">TMA STORE ARRIVE AND WAIT<a href="#tma-store-arrive-and-wait" class="heading-anchor" aria-label="Link to TMA STORE ARRIVE AND WAIT">¶</a></h5>
+<p>In lines 49 and 51, we have <code>tma_store_arrive()</code>, which commits the TMA store operation (technically, as a <code>cp.async.bulk-group</code>), and <code>tma_store_wait&#x3C;Count>()</code>, which waits until at most <code>Count</code> many of the committed TMA store operations are pending (e.g., if all should be completed, then set <code>Count</code> to be 0). These operations are useful when one has other in-kernel work waiting on the completion of the TMA store — for example, this would be needed to reuse the freed SMEM made available after writing out. However, because our kernel simply exits after the TMA store is done, we don’t need the TMA store arrive and wait pattern here, so we comment out those lines.</p>
+<h2 id="a-deeper-look-at-tma-operations">A Deeper Look at TMA Operations<a href="#a-deeper-look-at-tma-operations" class="heading-anchor" aria-label="Link to A Deeper Look at TMA Operations">¶</a></h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th></th><th>TMA LOAD</th><th>TMA STORE</th></tr></thead><tbody><tr><td>Direction</td><td>GMEM -> SMEM</td><td>SMEM -> GMEM</td></tr><tr><td>Sync method</td><td>Memory barrier</td><td>Proxy fence</td></tr><tr><td>When to sync</td><td>After the operation</td><td>Before the operation</td></tr></tbody></table>
+<p>Summary of TMA operations.</p>
+<p>Thus far, we have learned how to invoke the TMA load and TMA store operations. The above table compares and contrasts these operations. To invoke either operation, we need to create an object akin to <code>TiledCopy</code> via the <code>cute::make_tma_copy</code> method on the host code, and then pass this object into a kernel function, where we use them in <code>cute::copy</code> to actually invoke the operation. In this section, we take a deeper dive into what really happens when we call these <code>TiledCopy</code> objects in the kernel function. From this deep dive, we discuss two extensions: TMA store reduce and TMA load multicast.</p>
+<h4 id="ptx-instructions-of-tma-load-and-store">PTX Instructions of TMA Load and Store<a href="#ptx-instructions-of-tma-load-and-store" class="heading-anchor" aria-label="Link to PTX Instructions of TMA Load and Store">¶</a></h4>
+<p>PTX (<a href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html" target="_blank" rel="noopener noreferrer">Parallel Thread Execution</a>) is a low-level intermediate language for NVIDIA GPUs. For our discussion, the relevant part of PTX comprises a set of instructions that can be inserted into CUDA code via blocks wrapped by the <code>asm volatile</code> key words. In particular, when we call <code>cute::copy(tma_load, ...)</code> or <code>cute::copy(tma_store, ...)</code> as described in previous sections, certain PTX instructions are called to perform these operations. By studying the PTX, we can better understand TMA load and TMA store.</p>
+<p>Let us start with TMA load. Recall that when we create the <code>tma_load</code> object in the host code, we must provide the GMEM tensor (which contains the source data to copy from) and the SMEM layout (which describes how the data will look like inside each CTA). Using this tensor and layout, CuTe determines the underlying PTX instruction to be executed when <code>cute::copy(tma_load, ...)</code> is invoked in the kernel. The PTX instruction is chosen depending on the <em>rank</em> of the GMEM tensor (note that <em>rank</em> here means the number of dimensions of the tensor, as opposed to matrix rank/nullity in linear algebra). In our example, the GMEM tensor has rank two, so the <a href="https://github.com/NVIDIA/cutlass/blob/637b15906358191cb4238af419d408a65819d7ec/include/cute/arch/copy_sm90_tma.hpp#L100-L106" target="_blank" rel="noopener noreferrer">following PTX instruction</a> will be executed:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th></th><th></th></tr></thead><tbody><tr><td>1234567</td><td><code>asm ``volatile</code> <code>(``  ``"cp.async.bulk.tensor.2d.shared::cluster.global.mbarrier::complete_tx::bytes"``  ``" [%0], [%1, {%3, %4}], [%2];"``  ``:``  ``: ``"r"``(smem_int_ptr), ``"l"``(gmem_int_desc), ``"r"``(smem_int_mbar),``    ``"r"``(crd0), ``"r"``(crd1)``  ``: ``"memory"``);</code></td></tr></tbody></table>
+<p>Looking at this PTX instruction, we see many familiar concepts. For instance, <code>gmem_int_desc</code> refers to the coordinates kept in the TMA descriptor, while <code>mbarrier::complete_tx::bytes</code> and <code>smem_int_mbar</code> refer to the memory barrier. Note also that <code>tensor.2d</code> refers to the fact that we are copying a rank-2 tensor, i.e., a 2D matrix.</p>
+<p>It turns out that not only TMA load but all TMA operations are wrappers around certain <code>cp.async.bulk</code> instructions. The <a href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk" target="_blank" rel="noopener noreferrer">NVIDIA PTX documentation dedicates an entire section</a> to discuss <code>cp.async.bulk</code> instructions, specifically their syntaxes and operands. We encourage readers to read that section and the references therein for a more thorough study of TMA operations, which cover a much larger scope than this blog post is intended to. Here, we will discuss two extensions of TMA that are exposed via these <code>cp.async.bulk</code> instructions.</p>
+<h4 id="tma-store-reduce">TMA Store Reduce<a href="#tma-store-reduce" class="heading-anchor" aria-label="Link to TMA Store Reduce">¶</a></h4>
+<p>Recall that TMA store copies data from the SMEM of multiple CTAs into the corresponding tiles in a GMEM tensor. We can <em>interpret</em> TMA store as an assignment operation illustrated by the following Python pseudocode:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th></th><th></th></tr></thead><tbody><tr><td>12</td><td><code>for</code> <code>cta_idx ``in</code> <code>range``(number_of_ctas):``  ``gmem_dst[cta_idx] ``=</code> <code>smem_src[cta_idx]</code></td></tr></tbody></table>
+<p>What if we want to do the following instead?</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th></th><th></th></tr></thead><tbody><tr><td>123456</td><td><code>for</code> <code>cta_idx ``in</code> <code>range``(number_of_ctas):``  ``gmem_dst[cta_idx] ``+``=</code> <code>smem_src[cta_idx]``  ``  ``gmem_dst[cta_idx] ``=</code> <code>max``(gmem_dst[cta_idx], smem_src[cta_idx])``  ``  ``gmem_dst[cta_idx] ``=</code> <code>min``(gmem_dst[cta_idx], smem_src[cta_idx])</code></td></tr></tbody></table>
+<p>All of these operations — namely reduce sum, reduce max, and reduce min — are fairly common in tensor programs. In particular, reduce sum is an inevitable subroutine in Split-K GEMM, while reduce max and reduce min are often used in attention. As simple as these operations look, implementing them in CUDA kernels is not very straightforward. We invite readers to briefly think through how many rounds of data movements between GMEM and SMEM must be carried out to achieve these goals before reading the next paragraph.</p>
+<p>The vanilla implementation of a reduce operation that “accumulates” values from a CTA’s SMEM into a tile in a GMEM tensor consists of one GMEM read, one processing block, and one GMEM write. First, the original value from the GMEM is loaded into the CTA’s SMEM or register, then the reduce operation happens, and finally the result is written back out. This process is slow.</p>
+<p>Making a slight modification to the constructor of the TMA store <code>TiledCopy</code> object allows us to condense this three-step procedure to <em>just one</em> PTX instruction, namely <code>cp.reduce.async.bulk</code> instead of <code>cp.async.bulk</code>. Precisely, we can make the following <em>one line change</em> on the host code:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th></th><th></th></tr></thead><tbody><tr><td>12345</td><td><code>auto</code> <code>tma_store = make_tma_copy(SM90_TMA_STORE{}, gmem_tensor, smem_layout);</code> <code>auto</code> <code>tma_reduce_sum = make_tma_copy(SM90_TMA_REDUCE_ADD{}, gmem_tensor, smem_layout);</code></td></tr></tbody></table>
+<p>and then use <code>tma_reduce_sum</code> instead, which now calls <code>cp.reduce.async.bulk</code> instead of <code>cp.async.bulk</code> under the hood.</p>
+<p>As an aside, the PTX instruction <code>cp.reduce.async.bulk</code> has been available since the release of CUDA 12.0, but was not exposed through CUTLASS and CuTe until the <a href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-reduce-async-bulk" target="_blank" rel="noopener noreferrer">CUTLASS 3.5</a> release. We hope other reduction operations will be exposed in future releases, but if they are not, it’s fairly simple to adapt the CuTe code for TMA reduce add to perform the max and min reductions, as well as other bitwise reductions that <code>cp.reduce.async.bulk</code> offers: <code>and</code>, <code>or</code>, <code>xor</code>, <code>inc</code>, and <code>dec</code>.</p>
+<h4 id="tma-load-multicast">TMA Load Multicast<a href="#tma-load-multicast" class="heading-anchor" aria-label="Link to TMA Load Multicast">¶</a></h4>
+<p>In the previous section, we have seen that studying PTX instructions allows us to discover TMA reduce operations, which can be used instead of TMA store for certain applications. In this section, we will study the <em>multicast</em> extension of TMA load.</p>
+<p>To aid our understanding, we first take a look at the full syntax of <a href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-tensor" target="_blank" rel="noopener noreferrer"><code>cp.async.bulk.tensor</code></a>:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th></th><th></th></tr></thead><tbody><tr><td>1234567891011121314151617</td><td><code>// global -> shared::cluster:``cp.async.bulk.tensor.dim.dst.src{.load_mode}.completion_mechanism``{.multicast}{.level::cache_hint}``  ``[dstMem],``  ``[tensorMap, tensorCoords],``  ``[mbar]``  ``{, im2colOffsets}``  ``{, ctaMask}``  ``{, cache-policy}</code> <code>.dst =                  { .shared::cluster }``.src =                  { .global }``.dim =                  { .1d, .2d, .3d, .4d, .5d }``.completion_mechanism = { .mbarrier::complete_tx::bytes }``.load_mode =            { .tile, .im2col }``.level::cache_hint =    { .L2::cache_hint }``.multicast =            { .multicast::cluster  }</code></td></tr></tbody></table>
+<p>Again, without the need to completely understand the syntax of PTX instructions, we see many familiar concepts such as <code>.dim</code>, <code>.global</code> for <code>src</code>, and <code>.mbarrier</code> for <code>completion_mechanism</code>. This section focuses on the <code>multicast</code> operand.</p>
+<p>Multicast refers to a situation where we have a tile in a GMEM tensor that we want to copy to <em>multiple</em> SMEM locations in multiple CTAs. This is typically the case in GEMM kernels (i.e., matrix multiplication), where an input matrix column tile is needed for multiple row tiles or vice versa. In such cases, while TMA load is still perfectly functional — we simply provide the same TMA descriptor to the multiple CTAs that need it — the <code>.multicast</code> operand allows us to <em>guarantee</em> L2-cache hits.</p>
+<p>Let’s consider an extension of the above TMA load example to one with multicast. To begin with, we need to define the <em>cluster</em> dimensions of our kernel to be non-trivial, since a requirement for a subset of CTAs to collectively participate in a TMA load multicast operation is that they belong to the same <a href="https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#thread-block-clusters" target="_blank" rel="noopener noreferrer">(threadblock) cluster</a>. In order to keep things simple, we will just change the grid dimensions as so:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th></th><th></th></tr></thead><tbody><tr><td>1234567</td><td><code>dim3 grid_dims = dim3{M / CTA_M, N / CTA_N, 1};``dim3 cluster_dums = dim3{1, 1, 1};</code> <code>dim3 grid_dims = dim3{M / CTA_M, N / CTA_N, 2};``dim3 cluster_dums = dim3{1, 1, 2};</code></td></tr></tbody></table>
+<p>Note that when using clusters, the cluster dimensions must evenly divide into the grid dimensions, or the kernel will not launch. In our new kernel, we will then arrange for the same tile of GMEM to be loaded into each CTA’s SMEM for every pair of CTAs in the same cluster, which occurs if and only if the two CTAs have the same <code>blockIdx.x</code> and <code>blockIdx.y</code>.</p>
+<p>First, in the host code we make the following change to the definition of the TMA load <code>TiledCopy</code> object:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th></th><th></th></tr></thead><tbody><tr><td>123456</td><td><code>auto</code> <code>tma_load = make_tma_copy(SM90_TMA_LOAD{}, gmem_tensor, smem_layout);</code> <code>auto</code> <code>tma_load = make_tma_copy(SM90_TMA_LOAD_MULTICAST{},``      ``gmem_tensor, smem_layout, cute::_2{});</code></td></tr></tbody></table>
+<p>We write <code>_2{}</code> for the last parameter (the cluster size) to pass it as a compile-time constant, using the <a href="https://github.com/NVIDIA/cutlass/blob/main/media/docs/cute/01_layout.md#integers" target="_blank" rel="noopener noreferrer">CuTe integer types</a> provided for this purpose. In practice and more idiomatically, we would have defined the <code>ClusterShape</code> type prior (in our case, to be <code>Shape&#x3C;_1,_1,_2></code>) and then write <code>size&#x3C;2>ClusterShape{}</code> for that parameter.</p>
+<p>We then change the kernel code as follows:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th></th><th></th></tr></thead><tbody><tr><td>123456789101112131415161718192021222324252627282930313233343536373839404142</td><td><code>template</code> <code>&#x3C;``typename</code> <code>T, ``int</code> <code>CTA_M, ``int</code> <code>CTA_N, ``class</code> <code>ClusterShape,``          ``class</code> <code>TmaLoad, ``class</code> <code>GmemTensor>``void</code> <code>tma_load_kernel(__grid_constant__ ``const</code> <code>TmaLoad tma_load,``                     ``GmemTensor gmem_tensor) {``  ``using</code> <code>namespace</code> <code>cute;``  ``uint32_t</code> <code>block_rank_in_cluster = cute::block_rank_in_cluster();``  ``constexpr</code> <code>uint32_t</code> <code>cluster_size = size&#x3C;2>(ClusterShape{}));``  ``constexpr</code> <code>uint16_t</code> <code>tma_mcast_mask = (``uint16_t``(1) &#x3C;&#x3C; cluster_size) - 1;``  ``constexpr</code> <code>int</code> <code>tma_transaction_bytes = CTA_M * CTA_N * ``sizeof``(T);</code> <code>  ``__shared__ T smem_data[CTA_M * CTA_N];``  ``__shared__ ``uint64_t</code> <code>tma_load_mbar;</code> <code>  ``auto</code> <code>smem_layout = make_layout(make_shape(CTA_M, CTA_N), LayoutRight{});``  ``auto</code> <code>smem_tensor = make_tensor(make_smem_ptr(T), smem_layout);``  ``auto</code> <code>gmem_tensor_coord = tma_load.get_tma_tensor(shape(gmem_tensor));``  ``auto</code> <code>gmem_tensor_coord_cta = local_tile(``        ``gmem_tensor_coord,``        ``Tile&#x3C;Int&#x3C;CTA_M>, Int&#x3C;CTA_N>>{},``        ``make_coord(blockIdx.x, blockIdx.y));</code> <code>  ``if</code> <code>(threadIdx.x == 0) {``    ``initialize_barrier(tma_load_mbar, ``1);``  ``}``  ``__syncthreads();``  ``cute::cluster_sync();``  ``cutlass::arch::fence_barrier_init();</code> <code>  ``if</code> <code>(threadIdx.x == 0) {``    ``set_barrier_transaction_bytes(tma_load_mbar, tma_transaction_bytes);``    ``auto</code> <code>tma_load_per_cta = tma_load.get_slice(block_rank_in_cluster);``    ``copy(tma_load.with(tma_load_mbar, tma_mcast_mask),``         ``tma_load_per_cta.partition_S(gmem_tensor_coord_per_cta),``         ``tma_load_per_cta.partition_D(smem_tensor));``  ``}``  ``__syncthreads();``  ``wait_barrier(tma_load_mbar, ``0);</code> <code>  </code> <code>  ``cute::cluster_sync();``}</code></td></tr></tbody></table>
+<p>We have highlighted the relevant changes. First, we now need to track the internal index of the CTA within its cluster, which we fetch via the CuTe method <code>block_rank_in_cluster()</code>. This returns the value of the special register <code>%cluster_ctarank</code>, which will take on values 0 and 1 in our example. For brevity, let us refer to this as the <code>ctaid</code>. We then have the following three modifications to the code to unpack:</p>
+<ol>
+<li>Additional cluster synchronization primitives.</li>
+<li>Use of the <code>uint16</code> bitmask in the multicast operation.</li>
+<li>Use of the <code>ctaid</code> in determining the slice of the <code>TiledCopy</code> object used to partition the GMEM and SMEM tensors.</li>
+</ol>
+<p>For (1), we use the CuTe method <code>cluster_sync()</code>, which does <em>both</em> a cluster barrier arrive and wait operation in sequence. We insert this in two places: in lines 7-8 we use <code>cluster_sync()</code> together with a fence to ensure cluster-wide visibility of the mbarrier initialization, and on line 41 we use another <code>cluster_sync()</code> to ensure that one of the two CTAs in the cluster doesn’t exit prematurely while the other is still waiting for the multicast load to complete. In general, there would be compute done on the data loaded into SMEM, and the last <code>cluster_sync()</code> would appear at the very end of the kernel code.</p>
+<p>For (2), we pass a <code>uint16</code> bitmask to the <code>copy</code> operation to specify which CTAs will participate in the TMA multicast load. The bits set to 1 in the mask indicate which CTAs are active, with a maximum of 16 CTAs in a cluster (<a href="https://docs.nvidia.com/cuda/hopper-tuning-guide/index.html#thread-block-clusters" target="_blank" rel="noopener noreferrer">maximum nonportable size</a>) and the position of the bit corresponding to the <code>ctaid</code>. Thus, in our example, by setting <code>tma_mcast_mask</code> to <code>0b11</code> we specify that both CTAs in the cluster will participate.</p>
+<p>Finally, for (3), the <code>ctaid</code> is used to specify the offset used when slicing into GMEM for the TMA multicast load operation launched from the given CTA. To explain this point clearly, consider the following example of loading in a 16 x 16 tile of integers, initialized to be 0-255 in ascending row-major order, from GMEM to the SMEM of two CTAs in a cluster. Suppose we mistakenly gave 0 as the parameter to <code>tma_load.get_slice</code> for <strong>both</strong> CTAs. Then we obtain the following in both CTAs’ SMEM after completion of the load:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th></th><th></th></tr></thead><tbody><tr><td>12345678910111213141516</td><td><code>  ``0    1    2    3    4    5    6    7    8    9   10   11   12   13   14   15`` ``16   17   18   19   20   21   22   23   24   25   26   27   28   29   30   31`` ``32   33   34   35   36   37   38   39   40   41   42   43   44   45   46   47`` ``48   49   50   51   52   53   54   55   56   57   58   59   60   61   62   63`` ``64   65   66   67   68   69   70   71   72   73   74   75   76   77   78   79`` ``80   81   82   83   84   85   86   87   88   89   90   91   92   93   94   95`` ``96   97   98   99  100  101  102  103  104  105  106  107  108  109  110  111``112  113  114  115  116  117  118  119  120  121  122  123  124  125  126  127``  ``0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0``  ``0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0``  ``0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0``  ``0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0``  ``0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0``  ``0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0``  ``0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0``  ``0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0</code></td></tr></tbody></table>
+<p>In contrast, if we have 1 be the given parameter for both CTAs, then we get this in both CTAs’ SMEM:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th></th><th></th></tr></thead><tbody><tr><td>12345678910111213141516</td><td><code>  ``0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0``  ``0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0``  ``0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0``  ``0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0``  ``0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0``  ``0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0``  ``0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0``  ``0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0``128  129  130  131  132  133  134  135  136  137  138  139  140  141  142  143``144  145  146  147  148  149  150  151  152  153  154  155  156  157  158  159``160  161  162  163  164  165  166  167  168  169  170  171  172  173  174  175``176  177  178  179  180  181  182  183  184  185  186  187  188  189  190  191``192  193  194  195  196  197  198  199  200  201  202  203  204  205  206  207``208  209  210  211  212  213  214  215  216  217  218  219  220  221  222  223``224  225  226  227  228  229  230  231  232  233  234  235  236  237  238  239``240  241  242  243  244  245  246  247  248  249  250  251  252  253  254  255</code></td></tr></tbody></table>
+<p>Finally, giving <em>either</em> 0 from <code>ctaid</code> 1 and 1 from <code>ctaid</code> 0, <em>or</em> 0 from <code>ctaid</code> 0 and 1 from <code>ctaid</code> 1, would correctly load in the entire tile to both CTAs’ SMEM. These printouts illustrate that issuing the multicast operation from one CTA in the cluster loads half of the GMEM into each of the two CTAs’ SMEM, with the slice of the <code>TiledCopy</code> determining the respective half. This is consistent with the description of multicast for <code>cp.async.bulk.tensor</code> in the PTX documentation:</p>
+<blockquote>
+<p>The source data is multicast to the same CTA-relative offset as <code>dstMem</code> in the shared memory of each destination CTA.</p>
+</blockquote>
+<p>In terms of the <code>TiledCopy</code> object, which generically has a layout <code>TiledLayout_TV</code> mapping thread-value tuples to logical coordinates of the tile, CuTe treats the <code>ctaid</code> as the <em>thread index</em> for the purposes of slicing. For example, printing out the <code>TiledCopy</code> in our 16 x 16 example yields the following:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th></th><th></th></tr></thead><tbody><tr><td>123456789</td><td><code>TiledCopy``  ``Tiler_MN:       (_16,_16)``  ``TiledLayout_TV: (_2,((_16,_16))):(_8,((_16,_1)))``Copy_Atom``  ``ThrID:        _1:_0``  ``ValLayoutSrc: (_1,_256):(_0,_1)``  ``ValLayoutDst: (_1,_256):(_0,_1)``  ``ValLayoutRef: (_1,_256):(_0,_1)``  ``ValueType:    32b</code></td></tr></tbody></table>
+<p>which has two “threads” corresponding to the two CTAs in the cluster, with the offset position given by the logical coordinate <code>(8,0)</code> in the <code>(16,16)</code> tile for <code>ctaid</code> 1.</p>
+<h2 id="conclusion">Conclusion<a href="#conclusion" class="heading-anchor" aria-label="Link to Conclusion">¶</a></h2>
+<p>In this blog post, we walked through a few simplified examples of using TMA load, store, store reduce, and load multicast to perform memory copy between GMEM and SMEM in a CUDA kernel, using the methods provided by the CUTLASS library.</p>
+<p>We started by providing an overview of TMA and went into how a user can invoke these operations in a GPU kernel. Then, we dived deeper into the low-level PTX instructions in order to elicit a greater understanding of TMA. We hope this blog post is helpful for readers who want to understand TMA, to refresh their knowledge on the topic, or to debug their existing projects which use TMA.</p>
+<p>We left out a few important topics such as supported swizzling modes for TMA and the ability for TMA to copy GMEM to SMEM in an <strong>interleaved</strong> format, permuting strides outside the contiguous dimension. These are important when using TMA in conjunction with the Warpgroup Matrix-Multiply-Accumulate (WGMMA) instructions, also new to the Hopper architecture, in order to load tensor data in a memory format compatible with WGMMA. We will explain these points when we discuss Hopper-based GEMM in a future post.</p>
+<p>Lastly, fully-worked out examples of the kernels discussed in this blog post can be found on our <a href="https://github.com/ColfaxResearch/cfx-article-src/tree/master/tma" target="_blank" rel="noopener noreferrer">Colfax Research GitHub repository</a>.</p>
+<h3 id="share-this">Share this:<a href="#share-this" class="heading-anchor" aria-label="Link to Share this:">¶</a></h3>
+<ul>
+<li><a href="https://research.colfax-intl.com/tutorial-hopper-tma/?share=linkedin&#x26;nb=1" target="_blank" rel="noopener noreferrer">Click to share on LinkedIn (Opens in new window) LinkedIn</a></li>
+<li><a href="https://research.colfax-intl.com/tutorial-hopper-tma/?share=twitter&#x26;nb=1" target="_blank" rel="noopener noreferrer">Click to share on X (Opens in new window) X</a></li>
+<li><a href="https://research.colfax-intl.com/tutorial-hopper-tma/?share=facebook&#x26;nb=1" target="_blank" rel="noopener noreferrer">Click to share on Facebook (Opens in new window) Facebook</a></li>
+<li><a href="https://research.colfax-intl.com/tutorial-hopper-tma/?share=reddit&#x26;nb=1" target="_blank" rel="noopener noreferrer">Click to share on Reddit (Opens in new window) Reddit</a></li>
+<li>
+<hr>
+</li>
+</ul>
+<h3 id="discover-more-from-colfax-research">Discover more from Colfax Research<a href="#discover-more-from-colfax-research" class="heading-anchor" aria-label="Link to Discover more from Colfax Research">¶</a></h3>
+<p>Subscribe to get the latest posts sent to your email.</p>
+<p>Type your email… <a href="mailto:Type%20your%20email%E2%80%A6" target="_blank" rel="noopener noreferrer">Type your email…</a></p>
+<p>Subscribe</p>
+<p>Posted</p>
+<p>June 24, 2024</p>
+<p>in</p>
+<p><a href="https://research.colfax-intl.com/category/article/" target="_blank" rel="noopener noreferrer">Article</a>, <a href="https://research.colfax-intl.com/category/blog/" target="_blank" rel="noopener noreferrer">Blog</a>, <a href="https://research.colfax-intl.com/category/papers/tutorials/" target="_blank" rel="noopener noreferrer">Tutorials</a></p>
+<h2 id="comments">Comments<a href="#comments" class="heading-anchor" aria-label="Link to Comments">¶</a></h2>
+<h3 id="leave-a-reply--cancel-reply">Leave a Reply <a href="/tutorial-hopper-tma/#respond">Cancel reply</a><a href="#leave-a-reply--cancel-reply" class="heading-anchor" aria-label="Link to Leave a Reply  Cancel reply">¶</a></h3>
+<p>Your email address will not be published. Required fields are marked *</p>
+<p>Comment *</p>
+<p>Name</p>
+<p>Email</p>
+<p>Website</p>
+<p>[ ] Save my name, email, and website in this browser for the next time I comment.</p>
+<p>Post Comment</p>
+<p>Δ</p>
+<!-- #respond --> <div class="grid md:grid-cols-2 gap-4 mt-10"> <a href="/blog-preview/previews/pr-130/deepgemm-fp8-gemm/" class="block p-4 rounded-lg border border-gray-200 dark:border-gray-800 hover:border-blue-500"> <div class="text-xs uppercase text-gray-500">Previous</div> <div class="font-semibold">DeepGEMM 学习指南：面向初学者的 FP8 GEMM 库解析</div> </a> <div></div> </div>  <section id="comments" class="mt-12"> <div class="border-t border-gray-200 dark:border-gray-700 pt-8"> <script src="https://giscus.app/client.js" data-repo="yuanlehome/blog" data-repo-id="R_kgDOQu2Jjw" data-category="General" data-category-id="DIC_kwDOQu2Jj84C0QDN" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="bottom" data-theme="preferred_color_scheme" data-lang="zh-CN" crossorigin="anonymous" async></script> </div> </section> <script>
+  (() => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+
+    // Mapping uses `pathname` to keep one discussion per URL path, which is stable for static sites.
+    const themeMap = {
+      light: 'light',
+      dark: 'dark_dimmed',
+    };
+
+    const getResolvedTheme = () =>
+      document.documentElement.dataset.theme === 'dark' ||
+      document.documentElement.classList.contains('dark')
+        ? 'dark'
+        : 'light';
+
+    let activeTheme = getResolvedTheme();
+
+    const setContainerTheme = (theme) => {
+      const container = document.getElementById('comments');
+      if (container) {
+        container.setAttribute('data-giscus-theme', theme);
+      }
+    };
+
+    const postThemeMessage = (resolvedTheme) => {
+      const effective = resolvedTheme ?? activeTheme;
+      const nextTheme = themeMap[effective] ?? 'light';
+      setContainerTheme(nextTheme);
+      const iframe = document.querySelector('iframe.giscus-frame');
+      if (iframe) {
+        iframe.contentWindow?.postMessage(
+          { giscus: { setConfig: { theme: nextTheme } } },
+          'https://giscus.app',
+        );
+      }
+      window.dispatchEvent(
+        new CustomEvent('giscus-theme-applied', {
+          detail: { theme: nextTheme, resolved: effective },
+        }),
+      );
+    };
+
+    const syncTheme = (resolvedOverride) => {
+      const detected = resolvedOverride ?? getResolvedTheme();
+      if (detected !== activeTheme) {
+        activeTheme = detected;
+      }
+      postThemeMessage(detected);
+    };
+
+    const observer = new MutationObserver(() => syncTheme());
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class', 'data-theme'],
+    });
+
+    window.addEventListener('themechange', (event) => {
+      const detail = event?.detail || {};
+      if (detail.resolved) {
+        syncTheme(detail.resolved);
+      } else {
+        syncTheme();
+      }
+    });
+
+    const waitForFrame = () => {
+      const frame = document.querySelector('iframe.giscus-frame');
+      if (!frame) {
+        requestAnimationFrame(waitForFrame);
+        return;
+      }
+
+      const sendWhenReady = () => postThemeMessage();
+      if (frame instanceof HTMLIFrameElement) {
+        if (frame.complete) {
+          sendWhenReady();
+        } else {
+          frame.addEventListener('load', sendWhenReady, { once: true });
+        }
+      }
+      // Ensure we apply the current theme even if the iframe was already ready.
+      postThemeMessage();
+    };
+
+    // Run once after load to sync the initial theme and keep retrying until the iframe is present.
+    waitForFrame();
+    syncTheme();
+  })();
+</script> </article> <div class="w-full" data-toc-shell> <aside class="hidden lg:block h-full"> <div class="flex h-full w-full flex-col gap-3 overflow-hidden rounded-xl border border-gray-200 bg-gray-50/80 p-4 shadow-md backdrop-blur-sm dark:border-gray-800 dark:bg-gray-800/50 lg:sticky lg:top-[calc(var(--toc-offset)+1rem)] lg:max-h-[calc(100vh-var(--toc-offset)-1.5rem)] lg:h-[calc(100vh-var(--toc-offset)-1.5rem)]" style="--toc-offset: 96px" data-toc-container> <div class="space-y-1"> <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">文章目录</p> <p class="text-xs text-gray-500 dark:text-gray-400">快速跳转到你关心的章节</p> </div> <nav aria-label="文章目录" class="flex-1 min-h-0 overflow-y-auto pr-1" data-toc-scroll> <ol class="space-y-3 text-sm"> <li><a href="#cutlass-tutorial-mastering-the-nvidia-tensor-memory-accelerator-tma" data-toc-link data-mobile-toc-link data-target="cutlass-tutorial-mastering-the-nvidia-tensor-memory-accelerator-tma" title="CUTLASS Tutorial: Mastering the NVIDIA® Tensor Memory Accelerator (TMA)¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 text-base font-semibold text-gray-900 dark:text-gray-100"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-blue-600 dark:group-data-[active=true]:text-blue-400 text-gray-600 dark:text-gray-400">
+#
+</span><span class="flex-1 truncate" data-title>CUTLASS Tutorial: Mastering the NVIDIA® Tensor Memory Accelerator (TMA)¶</span></a><ol class="mt-1 space-y-1"><li><a href="#tma-load" data-toc-link data-mobile-toc-link data-target="tma-load" title="TMA Load¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 text-sm text-gray-700 dark:text-gray-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-blue-600 dark:group-data-[active=true]:text-blue-400 text-gray-400 dark:text-gray-500">
+#
+</span><span class="flex-1 truncate" data-title>TMA Load¶</span></a><ol class="mt-1 space-y-1"><li><a href="#example-task" data-toc-link data-mobile-toc-link data-target="example-task" title="Example task¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 text-xs text-gray-500 dark:text-gray-400 pl-9"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-blue-600 dark:group-data-[active=true]:text-blue-400 text-gray-400 dark:text-gray-500">
+#
+</span><span class="flex-1 truncate" data-title>Example task¶</span></a></li><li><a href="#host-code" data-toc-link data-mobile-toc-link data-target="host-code" title="Host code¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 text-xs text-gray-500 dark:text-gray-400 pl-9"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-blue-600 dark:group-data-[active=true]:text-blue-400 text-gray-400 dark:text-gray-500">
+#
+</span><span class="flex-1 truncate" data-title>Host code¶</span></a></li><li><a href="#kernel-code" data-toc-link data-mobile-toc-link data-target="kernel-code" title="Kernel code¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 text-xs text-gray-500 dark:text-gray-400 pl-9"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-blue-600 dark:group-data-[active=true]:text-blue-400 text-gray-400 dark:text-gray-500">
+#
+</span><span class="flex-1 truncate" data-title>Kernel code¶</span></a><ol class="mt-1 space-y-1"><li><a href="#coordinates-and-arithmetic-tuples" data-toc-link data-mobile-toc-link data-target="coordinates-and-arithmetic-tuples" title="Coordinates and Arithmetic tuples¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 text-xs text-gray-500 dark:text-gray-400 pl-9"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-blue-600 dark:group-data-[active=true]:text-blue-400 text-gray-400 dark:text-gray-500">
+#
+</span><span class="flex-1 truncate" data-title>Coordinates and Arithmetic tuples¶</span></a></li><li><a href="#memory-barrier" data-toc-link data-mobile-toc-link data-target="memory-barrier" title="Memory barrier¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 text-xs text-gray-500 dark:text-gray-400 pl-9"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-blue-600 dark:group-data-[active=true]:text-blue-400 text-gray-400 dark:text-gray-500">
+#
+</span><span class="flex-1 truncate" data-title>Memory barrier¶</span></a></li><li><a href="#remainder-tiles-with-tma-and-stride-requirements" data-toc-link data-mobile-toc-link data-target="remainder-tiles-with-tma-and-stride-requirements" title="REMAINDER TILES WITH TMA and STRIDE REQUIREMENTS¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 text-xs text-gray-500 dark:text-gray-400 pl-9"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-blue-600 dark:group-data-[active=true]:text-blue-400 text-gray-400 dark:text-gray-500">
+#
+</span><span class="flex-1 truncate" data-title>REMAINDER TILES WITH TMA and STRIDE REQUIREMENTS¶</span></a></li></ol></li></ol></li><li><a href="#tma-store" data-toc-link data-mobile-toc-link data-target="tma-store" title="TMA Store¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 text-sm text-gray-700 dark:text-gray-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-blue-600 dark:group-data-[active=true]:text-blue-400 text-gray-400 dark:text-gray-500">
+#
+</span><span class="flex-1 truncate" data-title>TMA Store¶</span></a><ol class="mt-1 space-y-1"><li><a href="#example-task-and-code" data-toc-link data-mobile-toc-link data-target="example-task-and-code" title="Example task and code¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 text-xs text-gray-500 dark:text-gray-400 pl-9"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-blue-600 dark:group-data-[active=true]:text-blue-400 text-gray-400 dark:text-gray-500">
+#
+</span><span class="flex-1 truncate" data-title>Example task and code¶</span></a><ol class="mt-1 space-y-1"><li><a href="#memory-fence" data-toc-link data-mobile-toc-link data-target="memory-fence" title="Memory fence¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 text-xs text-gray-500 dark:text-gray-400 pl-9"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-blue-600 dark:group-data-[active=true]:text-blue-400 text-gray-400 dark:text-gray-500">
+#
+</span><span class="flex-1 truncate" data-title>Memory fence¶</span></a></li><li><a href="#tma-store-arrive-and-wait" data-toc-link data-mobile-toc-link data-target="tma-store-arrive-and-wait" title="TMA STORE ARRIVE AND WAIT¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 text-xs text-gray-500 dark:text-gray-400 pl-9"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-blue-600 dark:group-data-[active=true]:text-blue-400 text-gray-400 dark:text-gray-500">
+#
+</span><span class="flex-1 truncate" data-title>TMA STORE ARRIVE AND WAIT¶</span></a></li></ol></li></ol></li><li><a href="#a-deeper-look-at-tma-operations" data-toc-link data-mobile-toc-link data-target="a-deeper-look-at-tma-operations" title="A Deeper Look at TMA Operations¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 text-sm text-gray-700 dark:text-gray-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-blue-600 dark:group-data-[active=true]:text-blue-400 text-gray-400 dark:text-gray-500">
+#
+</span><span class="flex-1 truncate" data-title>A Deeper Look at TMA Operations¶</span></a><ol class="mt-1 space-y-1"><li><a href="#ptx-instructions-of-tma-load-and-store" data-toc-link data-mobile-toc-link data-target="ptx-instructions-of-tma-load-and-store" title="PTX Instructions of TMA Load and Store¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 text-xs text-gray-500 dark:text-gray-400 pl-9"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-blue-600 dark:group-data-[active=true]:text-blue-400 text-gray-400 dark:text-gray-500">
+#
+</span><span class="flex-1 truncate" data-title>PTX Instructions of TMA Load and Store¶</span></a></li><li><a href="#tma-store-reduce" data-toc-link data-mobile-toc-link data-target="tma-store-reduce" title="TMA Store Reduce¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 text-xs text-gray-500 dark:text-gray-400 pl-9"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-blue-600 dark:group-data-[active=true]:text-blue-400 text-gray-400 dark:text-gray-500">
+#
+</span><span class="flex-1 truncate" data-title>TMA Store Reduce¶</span></a></li><li><a href="#tma-load-multicast" data-toc-link data-mobile-toc-link data-target="tma-load-multicast" title="TMA Load Multicast¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 text-xs text-gray-500 dark:text-gray-400 pl-9"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-blue-600 dark:group-data-[active=true]:text-blue-400 text-gray-400 dark:text-gray-500">
+#
+</span><span class="flex-1 truncate" data-title>TMA Load Multicast¶</span></a></li></ol></li><li><a href="#conclusion" data-toc-link data-mobile-toc-link data-target="conclusion" title="Conclusion¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 text-sm text-gray-700 dark:text-gray-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-blue-600 dark:group-data-[active=true]:text-blue-400 text-gray-400 dark:text-gray-500">
+#
+</span><span class="flex-1 truncate" data-title>Conclusion¶</span></a><ol class="mt-1 space-y-1"><li><a href="#share-this" data-toc-link data-mobile-toc-link data-target="share-this" title="Share this:¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 text-sm text-gray-600 dark:text-gray-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-blue-600 dark:group-data-[active=true]:text-blue-400 text-gray-400 dark:text-gray-500">
+#
+</span><span class="flex-1 truncate" data-title>Share this:¶</span></a></li><li><a href="#discover-more-from-colfax-research" data-toc-link data-mobile-toc-link data-target="discover-more-from-colfax-research" title="Discover more from Colfax Research¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 text-sm text-gray-600 dark:text-gray-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-blue-600 dark:group-data-[active=true]:text-blue-400 text-gray-400 dark:text-gray-500">
+#
+</span><span class="flex-1 truncate" data-title>Discover more from Colfax Research¶</span></a></li></ol></li><li><a href="#comments" data-toc-link data-mobile-toc-link data-target="comments" title="Comments¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 text-sm text-gray-700 dark:text-gray-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-blue-600 dark:group-data-[active=true]:text-blue-400 text-gray-400 dark:text-gray-500">
+#
+</span><span class="flex-1 truncate" data-title>Comments¶</span></a><ol class="mt-1 space-y-1"><li><a href="#leave-a-reply--cancel-reply" data-toc-link data-mobile-toc-link data-target="leave-a-reply--cancel-reply" title="Leave a Reply Cancel reply¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 text-sm text-gray-600 dark:text-gray-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-blue-600 dark:group-data-[active=true]:text-blue-400 text-gray-400 dark:text-gray-500">
+#
+</span><span class="flex-1 truncate" data-title>Leave a Reply Cancel reply¶</span></a></li></ol></li></ol></li> </ol> </nav> </div> </aside> </div> <script type="module">const u=Array.from(document.querySelectorAll("[data-toc-link]")),e=document.querySelector("[data-toc-container]"),r=document.querySelector("[data-toc-shell]"),d=e&&getComputedStyle(e).getPropertyValue("--toc-offset")||"96px",x=parseFloat(d)||0,a=window.matchMedia("(min-width: 1024px)"),h=u.map(t=>document.getElementById(t.dataset.target||"")).filter(t=>!!t),C=()=>{h.forEach(t=>{t.style.scrollMarginTop=`${x+12}px`})},w=t=>`#${encodeURIComponent(t)}`,v=t=>decodeURIComponent(t.replace(/^#/,"")),f=t=>{u.forEach(o=>{const n=o.dataset.target===t;o.dataset.active=n?"true":"false",o.setAttribute("aria-current",n?"true":"false")})},g=(t,o=!1)=>{const n=document.getElementById(t);if(!n)return;const s=window.scrollY+n.getBoundingClientRect().top-x-12;o?history.replaceState(null,"",w(t)):history.pushState(null,"",w(t)),window.scrollTo({top:s,behavior:"smooth"}),f(t)};u.forEach(t=>t.addEventListener("click",o=>{const n=t.dataset.target;n&&(o.preventDefault(),g(n))}));const p=()=>{e&&(e.dataset.fixed="false",e.style.position="",e.style.left="",e.style.width="",e.style.height="",e.style.maxHeight="",e.style.top="",r&&(r.style.minHeight=""))},E=()=>{if(!e||!r)return;const t=r.getBoundingClientRect(),o=`calc(100vh - ${d} - 1.5rem)`;e.dataset.fixed="true",r.style.minHeight=`${e.offsetHeight}px`,e.style.position="fixed",e.style.top=`calc(${d} + 1rem)`,e.style.left=`${t.left}px`,e.style.width=`${t.width}px`,e.style.height=o,e.style.maxHeight=o},c=()=>{if(!e||e.dataset.fixed==="true"||!a.matches)return;const t=parseFloat(getComputedStyle(e).top||"0"),o=e.offsetTop-t;if(Number.isNaN(t)||window.scrollY<o)return;const n=e.getBoundingClientRect().top;Math.abs(n-t)>2&&E()},R=()=>{if(!a.matches){p();return}e?.dataset.fixed==="true"&&E()};if(h.length>0){C();const t=e&&getComputedStyle(e).getPropertyValue("--toc-offset")||"96px",o=new IntersectionObserver(s=>{const m=s.filter(i=>i.isIntersecting).sort((i,l)=>i.target.getBoundingClientRect().top-l.target.getBoundingClientRect().top);if(m[0]){f(m[0].target.id);return}const y=s.filter(i=>i.boundingClientRect.top<0).sort((i,l)=>l.target.getBoundingClientRect().top-i.target.getBoundingClientRect().top);y[0]&&f(y[0].target.id)},{rootMargin:`-${t.trim()} 0% -55% 0%`,threshold:[0,.25,.5,1]});h.forEach(s=>o.observe(s));const n=v(location.hash||"");n&&requestAnimationFrame(()=>g(n,!0)),window.addEventListener("hashchange",()=>{const s=v(location.hash||"");s&&g(s,!0)})}p();a.matches&&c();a.addEventListener("change",()=>{p(),requestAnimationFrame(()=>{a.matches&&c()})});window.addEventListener("scroll",c,{passive:!0});window.addEventListener("resize",R);window.addEventListener("load",()=>{c(),C()},{once:!0});</script> </div> <div class="fixed inset-0 z-50 pointer-events-none data-[open=true]:pointer-events-auto lg:hidden" data-mobile-toc data-open="false" aria-hidden="true"><div class="absolute inset-0 bg-gray-900/40 opacity-0 transition duration-200 data-[open=true]:opacity-100 dark:bg-black/50" data-mobile-toc-backdrop></div><div id="mobile-toc-drawer" role="dialog" aria-modal="true" aria-label="文章目录" class="absolute inset-x-0 bottom-0 translate-y-full rounded-t-2xl border border-gray-200 bg-white/95 shadow-2xl ring-1 ring-black/5 transition duration-200 data-[open=true]:translate-y-0 dark:border-gray-800 dark:bg-gray-900/95 dark:ring-white/10" data-mobile-toc-drawer><div class="flex items-center justify-between gap-3 px-4 pt-4 pb-3"><div><p class="text-sm font-semibold text-gray-900 dark:text-gray-50">文章目录</p><p class="text-xs text-gray-500 dark:text-gray-400">点击条目可跳转</p></div><button type="button" class="rounded-full border border-gray-200 bg-white px-3 py-1 text-sm font-medium text-gray-800 shadow-sm transition hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:border-gray-800 dark:bg-gray-800 dark:text-gray-100 dark:hover:text-blue-300 dark:focus-visible:ring-offset-gray-900" data-mobile-toc-close>
+关闭
+</button></div><div class="max-h-[60vh] overflow-y-auto px-4 pb-5" data-mobile-toc-scroll><ol class="space-y-3 text-sm"><li><a href="#cutlass-tutorial-mastering-the-nvidia-tensor-memory-accelerator-tma" data-toc-link data-mobile-toc-link data-target="cutlass-tutorial-mastering-the-nvidia-tensor-memory-accelerator-tma" title="CUTLASS Tutorial: Mastering the NVIDIA® Tensor Memory Accelerator (TMA)¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 text-base font-semibold text-gray-900 dark:text-gray-100"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-blue-600 dark:group-data-[active=true]:text-blue-400 text-gray-600 dark:text-gray-400">
+#
+</span><span class="flex-1 truncate" data-title>CUTLASS Tutorial: Mastering the NVIDIA® Tensor Memory Accelerator (TMA)¶</span></a><ol class="mt-1 space-y-1"><li><a href="#tma-load" data-toc-link data-mobile-toc-link data-target="tma-load" title="TMA Load¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 text-sm text-gray-700 dark:text-gray-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-blue-600 dark:group-data-[active=true]:text-blue-400 text-gray-400 dark:text-gray-500">
+#
+</span><span class="flex-1 truncate" data-title>TMA Load¶</span></a><ol class="mt-1 space-y-1"><li><a href="#example-task" data-toc-link data-mobile-toc-link data-target="example-task" title="Example task¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 text-xs text-gray-500 dark:text-gray-400 pl-9"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-blue-600 dark:group-data-[active=true]:text-blue-400 text-gray-400 dark:text-gray-500">
+#
+</span><span class="flex-1 truncate" data-title>Example task¶</span></a></li><li><a href="#host-code" data-toc-link data-mobile-toc-link data-target="host-code" title="Host code¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 text-xs text-gray-500 dark:text-gray-400 pl-9"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-blue-600 dark:group-data-[active=true]:text-blue-400 text-gray-400 dark:text-gray-500">
+#
+</span><span class="flex-1 truncate" data-title>Host code¶</span></a></li><li><a href="#kernel-code" data-toc-link data-mobile-toc-link data-target="kernel-code" title="Kernel code¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 text-xs text-gray-500 dark:text-gray-400 pl-9"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-blue-600 dark:group-data-[active=true]:text-blue-400 text-gray-400 dark:text-gray-500">
+#
+</span><span class="flex-1 truncate" data-title>Kernel code¶</span></a><ol class="mt-1 space-y-1"><li><a href="#coordinates-and-arithmetic-tuples" data-toc-link data-mobile-toc-link data-target="coordinates-and-arithmetic-tuples" title="Coordinates and Arithmetic tuples¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 text-xs text-gray-500 dark:text-gray-400 pl-9"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-blue-600 dark:group-data-[active=true]:text-blue-400 text-gray-400 dark:text-gray-500">
+#
+</span><span class="flex-1 truncate" data-title>Coordinates and Arithmetic tuples¶</span></a></li><li><a href="#memory-barrier" data-toc-link data-mobile-toc-link data-target="memory-barrier" title="Memory barrier¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 text-xs text-gray-500 dark:text-gray-400 pl-9"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-blue-600 dark:group-data-[active=true]:text-blue-400 text-gray-400 dark:text-gray-500">
+#
+</span><span class="flex-1 truncate" data-title>Memory barrier¶</span></a></li><li><a href="#remainder-tiles-with-tma-and-stride-requirements" data-toc-link data-mobile-toc-link data-target="remainder-tiles-with-tma-and-stride-requirements" title="REMAINDER TILES WITH TMA and STRIDE REQUIREMENTS¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 text-xs text-gray-500 dark:text-gray-400 pl-9"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-blue-600 dark:group-data-[active=true]:text-blue-400 text-gray-400 dark:text-gray-500">
+#
+</span><span class="flex-1 truncate" data-title>REMAINDER TILES WITH TMA and STRIDE REQUIREMENTS¶</span></a></li></ol></li></ol></li><li><a href="#tma-store" data-toc-link data-mobile-toc-link data-target="tma-store" title="TMA Store¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 text-sm text-gray-700 dark:text-gray-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-blue-600 dark:group-data-[active=true]:text-blue-400 text-gray-400 dark:text-gray-500">
+#
+</span><span class="flex-1 truncate" data-title>TMA Store¶</span></a><ol class="mt-1 space-y-1"><li><a href="#example-task-and-code" data-toc-link data-mobile-toc-link data-target="example-task-and-code" title="Example task and code¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 text-xs text-gray-500 dark:text-gray-400 pl-9"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-blue-600 dark:group-data-[active=true]:text-blue-400 text-gray-400 dark:text-gray-500">
+#
+</span><span class="flex-1 truncate" data-title>Example task and code¶</span></a><ol class="mt-1 space-y-1"><li><a href="#memory-fence" data-toc-link data-mobile-toc-link data-target="memory-fence" title="Memory fence¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 text-xs text-gray-500 dark:text-gray-400 pl-9"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-blue-600 dark:group-data-[active=true]:text-blue-400 text-gray-400 dark:text-gray-500">
+#
+</span><span class="flex-1 truncate" data-title>Memory fence¶</span></a></li><li><a href="#tma-store-arrive-and-wait" data-toc-link data-mobile-toc-link data-target="tma-store-arrive-and-wait" title="TMA STORE ARRIVE AND WAIT¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 text-xs text-gray-500 dark:text-gray-400 pl-9"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-blue-600 dark:group-data-[active=true]:text-blue-400 text-gray-400 dark:text-gray-500">
+#
+</span><span class="flex-1 truncate" data-title>TMA STORE ARRIVE AND WAIT¶</span></a></li></ol></li></ol></li><li><a href="#a-deeper-look-at-tma-operations" data-toc-link data-mobile-toc-link data-target="a-deeper-look-at-tma-operations" title="A Deeper Look at TMA Operations¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 text-sm text-gray-700 dark:text-gray-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-blue-600 dark:group-data-[active=true]:text-blue-400 text-gray-400 dark:text-gray-500">
+#
+</span><span class="flex-1 truncate" data-title>A Deeper Look at TMA Operations¶</span></a><ol class="mt-1 space-y-1"><li><a href="#ptx-instructions-of-tma-load-and-store" data-toc-link data-mobile-toc-link data-target="ptx-instructions-of-tma-load-and-store" title="PTX Instructions of TMA Load and Store¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 text-xs text-gray-500 dark:text-gray-400 pl-9"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-blue-600 dark:group-data-[active=true]:text-blue-400 text-gray-400 dark:text-gray-500">
+#
+</span><span class="flex-1 truncate" data-title>PTX Instructions of TMA Load and Store¶</span></a></li><li><a href="#tma-store-reduce" data-toc-link data-mobile-toc-link data-target="tma-store-reduce" title="TMA Store Reduce¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 text-xs text-gray-500 dark:text-gray-400 pl-9"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-blue-600 dark:group-data-[active=true]:text-blue-400 text-gray-400 dark:text-gray-500">
+#
+</span><span class="flex-1 truncate" data-title>TMA Store Reduce¶</span></a></li><li><a href="#tma-load-multicast" data-toc-link data-mobile-toc-link data-target="tma-load-multicast" title="TMA Load Multicast¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 text-xs text-gray-500 dark:text-gray-400 pl-9"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-blue-600 dark:group-data-[active=true]:text-blue-400 text-gray-400 dark:text-gray-500">
+#
+</span><span class="flex-1 truncate" data-title>TMA Load Multicast¶</span></a></li></ol></li><li><a href="#conclusion" data-toc-link data-mobile-toc-link data-target="conclusion" title="Conclusion¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 text-sm text-gray-700 dark:text-gray-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-blue-600 dark:group-data-[active=true]:text-blue-400 text-gray-400 dark:text-gray-500">
+#
+</span><span class="flex-1 truncate" data-title>Conclusion¶</span></a><ol class="mt-1 space-y-1"><li><a href="#share-this" data-toc-link data-mobile-toc-link data-target="share-this" title="Share this:¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 text-sm text-gray-600 dark:text-gray-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-blue-600 dark:group-data-[active=true]:text-blue-400 text-gray-400 dark:text-gray-500">
+#
+</span><span class="flex-1 truncate" data-title>Share this:¶</span></a></li><li><a href="#discover-more-from-colfax-research" data-toc-link data-mobile-toc-link data-target="discover-more-from-colfax-research" title="Discover more from Colfax Research¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 text-sm text-gray-600 dark:text-gray-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-blue-600 dark:group-data-[active=true]:text-blue-400 text-gray-400 dark:text-gray-500">
+#
+</span><span class="flex-1 truncate" data-title>Discover more from Colfax Research¶</span></a></li></ol></li><li><a href="#comments" data-toc-link data-mobile-toc-link data-target="comments" title="Comments¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 text-sm text-gray-700 dark:text-gray-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-blue-600 dark:group-data-[active=true]:text-blue-400 text-gray-400 dark:text-gray-500">
+#
+</span><span class="flex-1 truncate" data-title>Comments¶</span></a><ol class="mt-1 space-y-1"><li><a href="#leave-a-reply--cancel-reply" data-toc-link data-mobile-toc-link data-target="leave-a-reply--cancel-reply" title="Leave a Reply Cancel reply¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 text-sm text-gray-600 dark:text-gray-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-blue-600 dark:group-data-[active=true]:text-blue-400 text-gray-400 dark:text-gray-500">
+#
+</span><span class="flex-1 truncate" data-title>Leave a Reply Cancel reply¶</span></a></li></ol></li></ol></li></ol></div></div></div><script type="module">const c=document.querySelector("[data-mobile-toc]"),s=document.querySelector("[data-mobile-toc-drawer]"),a=document.querySelector("[data-mobile-toc-backdrop]"),p=()=>Array.from(document.querySelectorAll("[data-mobile-toc-open]")),w=document.querySelector("[data-mobile-toc-close]"),f=()=>Array.from((s??c)?.querySelectorAll("[data-mobile-toc-link]")??[]),o=document.body,k=window.matchMedia("(prefers-reduced-motion: reduce)"),E=k.matches,g=96;let i=0;const v=e=>window.dispatchEvent(new CustomEvent("mobile-toc:toggle",{detail:{open:e}})),S=e=>{p().forEach(t=>t.setAttribute("aria-expanded",e?"true":"false"))},l=e=>{e.preventDefault(),r(!0)},y=()=>{p().forEach(e=>{e.removeEventListener("click",l),e.addEventListener("click",l)})},A=()=>{i=window.scrollY,o.style.position="fixed",o.style.width="100%",o.style.top=`-${i}px`},L=()=>{o.style.position="",o.style.width="",o.style.top="",window.scrollTo({top:i})},r=e=>{!c||!s||(c.dataset.open=String(e),s.dataset.open=String(e),a?.setAttribute("data-open",String(e)),c.setAttribute("aria-hidden",e?"false":"true"),S(e),v(e),e?A():L())},B=()=>{f().map(t=>document.getElementById(t.dataset.target||"")).filter(t=>!!t).forEach(t=>{t.style.scrollMarginTop=`${g+12}px`})},d=e=>`#${encodeURIComponent(e)}`,h=(e,t=!1)=>{const n=document.getElementById(e);if(!n)return;const b=window.scrollY+n.getBoundingClientRect().top-g-12;t?history.replaceState(null,"",d(e)):history.pushState(null,"",d(e)),window.scrollTo({top:b,behavior:E?"auto":"smooth"})};y();const T=new MutationObserver(y);T.observe(document.body,{subtree:!0,childList:!0,attributes:!0,attributeFilter:["data-mobile-toc-open"]});w?.addEventListener("click",()=>r(!1));a?.addEventListener("click",e=>{e.target===a&&r(!1)});const u=e=>{const n=e.currentTarget?.dataset.target;n&&(e.preventDefault(),e.stopPropagation(),r(!1),requestAnimationFrame(()=>requestAnimationFrame(()=>h(n))))};f().forEach(e=>{e.removeEventListener("click",u),e.addEventListener("click",u)});window.addEventListener("keydown",e=>{e.key==="Escape"&&r(!1)});B();const m=decodeURIComponent(location.hash.replace(/^#/,""));m&&requestAnimationFrame(()=>h(m,!0));</script> <div class="floating-action-stack fixed z-40 flex flex-col items-end gap-3 lg:hidden pointer-events-auto transition-opacity data-[toc-open=true]:opacity-0 data-[toc-open=true]:pointer-events-none" data-floating-action-stack data-target-selector="[data-article]" style="inset-inline-end: calc(env(safe-area-inset-right, 0px) + 1rem); inset-block-end: calc(env(safe-area-inset-bottom, 0px) + 1rem);"><button type="button" class="floating-action-stack__button h-11 w-11 rounded-full border border-gray-200 bg-white/90 text-gray-900 shadow-lg backdrop-blur-sm ring-offset-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 hover:-translate-y-0.5 hover:border-blue-200 hover:text-blue-600 data-[visible=false]:opacity-0 data-[visible=false]:pointer-events-none data-[visible=true]:opacity-100 data-[visible=true]:pointer-events-auto dark:border-gray-800 dark:bg-gray-900/85 dark:text-gray-100 dark:ring-offset-gray-900 dark:hover:border-blue-500/50 dark:hover:text-blue-300" data-floating-action-button data-action="top" data-visible="false" style="transition-delay: 0ms;" aria-label="返回文章顶部"><span class="sr-only">顶部</span><span aria-hidden="true" class="text-base">⬆️</span></button><button type="button" class="floating-action-stack__button h-11 w-11 rounded-full border border-gray-200 bg-white/90 text-gray-900 shadow-lg backdrop-blur-sm ring-offset-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 hover:-translate-y-0.5 hover:border-blue-200 hover:text-blue-600 data-[visible=false]:opacity-0 data-[visible=false]:pointer-events-none data-[visible=true]:opacity-100 data-[visible=true]:pointer-events-auto dark:border-gray-800 dark:bg-gray-900/85 dark:text-gray-100 dark:ring-offset-gray-900 dark:hover:border-blue-500/50 dark:hover:text-blue-300" data-floating-action-button data-action="toc" data-visible="true" style="transition-delay: 10ms;" aria-label="打开目录抽屉" data-mobile-toc-open="true"><span class="sr-only">目录</span><span aria-hidden="true" class="text-base">📑</span></button><button type="button" class="floating-action-stack__button h-11 w-11 rounded-full border border-gray-200 bg-white/90 text-gray-900 shadow-lg backdrop-blur-sm ring-offset-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 hover:-translate-y-0.5 hover:border-blue-200 hover:text-blue-600 data-[visible=false]:opacity-0 data-[visible=false]:pointer-events-none data-[visible=true]:opacity-100 data-[visible=true]:pointer-events-auto dark:border-gray-800 dark:bg-gray-900/85 dark:text-gray-100 dark:ring-offset-gray-900 dark:hover:border-blue-500/50 dark:hover:text-blue-300" data-floating-action-button data-action="bottom" data-visible="true" style="transition-delay: 20ms;" aria-label="跳转文章底部"><span class="sr-only">底部</span><span aria-hidden="true" class="text-base">⬇️</span></button></div><script type="module">const o=document.querySelector("[data-floating-action-stack]"),v=o?.dataset.targetSelector||"[data-article]",h=o?.querySelector('[data-action="top"]'),p=o?.querySelector('[data-action="bottom"]'),m=o?.querySelector('[data-action="toc"]'),g=window.matchMedia("(prefers-reduced-motion: reduce)"),f=g.matches,c=document.querySelector("[data-mobile-toc]"),n=document.querySelector(v);let r=0,d=0,s=!1;const i=()=>{if(!n)return;r=n.getBoundingClientRect().top+window.scrollY,d=n.scrollHeight},S=(t,e,a)=>Math.min(Math.max(t,e),a),w=(t,e)=>{t&&(t.dataset.visible=e?"true":"false")},l=()=>{if(!n)return;const t=120,e=d>window.innerHeight+40,a=window.scrollY>r+t;w(h,a),w(p,e),s=!1},b=()=>{s||(s=!0,requestAnimationFrame(l))},y=()=>{const t=S(r,0,Number.MAX_SAFE_INTEGER);window.scrollTo({top:t,behavior:f?"auto":"smooth"})},E=()=>{const t=Math.max(r+d-window.innerHeight,r);window.scrollTo({top:t,behavior:f?"auto":"smooth"})},u=t=>{o&&(o.dataset.tocOpen=t?"true":"false")};u(c?.dataset.open==="true");o&&n&&(i(),l(),window.addEventListener("scroll",b,{passive:!0}),window.addEventListener("resize",()=>{i(),b()}),window.addEventListener("load",()=>{i(),l()},{once:!0}),h?.addEventListener("click",y),p?.addEventListener("click",E));m?.addEventListener("click",()=>{requestAnimationFrame(()=>m?.blur())});window.addEventListener("mobile-toc:toggle",t=>{const e=t.detail;e&&u(e.open)});c&&new MutationObserver(()=>{u(c.dataset.open==="true")}).observe(c,{attributes:!0,attributeFilter:["data-open"]});</script> </main> <footer class="py-8 mt-auto border-t border-gray-200 dark:border-gray-800"> <div class="container mx-auto px-4 text-center text-gray-500 max-w-4xl">
+&copy; 2025 Yuanle Liu‘s Blog. All rights reserved.
+</div> </footer>   </body> </html>
