@@ -15,11 +15,7 @@
 
 ### 2.1 前提：`qkv_inear` (列切)
 
-两种方案都始于一个**列并行 (Co</description><pubDate>Sun, 28 Dec 2025 00:00:00 GMT</pubDate></item><item><title>Inside NVIDIA GPUs: Anatomy of high performance matmul kernels</title><link>https://yuanlehome.github.io/blog/inside-nvidia-gpus-anatomy-of-high-performance-matmul-kernels/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/inside-nvidia-gpus-anatomy-of-high-performance-matmul-kernels/</guid><description># Inside NVIDIA GPUs: Anatomy of high performance matmul kernels
-
-## From GPU architecture and PTX/SASS to warp-tiling and deep asynchronous tensor core pipelines
-
-September 29, 20</description><pubDate>Sun, 28 Dec 2025 00:00:00 GMT</pubDate></item><item><title>Context Parallel 技术解析</title><link>https://yuanlehome.github.io/blog/context-parallel/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/context-parallel/</guid><description>---
+两种方案都始于一个**列并行 (Co</description><pubDate>Sun, 28 Dec 2025 00:00:00 GMT</pubDate></item><item><title>Context Parallel 技术解析</title><link>https://yuanlehome.github.io/blog/context-parallel/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/context-parallel/</guid><description>---
 
 ## 学习链接
 
@@ -41,17 +37,21 @@ RoPE 做的是把 **Q/K 先旋转**：
 
 - $Q&apos; = \text{RoPE}(Q, \text{pos})$
 - $K&apos; = \text{RoPE}(K, \text{pos})$
-- </description><pubDate>Sun, 28 Dec 2025 00:00:00 GMT</pubDate></item><item><title>Inside vLLM: Anatomy of a High-Throughput LLM Inference System</title><link>https://yuanlehome.github.io/blog/inside-vllm-anatomy-of-a-high-throughput-llm-inference-system/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/inside-vllm-anatomy-of-a-high-throughput-llm-inference-system/</guid><description># Inside vLLM: Anatomy of a High-Throughput LLM Inference System
-
-## From paged attention, continuous batching, prefix caching, specdec, etc. to multi-GPU, multi-node dynamic servi</description><pubDate>Sun, 28 Dec 2025 00:00:00 GMT</pubDate></item><item><title>如何系统性定位并分析 PyTorch 模型推理中的性能瓶颈</title><link>https://yuanlehome.github.io/blog/pytorch/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/pytorch/</guid><description># 0x0. 前言
+- </description><pubDate>Sun, 28 Dec 2025 00:00:00 GMT</pubDate></item><item><title>如何系统性定位并分析 PyTorch 模型推理中的性能瓶颈</title><link>https://yuanlehome.github.io/blog/pytorch/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/pytorch/</guid><description># 0x0. 前言
 
 博客标题实际上是一个知乎上的问题，这篇博客就以这两天定位SGLang Diffusion在推理Qwen-Image-Edit-2511时比LightX2V慢的问题为真实例子来演示一下如何系统的定位并分析PyTorch模型推理中的性能瓶颈。
 
 ![图片](/images/wechat/pytorch/001-c23cddc4.png)
 
-</description><pubDate>Sun, 28 Dec 2025 00:00:00 GMT</pubDate></item><item><title>通过零开销逐层权重卸载技术将SGLang Diffusion wan2.2的推理速度加速60%</title><link>https://yuanlehome.github.io/blog/sglang-diffusion-wan2260percent/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/sglang-diffusion-wan2260percent/</guid><description># 0x0. 前言
+</description><pubDate>Sun, 28 Dec 2025 00:00:00 GMT</pubDate></item><item><title>Inside NVIDIA GPUs: Anatomy of high performance matmul kernels</title><link>https://yuanlehome.github.io/blog/inside-nvidia-gpus-anatomy-of-high-performance-matmul-kernels/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/inside-nvidia-gpus-anatomy-of-high-performance-matmul-kernels/</guid><description># Inside NVIDIA GPUs: Anatomy of high performance matmul kernels
 
-最近在优化SGLang对Wan2.2视频生成模型的支持时,发现了一个性能问题: 在使用双Transformer架构时,第1步和第19步的推理速度比正常步骤慢了约7倍。经过深入分析,通过实现**零开销的逐层权重卸载**(Layerwise Weight Offload)技术,最终将整体推理速度提升了**60%**(从149.69秒降至94</description><pubDate>Sun, 28 Dec 2025 00:00:00 GMT</pubDate></item><item><title>CUDA Graph 学习笔记</title><link>https://yuanlehome.github.io/blog/cuda-graph/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/cuda-graph/</guid><description>**目录**：为什么需要 - 核心抽象 - 生命周期与执行语义 - 静态性 - 性能收益 - torch.compile - 推理系统
+## From GPU architecture and PTX/SASS to warp-tiling and deep asynchronous tensor core pipelines
+
+September 29, 20</description><pubDate>Sun, 28 Dec 2025 00:00:00 GMT</pubDate></item><item><title>通过零开销逐层权重卸载技术将SGLang Diffusion wan2.2的推理速度加速60%</title><link>https://yuanlehome.github.io/blog/sglang-diffusion-wan2260percent/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/sglang-diffusion-wan2260percent/</guid><description># 0x0. 前言
+
+最近在优化SGLang对Wan2.2视频生成模型的支持时,发现了一个性能问题: 在使用双Transformer架构时,第1步和第19步的推理速度比正常步骤慢了约7倍。经过深入分析,通过实现**零开销的逐层权重卸载**(Layerwise Weight Offload)技术,最终将整体推理速度提升了**60%**(从149.69秒降至94</description><pubDate>Sun, 28 Dec 2025 00:00:00 GMT</pubDate></item><item><title>Inside vLLM: Anatomy of a High-Throughput LLM Inference System</title><link>https://yuanlehome.github.io/blog/inside-vllm-anatomy-of-a-high-throughput-llm-inference-system/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/inside-vllm-anatomy-of-a-high-throughput-llm-inference-system/</guid><description># Inside vLLM: Anatomy of a High-Throughput LLM Inference System
+
+## From paged attention, continuous batching, prefix caching, specdec, etc. to multi-GPU, multi-node dynamic servi</description><pubDate>Sun, 28 Dec 2025 00:00:00 GMT</pubDate></item><item><title>CUDA Graph 学习笔记</title><link>https://yuanlehome.github.io/blog/cuda-graph/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/cuda-graph/</guid><description>**目录**：为什么需要 - 核心抽象 - 生命周期与执行语义 - 静态性 - 性能收益 - torch.compile - 推理系统
 
 ---
 
