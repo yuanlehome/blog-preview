@@ -88,8 +88,4 @@ RoPE 做的是把 **Q/K 先旋转**：
 
 ### 1.1 DeepGEMM 是什么？
 
-DeepGEMM 是由 DeepSeek </description><pubDate>Thu, 25 Dec 2025 00:00:00 GMT</pubDate></item><item><title>Writing Speed-of-Light Flash Attention for 5090 in CUDA C++</title><link>https://yuanlehome.github.io/blog/writing-speed-of-light-flash-attention-for-5090-in-cuda-c/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/writing-speed-of-light-flash-attention-for-5090-in-cuda-c/</guid><description># 为5090在CUDA C++中编写光速Flash Attention
-
-2025年8月23日
-
-在这篇文章中，我将逐步介绍如何学习为5090在CUDA C++中实现Flash Attention。主要目标是学习在CUDA C++中编写attention，因为许多功能在[Triton](https://triton-lang.org/main/index.</description><pubDate>Sat, 23 Aug 2025 00:00:00 GMT</pubDate></item></channel></rss>
+DeepGEMM 是由 DeepSeek </description><pubDate>Thu, 25 Dec 2025 00:00:00 GMT</pubDate></item></channel></rss>
