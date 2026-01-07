@@ -18,13 +18,7 @@
 ## 优质博客
 
 - [\[LLM性能优化\] 聊聊长文本推理性能优化方向 - 知乎](https://zhuanlan.zhihu.com/p/698308542)
-- [Deploying DeepSeek with PD Disaggregation and Large-Scale Expert Parallelism on 96 H100 </description><pubDate>Sun, 04 Jan 2026 00:00:00 GMT</pubDate></item><item><title>RDMA 在大模型推理框架中的应用</title><link>https://yuanlehome.github.io/blog/rdma/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/rdma/</guid><description>## \[极简] RDMA 在大模型推理框架中的应用
-
----
-
-在现代大规模 LLM 推理系统中，**多 GPU / 多节点推理已成为必然**。无论是模型本身的体积（70B/405B/1T+）还是长上下文（128k\~1M tokens），都远超单节点能力。
-
-为保证吞吐和延迟，推理框架需要极为高效的跨 GPU / 跨节点通信，而 **RDMA（Remot</description><pubDate>Sun, 04 Jan 2026 00:00:00 GMT</pubDate></item><item><title>一种 TP-SP-EP 混合并行策略</title><link>https://yuanlehome.github.io/blog/tp-sp-ep/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/tp-sp-ep/</guid><description>---
+- [Deploying DeepSeek with PD Disaggregation and Large-Scale Expert Parallelism on 96 H100 </description><pubDate>Sun, 04 Jan 2026 00:00:00 GMT</pubDate></item><item><title>一种 TP-SP-EP 混合并行策略</title><link>https://yuanlehome.github.io/blog/tp-sp-ep/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/tp-sp-ep/</guid><description>---
 
 ## 一、两种混合并行图示
 
@@ -36,7 +30,13 @@
 
 ### 2.1 前提：`qkv_inear` (列切)
 
-两种方案都始于一个**列并行 (Co</description><pubDate>Sun, 04 Jan 2026 00:00:00 GMT</pubDate></item><item><title>Context Parallel 技术解析</title><link>https://yuanlehome.github.io/blog/context-parallel/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/context-parallel/</guid><description>---
+两种方案都始于一个**列并行 (Co</description><pubDate>Sun, 04 Jan 2026 00:00:00 GMT</pubDate></item><item><title>RDMA 在大模型推理框架中的应用</title><link>https://yuanlehome.github.io/blog/rdma/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/rdma/</guid><description>## \[极简] RDMA 在大模型推理框架中的应用
+
+---
+
+在现代大规模 LLM 推理系统中，**多 GPU / 多节点推理已成为必然**。无论是模型本身的体积（70B/405B/1T+）还是长上下文（128k\~1M tokens），都远超单节点能力。
+
+为保证吞吐和延迟，推理框架需要极为高效的跨 GPU / 跨节点通信，而 **RDMA（Remot</description><pubDate>Sun, 04 Jan 2026 00:00:00 GMT</pubDate></item><item><title>Context Parallel 技术解析</title><link>https://yuanlehome.github.io/blog/context-parallel/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/context-parallel/</guid><description>---
 
 ## 学习链接
 
