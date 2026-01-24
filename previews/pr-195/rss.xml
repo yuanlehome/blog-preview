@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>Yuanle Liu‘s Blog</title><description>Engineering notes from Astro + Notion</description><link>https://yuanlehome.github.io/blog/</link><language>en-us</language><item><title>【部分观点记录】翁家翌：OpenAI，GPT，强化学习，Infra，后训练，天授，tuixue，开源，CMU，清华 | WhynotTVPodcast</title><link>https://yuanlehome.github.io/blog/openaigptinfratuixuecmu-or-whynottvpodcast/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/openaigptinfratuixuecmu-or-whynottvpodcast/</guid><description>来源：【哔哩哔哩】 &lt;https://b23.tv/wkzOQYj&gt;
+
+![](/images/notion/openaigptinfratuixuecmu-or-whynottvpodcast/2ec22dca-4210-80b7-ae83-f6e437b19bf2.png)
+
+这位技术大佬很多观点挺有意思，来自在 AI 工程技术方向的视角，很有共鸣，还爆</description><pubDate>Sun, 18 Jan 2026 00:00:00 GMT</pubDate><category>Interviews with Experts</category></item><item><title>RDMA 在大模型推理框架中的应用</title><link>https://yuanlehome.github.io/blog/rdma/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/rdma/</guid><description>## 一、RDMA 技术概述
+
+**RDMA（Remote Direct Memory Access）**是一种在网络通信中绕过操作系统内核、使一台计算机直接访问另一台计算机内存的技术。通过硬件支持，RDMA 将网络数据传输的大部分工作从 CPU 卸载给 NIC（网络接口卡/ HCA），实现**低延迟**、**高吞吐**和**低 CPU 占用**的数据交换。</description><pubDate>Tue, 13 Jan 2026 00:00:00 GMT</pubDate><category>RDMA</category></item><item><title>MTP 理论加速比分析：从公式到工程决策</title><link>https://yuanlehome.github.io/blog/mtp/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/mtp/</guid><description>在大模型推理中，MTP（Multi-Token Prediction）是一类典型的 **Speculative Decoding** 技术：
+
+通过一个较小的 Draft Model 预测多个 token，再由 Target Model 一次性验证，从而**用一次昂贵的主模型计算，摊薄多个 token 的生成成本**。
+
+本文将从**第一性原理**出发，系统</description><pubDate>Tue, 06 Jan 2026 00:00:00 GMT</pubDate><category>Speculative Decoding</category></item><item><title>DeepGEMM 学习指南：面向初学者的 FP8 GEMM 库解析</title><link>https://yuanlehome.github.io/blog/deepgemm-fp8-gemm/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/deepgemm-fp8-gemm/</guid><description>---
+
+## 优质博客
+
+- CUTLASS &amp; GPU CUDA 编程解析 &lt;https://research.colfax-intl.com/blog/&gt;
+
+---
+
+![](/images/notion/deepgemm-fp8-gemm/2e022dca-4210-803e-8c55-c9cc383313ea.png)
+
+## 一、总体设计与原理
+</description><pubDate>Tue, 06 Jan 2026 00:00:00 GMT</pubDate><category>FP8</category><category>DeepGEMM</category></item><item><title>Long Context 推理优化技术梳理</title><link>https://yuanlehome.github.io/blog/long-context/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/long-context/</guid><description>---
+
+## 优质博客
+
+- [\[LLM性能优化\] 聊聊长文本推理性能优化方向 - 知乎](https://zhuanlan.zhihu.com/p/698308542)
+- [Deploying DeepSeek with PD Disaggregation and Large-Scale Expert Parallelism on 96 H100 </description><pubDate>Sun, 04 Jan 2026 00:00:00 GMT</pubDate><category>Long Context Optimization</category></item><item><title>一种 TP-SP-EP 混合并行策略</title><link>https://yuanlehome.github.io/blog/tp-sp-ep/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/tp-sp-ep/</guid><description>---
+
+## 一、两种混合并行图示
+
+![非完整图示，不含后续 EP 并行 MoE 层。](/images/notion/tp-sp-ep/2b222dca-4210-80d9-98fb-cf78ef53eb91.jpeg)
+
+---
+
+## 二、并行原理解析
+
+### 2.1 前提：`qkv_inear` (列切)
+
+两种方案都始于一个**列并行 (Co</description><pubDate>Sun, 04 Jan 2026 00:00:00 GMT</pubDate><category>Sequence Parallel</category><category>Distributed Parallel</category></item><item><title>Context Parallel 技术解析</title><link>https://yuanlehome.github.io/blog/context-parallel/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/context-parallel/</guid><description>---
+
+## 学习链接
+
+- [\[并行训练\]Context Parallelism的原理与代码浅析 - 知乎](https://zhuanlan.zhihu.com/p/698447429?share_code=WwUutv3avJIE&amp;utm_psn=1983881801186444490)
+- [ring attention + flash att</description><pubDate>Sun, 04 Jan 2026 00:00:00 GMT</pubDate><category>Context Parallel</category><category>Distributed Parallel</category><category>Long Context Optimization</category></item><item><title>FlashAttention 原理与实现</title><link>https://yuanlehome.github.io/blog/flashattention/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/flashattention/</guid><description>---
+
+## 学习链接
+
+- [图解大模型计算加速系列：FlashAttention V1，从硬件到计算逻辑 - 知乎](https://zhuanlan.zhihu.com/p/669926191)
+- [图解大模型计算加速系列：FlashAttention V2，从原理到并行计算 - 知乎](https://zhuanlan.zhihu.com/p/6</description><pubDate>Sun, 04 Jan 2026 00:00:00 GMT</pubDate><category>Attention</category></item><item><title>RoPE 究竟是怎么计算的</title><link>https://yuanlehome.github.io/blog/rope/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/rope/</guid><description>---
+
+## 一、RoPE 到底改了什么？
+
+Attention 里我们原来用：
+
+- $Q, K, V$ 计算 $\text{Attn}(Q, K, V)$
+
+RoPE 做的是把 **Q/K 先旋转**：
+
+- $Q&apos; = \text{RoPE}(Q, \text{pos})$
+- $K&apos; = \text{RoPE}(K, \text{pos})$
+- </description><pubDate>Sun, 04 Jan 2026 00:00:00 GMT</pubDate><category>RoPE</category></item><item><title>Inside NVIDIA GPUs: Anatomy of high performance matmul kernels</title><link>https://yuanlehome.github.io/blog/inside-nvidia-gpus-anatomy-of-high-performance-matmul-kernels/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/inside-nvidia-gpus-anatomy-of-high-performance-matmul-kernels/</guid><description># 深入NVIDIA GPU：高性能矩阵乘法（matmul）内核的剖析
+
+## 从GPU架构和PTX/SASS到warp-tiling和深度异步张量核心（tensor core）流水线
+
+2025年9月29日
+
+在这篇文章中，我将逐步介绍支撑最先进（SOTA）NVIDIA GPU矩阵乘法（matmul）内核的所有核心硬件概念和编程技术。
+
+**为什么关注矩阵</description><pubDate>Mon, 29 Dec 2025 00:00:00 GMT</pubDate><category>CUDA</category><category>Performance</category></item><item><title>Inside vLLM: Anatomy of a High-Throughput LLM Inference System</title><link>https://yuanlehome.github.io/blog/inside-vllm-anatomy-of-a-high-throughput-llm-inference-system/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/inside-vllm-anatomy-of-a-high-throughput-llm-inference-system/</guid><description># 深入 vLLM：剖析一个高吞吐量 LLM 推理系统
+
+## 从分页注意力（paged attention）、连续批处理（continuous batching）、前缀缓存（prefix caching）、推测解码（specdec）等，到多 GPU、多节点的动态大规模服务
+
+2025年8月29日
+
+在这篇文章中，我将逐步介绍构成现代高吞吐量 LLM 推理系</description><pubDate>Mon, 29 Dec 2025 00:00:00 GMT</pubDate><category>Source Code Analysis</category><category>Architecture Design</category></item><item><title>通过零开销逐层权重卸载技术将 SGLang Diffusion wan2.2 的推理速度加速 60%</title><link>https://yuanlehome.github.io/blog/sglang-diffusion-wan2260percent/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/sglang-diffusion-wan2260percent/</guid><description># 0x0. 前言
+
+最近在优化SGLang对Wan2.2视频生成模型的支持时,发现了一个性能问题: 在使用双Transformer架构时,第1步和第19步的推理速度比正常步骤慢了约7倍。经过深入分析,通过实现**零开销的逐层权重卸载**(Layerwise Weight Offload)技术,最终将整体推理速度提升了**60%**(从149.69秒降至94</description><pubDate>Sun, 28 Dec 2025 00:00:00 GMT</pubDate><category>Performance</category></item><item><title>CUDA Graph 学习笔记</title><link>https://yuanlehome.github.io/blog/cuda-graph/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/cuda-graph/</guid><description>**目录**：为什么需要 - 核心抽象 - 生命周期与执行语义 - 静态性 - 性能收益 - torch.compile - 推理系统
+
+---
+
+# 为什么需要 CUDA Graph
+
+一个 GPU 程序的执行可以分成两个层面来看：
+
+**数据面**是我们通常关注的那部分，也就是 kernel 在 GPU 上的实际计算。矩阵乘、卷积、attention 等</description><pubDate>Sat, 27 Dec 2025 00:00:00 GMT</pubDate><category>CUDA Graphs</category></item><item><title>Code is not only an implementation, but also a presentation of a way of thinking</title><link>https://yuanlehome.github.io/blog/code-is-not-only-an-implementation-but-also-a-presentation-of-a-way-of-thinking/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/code-is-not-only-an-implementation-but-also-a-presentation-of-a-way-of-thinking/</guid><description>&lt;u&gt;_**在日常开发中，我们往往把重点放在“把功能实现出来”。但一个成熟工程师的代码，并不仅仅是代码本身，而是其思维方式、问题拆解能力、沟通意识与系统理解的外化形式。**_&lt;/u&gt;
+
+---
+
+## 一、系统思维：看到代码之外的系统
+
+优秀工程师写代码时并不是只盯着一个函数或一个类，而是思考：
+
+1. 这个模块在整个系统中承担什么角色？
+2. 它如何与其他</description><pubDate>Fri, 26 Dec 2025 00:00:00 GMT</pubDate><category>Soft Skills</category></item><item><title>Understanding Conway’s Law（康威定律）</title><link>https://yuanlehome.github.io/blog/understanding-conways-law/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/understanding-conways-law/</guid><description>&lt;u&gt;_**康威定律（Conway’s Law）：设计系统的组织，其产生的系统设计，必然反映该组织的沟通结构。**_&lt;/u&gt;
+
+软件代码结构是部门组织形态的体现，分支管理则是这种组织形态在时间维度上的投影。组织如何沟通、如何划分责任、如何整合成果，都会直接在代码仓库的结构与分支策略中体现。优秀的组织会通过良好的分支策略促进协作，糟糕的分支策略则会放大组织壁垒</description><pubDate>Thu, 25 Dec 2025 00:00:00 GMT</pubDate><category>Soft Skills</category></item></channel></rss>
