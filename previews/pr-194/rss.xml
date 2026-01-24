@@ -46,7 +46,7 @@
 ## 学习链接
 
 - [图解大模型计算加速系列：FlashAttention V1，从硬件到计算逻辑 - 知乎](https://zhuanlan.zhihu.com/p/669926191)
-- [图解大模型计算加速系列：FlashAttention V2，从原理到并行计算 - 知乎](https://zhuanlan.zhihu.com/p/6</description><pubDate>Sun, 04 Jan 2026 00:00:00 GMT</pubDate></item><item><title>RoPE 究竟是怎么计算的</title><link>https://yuanlehome.github.io/blog/rope/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/rope/</guid><description>---
+- [图解大模型计算加速系列：FlashAttention V2，从原理到并行计算 - 知乎](https://zhuanlan.zhihu.com/p/6</description><pubDate>Sun, 04 Jan 2026 00:00:00 GMT</pubDate><category>Attention</category><category>GPU</category><category>Deep Learning</category></item><item><title>RoPE 究竟是怎么计算的</title><link>https://yuanlehome.github.io/blog/rope/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/rope/</guid><description>---
 
 ## 一、RoPE 到底改了什么？
 
@@ -66,13 +66,13 @@ RoPE 做的是把 **Q/K 先旋转**：
 
 在这篇文章中，我将逐步介绍支撑最先进（SOTA）NVIDIA GPU矩阵乘法（matmul）内核的所有核心硬件概念和编程技术。
 
-**为什么关注矩阵</description><pubDate>Mon, 29 Dec 2025 00:00:00 GMT</pubDate></item><item><title>Inside vLLM: Anatomy of a High-Throughput LLM Inference System</title><link>https://yuanlehome.github.io/blog/inside-vllm-anatomy-of-a-high-throughput-llm-inference-system/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/inside-vllm-anatomy-of-a-high-throughput-llm-inference-system/</guid><description># 深入 vLLM：剖析一个高吞吐量 LLM 推理系统
+**为什么关注矩阵</description><pubDate>Mon, 29 Dec 2025 00:00:00 GMT</pubDate><category>GPU</category><category>CUDA</category><category>Performance</category></item><item><title>Inside vLLM: Anatomy of a High-Throughput LLM Inference System</title><link>https://yuanlehome.github.io/blog/inside-vllm-anatomy-of-a-high-throughput-llm-inference-system/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/inside-vllm-anatomy-of-a-high-throughput-llm-inference-system/</guid><description># 深入 vLLM：剖析一个高吞吐量 LLM 推理系统
 
 ## 从分页注意力（paged attention）、连续批处理（continuous batching）、前缀缓存（prefix caching）、推测解码（specdec）等，到多 GPU、多节点的动态大规模服务
 
 2025年8月29日
 
-在这篇文章中，我将逐步介绍构成现代高吞吐量 LLM 推理系</description><pubDate>Mon, 29 Dec 2025 00:00:00 GMT</pubDate></item><item><title>通过零开销逐层权重卸载技术将SGLang Diffusion wan2.2的推理速度加速60%</title><link>https://yuanlehome.github.io/blog/sglang-diffusion-wan2260percent/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/sglang-diffusion-wan2260percent/</guid><description># 0x0. 前言
+在这篇文章中，我将逐步介绍构成现代高吞吐量 LLM 推理系</description><pubDate>Mon, 29 Dec 2025 00:00:00 GMT</pubDate><category>LLM</category><category>Inference</category><category>Performance</category></item><item><title>通过零开销逐层权重卸载技术将SGLang Diffusion wan2.2的推理速度加速60%</title><link>https://yuanlehome.github.io/blog/sglang-diffusion-wan2260percent/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/sglang-diffusion-wan2260percent/</guid><description># 0x0. 前言
 
 最近在优化SGLang对Wan2.2视频生成模型的支持时,发现了一个性能问题: 在使用双Transformer架构时,第1步和第19步的推理速度比正常步骤慢了约7倍。经过深入分析,通过实现**零开销的逐层权重卸载**(Layerwise Weight Offload)技术,最终将整体推理速度提升了**60%**(从149.69秒降至94</description><pubDate>Sun, 28 Dec 2025 00:00:00 GMT</pubDate></item><item><title>CUDA Graph 学习笔记</title><link>https://yuanlehome.github.io/blog/cuda-graph/</link><guid isPermaLink="true">https://yuanlehome.github.io/blog/cuda-graph/</guid><description>**目录**：为什么需要 - 核心抽象 - 生命周期与执行语义 - 静态性 - 性能收益 - torch.compile - 推理系统
 
