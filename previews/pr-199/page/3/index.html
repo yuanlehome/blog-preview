@@ -1,0 +1,178 @@
+<!DOCTYPE html><html lang="en" data-astro-cid-sckkx6r4> <head><script>(() => {
+  const storageKey = 'theme';
+  const className = 'dark';
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  const validThemes = ['light', 'dark'];
+  let currentPreference = (() => {
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored && validThemes.includes(stored)) return stored;
+    } catch (error) {
+      console.warn('Unable to access localStorage for theme:', error);
+    }
+    return mediaQuery.matches ? 'dark' : 'light';
+  })();
+
+  const resolveTheme = (preference) => (preference === 'dark' ? 'dark' : 'light');
+
+  const applyTheme = (preference) => {
+    const effectiveTheme = resolveTheme(preference);
+    document.documentElement.classList.toggle(className, effectiveTheme === 'dark');
+    document.documentElement.dataset.theme = effectiveTheme;
+    return effectiveTheme;
+  };
+
+  const dispatchChange = (preference) => {
+    const resolved = document.documentElement.classList.contains(className) ? 'dark' : 'light';
+    window.dispatchEvent(
+      new CustomEvent('themechange', {
+        detail: { theme: preference, resolved },
+      }),
+    );
+  };
+
+  applyTheme(currentPreference);
+
+  window.__setTheme = (next) => {
+    const preference = validThemes.includes(String(next)) ? String(next) : resolveTheme(currentPreference);
+    currentPreference = preference;
+    try {
+      localStorage.setItem(storageKey, preference);
+    } catch (error) {
+      console.warn('Unable to persist theme selection:', error);
+    }
+    applyTheme(preference);
+    dispatchChange(preference);
+  };
+})();</script><meta charset="UTF-8"><meta name="description" content="A minimal Astro blog"><meta name="viewport" content="width=device-width"><link rel="icon" type="image/svg+xml" href="/blog-preview/previews/pr-199/favicon.svg"><meta name="generator" content="Astro v5.16.6"><link rel="canonical" href="https://yuanlehome.github.io/blog-preview/previews/pr-199/page/3/"><meta property="og:title" content="Page 3 | Yuanle Liu"><meta property="og:description" content="A minimal Astro blog"><meta property="og:image" content="/blog-preview/previews/pr-199/placeholder-social.jpg"><meta property="og:type" content="article"><meta property="og:url" content="https://yuanlehome.github.io/blog-preview/previews/pr-199/page/3/"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Page 3 | Yuanle Liu"><meta name="twitter:description" content="A minimal Astro blog"><meta name="twitter:image" content="/blog-preview/previews/pr-199/placeholder-social.jpg"><title>Page 3 | Yuanle Liu</title><style>:root {
+  /* Typography */
+  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial, Noto Sans SC, PingFang SC, Microsoft YaHei, sans-serif;
+  --font-serif: ui-serif, Georgia, Cambria, Times New Roman, Times, serif;
+  --font-mono: JetBrains Mono, Fira Code, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  --font-size-4xl: 2.25rem;
+  --line-height-body: 1.75;
+  --line-height-heading: 1.3;
+  --line-height-code: 1.65;
+  --line-height-tight: 1.25;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Components */
+  --radius-sm: 0.35rem;
+  --radius-md: 0.65rem;
+  --radius-lg: 0.9rem;
+  --radius-xl: 0.75rem;
+  --shadow-card: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-code-block: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-header: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --border-style: solid;
+  --border-width: 1px;
+  --motion-duration: 160ms;
+  --motion-easing: ease;
+  --spacing-multiplier: 1;
+
+  /* Light Mode Colors */
+  --color-brand: #0284c7;
+  --color-accent: #0284c7;
+  --color-background: #fafafa;
+  --color-foreground: #18181b;
+  --color-muted: #71717a;
+  --color-border: #e4e4e7;
+  --color-card: #f4f4f5;
+  --color-code-background: #f4f4f5;
+  --color-code-foreground: #18181b;
+  --color-code-border: #e4e4e7;
+  --color-code-keyword: #0284c7;
+  --color-code-string: #059669;
+  --color-code-comment: #a1a1aa;
+  --color-code-function: #0284c7;
+
+  /* Code block specific (legacy support) */
+  --code-font: var(--font-mono);
+  --code-radius: 0.9rem;
+  --code-border: 1px solid var(--color-code-border);
+  --code-bg: var(--color-code-background);
+  --code-fg: var(--color-code-foreground);
+  --code-scrollbar: rgb(203 213 225 / 0.75);
+  --code-highlight-bg: rgb(59 130 246 / 0.12);
+  --code-highlight-accent: rgb(59 130 246);
+
+  /* Header specific (legacy support) */
+  --header-bg: rgb(248 250 252 / 0.92);
+  --header-bg-scrolled: rgb(248 250 252 / 0.98);
+  --header-border: rgb(226 232 240 / 0.9);
+  --header-shadow: var(--shadow-header);
+  --header-shadow-strong: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+.dark {
+  /* Dark Mode Colors */
+  --color-brand: #38bdf8;
+  --color-accent: #38bdf8;
+  --color-background: #18181b;
+  --color-foreground: #fafafa;
+  --color-muted: #a1a1aa;
+  --color-border: #3f3f46;
+  --color-card: #27272a;
+  --color-code-background: #1f1f23;
+  --color-code-foreground: #e4e4e7;
+  --color-code-border: #3f3f46;
+  --color-code-keyword: #38bdf8;
+  --color-code-string: #34d399;
+  --color-code-comment: #71717a;
+  --color-code-function: #38bdf8;
+
+  /* Dark mode shadows */
+  --shadow-card: 0 10px 30px rgb(0 0 0 / 0.28);
+  --shadow-code-block: 0 10px 30px rgb(0 0 0 / 0.28);
+  --shadow-header: 0 10px 30px rgb(0 0 0 / 0.28);
+
+  /* Code block specific (legacy support) */
+  --code-border: 1px solid var(--color-code-border);
+  --code-bg: var(--color-code-background);
+  --code-fg: var(--color-code-foreground);
+  --code-scrollbar: rgb(71 85 105 / 0.8);
+  --code-highlight-bg: rgb(59 130 246 / 0.2);
+  --code-highlight-accent: rgb(96 165 250);
+
+  /* Header specific (legacy support) */
+  --header-bg: rgb(15 23 42 / 0.72);
+  --header-bg-scrolled: rgb(15 23 42 / 0.8400000000000001);
+  --header-border: rgb(71 85 105 / 0.8);
+  --header-shadow: var(--shadow-header);
+  --header-shadow-strong: 0 20px 40px rgb(0 0 0 / 0.35);
+}
+</style><link rel="stylesheet" href="/blog-preview/previews/pr-199/_astro/_slug_.a2Qx3EEI.css"></head> <body class="bg-neutral-50 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 transition-colors duration-300 min-h-screen flex flex-col" data-astro-cid-sckkx6r4>  <header class="site-header header-variant-frosted" data-header> <div class="container mx-auto px-5 py-3 sm:py-4 flex justify-between items-start max-w-5xl"> <a href="/blog-preview/previews/pr-199/" class="text-xl font-bold hover:text-sky-600 dark:hover:text-sky-400">Yuanle Liu</a> <nav class="flex items-start gap-3 items-center"> <a href="/blog-preview/previews/pr-199/" class="hover:underline inline-flex items-center "> Home </a><a href="/blog-preview/previews/pr-199/archive/" class="hover:underline inline-flex items-center "> Archive </a><a href="/blog-preview/previews/pr-199/tags/" class="hover:underline inline-flex items-center "> Tags </a><a href="/blog-preview/previews/pr-199/about/" class="hover:underline inline-flex items-center "> About </a> <button id="theme-toggle" class="inline-flex items-center gap-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 px-1" aria-label="Toggle theme"> 🖥️ ☀️ </button> </nav> </div> </header> <script type="module">const i="theme",c=["light","dark"],d=()=>{try{const e=localStorage.getItem(i);if(e==="light"||e==="dark")return e}catch(e){console.warn("Unable to read theme preference:",e)}return window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"},g=()=>document.documentElement.classList.contains("dark")?"dark":"light",u=e=>e==="dark"?"🌙":"☀️",w=e=>e==="dark"?"Dark":"Light",a=(e,t)=>{const n=document.getElementById("theme-toggle");if(!n)return;const o=t??g(),h=u(o),l=w(o);n.dataset.theme=e,n.textContent="";const r=document.createElement("span");r.className="inline-flex items-center justify-center",r.style.lineHeight="1",r.textContent=h,n.appendChild(r),n.appendChild(document.createTextNode(" "+l)),n.setAttribute("aria-label",`Toggle theme (current: ${l})`)},k=e=>{if(typeof window.__setTheme=="function"){window.__setTheme?.(e);return}const t=e==="dark"?"dark":"light";document.documentElement.classList.toggle("dark",t==="dark");try{localStorage.setItem(i,e)}catch(n){console.warn("Unable to persist theme preference:",n)}window.dispatchEvent(new CustomEvent("themechange",{detail:{theme:e,resolved:t}}))},p=()=>{const e=d(),t=c[(c.indexOf(e)+1)%c.length];k(t),a(t)},s=document.querySelector("[data-header]"),f=window.matchMedia("(prefers-reduced-motion: reduce)").matches,m=()=>{if(!s)return;const e=window.scrollY>6;s.classList.toggle("is-scrolled",e)};document.getElementById("theme-toggle")?.addEventListener("click",p);a(d());window.addEventListener("themechange",e=>{const t=e.detail,n=t?.theme??d(),o=t?.resolved;a(n,o)});m();const v=()=>m();window.addEventListener("scroll",v,{passive:!0});f&&s?.classList.add("reduce-motion");</script> <main class="container mx-auto px-4 py-8 max-w-4xl"> <div class="flex flex-col gap-2 mb-6"> <h2 class="text-2xl font-bold">Recent Posts</h2> <p class="text-sm text-zinc-500">Page 3 / 4</p> </div> <ul class="grid gap-6" id="post-list"> <li class="list-none"> <article class="relative block overflow-hidden rounded-2xl border border-zinc-200/80 bg-neutral-50/80 px-5 py-5 shadow-[0_10px_30px_rgb(24_24_27/0.04)] transition duration-200 ease-out hover:-translate-y-1 hover:border-sky-200 hover:shadow-[0_14px_36px_rgb(2_132_199/0.1)] motion-reduce:transform-none motion-reduce:shadow-none dark:border-zinc-800/80 dark:bg-zinc-900/70 dark:shadow-[0_16px_38px_rgb(0_0_0/0.4)] dark:hover:border-sky-500/35 dark:hover:shadow-[0_18px_40px_rgb(56_189_248/0.12)]"> <div class="flex flex-col gap-4 md:grid md:grid-cols-[minmax(0,1fr)_200px] md:items-start md:gap-6"> <div class="flex flex-col gap-2 md:h-full"> <h3 class="text-xl font-semibold leading-tight text-zinc-900 dark:text-zinc-100"> <a href="/blog-preview/previews/pr-199/inside-vllm-anatomy-of-a-high-throughput-llm-inference-system/" class="hover:text-sky-600 focus-visible:text-sky-600 dark:hover:text-sky-400 dark:focus-visible:text-sky-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900"> <span class="underline-offset-4 decoration-2 decoration-sky-200/0 transition hover:underline hover:decoration-sky-400/80 dark:hover:decoration-sky-400/60"> Inside vLLM: Anatomy of a High-Throughput LLM Inference System </span> </a> </h3> <div class="flex flex-col gap-2 md:mt-auto"> <div class="text-sm text-zinc-600 dark:text-zinc-400"> <span class="flex items-center gap-1">📅 2025-12-29</span> </div> <div class="text-sm text-zinc-500 flex items-center gap-4 flex-wrap"> <span class="flex items-center gap-1">✍️ 12803 字</span> <span class="flex items-center gap-1" title="12803 words">
+⏱️ 29 min read </span> </div> <div class="flex flex-wrap gap-1.5 items-center" data-testid="post-list-tags"> <a href="/blog-preview/previews/pr-199/tags/source-code-analysis/" class="inline-flex items-center gap-1 rounded-full border text-xs px-2 py-0.5 transition-colors duration-200 font-medium cursor-pointer
+                          border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 
+                          dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 dark:hover:border-sky-700
+                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-tag-slug="source-code-analysis"> <span class="pointer-events-none">Source Code Analysis</span> </a><a href="/blog-preview/previews/pr-199/tags/architecture-design/" class="inline-flex items-center gap-1 rounded-full border text-xs px-2 py-0.5 transition-colors duration-200 font-medium cursor-pointer
+                          border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 
+                          dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 dark:hover:border-sky-700
+                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-tag-slug="architecture-design"> <span class="pointer-events-none">Architecture Design</span> </a>  </div> </div> </div> <a href="/blog-preview/previews/pr-199/inside-vllm-anatomy-of-a-high-throughput-llm-inference-system/" class="md:justify-self-end block overflow-hidden rounded-xl border border-zinc-200/70 shadow-sm transition duration-200 ease-out hover:shadow-md hover:border-sky-200 dark:border-zinc-800/70 dark:hover:border-sky-400/40 w-full max-w-[320px] md:max-w-[200px] md:min-w-[160px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900"> <img src="/blog-preview/previews/pr-199/images/others/inside-vllm-anatomy-of-a-high-throughput-llm-inference-system/001-f5b11a75.png" alt="Inside vLLM: Anatomy of a High-Throughput LLM Inference System" loading="lazy" class="aspect-[4/3] w-full object-cover transition duration-300 ease-out motion-safe:hover:scale-[1.01] motion-reduce:transform-none"> </a> </div> </article> </li><li class="list-none"> <article class="relative block overflow-hidden rounded-2xl border border-zinc-200/80 bg-neutral-50/80 px-5 py-5 shadow-[0_10px_30px_rgb(24_24_27/0.04)] transition duration-200 ease-out hover:-translate-y-1 hover:border-sky-200 hover:shadow-[0_14px_36px_rgb(2_132_199/0.1)] motion-reduce:transform-none motion-reduce:shadow-none dark:border-zinc-800/80 dark:bg-zinc-900/70 dark:shadow-[0_16px_38px_rgb(0_0_0/0.4)] dark:hover:border-sky-500/35 dark:hover:shadow-[0_18px_40px_rgb(56_189_248/0.12)]"> <div class="flex flex-col gap-4 md:grid md:grid-cols-[minmax(0,1fr)_200px] md:items-start md:gap-6"> <div class="flex flex-col gap-2 md:h-full"> <h3 class="text-xl font-semibold leading-tight text-zinc-900 dark:text-zinc-100"> <a href="/blog-preview/previews/pr-199/sglang-diffusion-wan2260percent/" class="hover:text-sky-600 focus-visible:text-sky-600 dark:hover:text-sky-400 dark:focus-visible:text-sky-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900"> <span class="underline-offset-4 decoration-2 decoration-sky-200/0 transition hover:underline hover:decoration-sky-400/80 dark:hover:decoration-sky-400/60"> 通过零开销逐层权重卸载技术将 SGLang Diffusion wan2.2 的推理速度加速 60% </span> </a> </h3> <div class="flex flex-col gap-2 md:mt-auto"> <div class="text-sm text-zinc-600 dark:text-zinc-400"> <span class="flex items-center gap-1">📅 2025-12-28</span> </div> <div class="text-sm text-zinc-500 flex items-center gap-4 flex-wrap"> <span class="flex items-center gap-1">✍️ 2037 字</span> <span class="flex items-center gap-1" title="2037 words">
+⏱️ 5 min read </span> </div> <div class="flex flex-wrap gap-1.5 items-center" data-testid="post-list-tags"> <a href="/blog-preview/previews/pr-199/tags/performance/" class="inline-flex items-center gap-1 rounded-full border text-xs px-2 py-0.5 transition-colors duration-200 font-medium cursor-pointer
+                          border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 
+                          dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 dark:hover:border-sky-700
+                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-tag-slug="performance"> <span class="pointer-events-none">Performance</span> </a>  </div> </div> </div> <a href="/blog-preview/previews/pr-199/sglang-diffusion-wan2260percent/" class="md:justify-self-end block overflow-hidden rounded-xl border border-zinc-200/70 shadow-sm transition duration-200 ease-out hover:shadow-md hover:border-sky-200 dark:border-zinc-800/70 dark:hover:border-sky-400/40 w-full max-w-[320px] md:max-w-[200px] md:min-w-[160px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900"> <img src="/blog-preview/previews/pr-199/images/wechat/sglang-diffusion-wan2260percent/001-85495dc3.png" alt="通过零开销逐层权重卸载技术将 SGLang Diffusion wan2.2 的推理速度加速 60%" loading="lazy" class="aspect-[4/3] w-full object-cover transition duration-300 ease-out motion-safe:hover:scale-[1.01] motion-reduce:transform-none"> </a> </div> </article> </li><li class="list-none"> <article class="relative block overflow-hidden rounded-2xl border border-zinc-200/80 bg-neutral-50/80 px-5 py-5 shadow-[0_10px_30px_rgb(24_24_27/0.04)] transition duration-200 ease-out hover:-translate-y-1 hover:border-sky-200 hover:shadow-[0_14px_36px_rgb(2_132_199/0.1)] motion-reduce:transform-none motion-reduce:shadow-none dark:border-zinc-800/80 dark:bg-zinc-900/70 dark:shadow-[0_16px_38px_rgb(0_0_0/0.4)] dark:hover:border-sky-500/35 dark:hover:shadow-[0_18px_40px_rgb(56_189_248/0.12)]"> <div class="flex flex-col gap-4 "> <div class="flex flex-col gap-2 "> <h3 class="text-xl font-semibold leading-tight text-zinc-900 dark:text-zinc-100"> <a href="/blog-preview/previews/pr-199/cuda-graph/" class="hover:text-sky-600 focus-visible:text-sky-600 dark:hover:text-sky-400 dark:focus-visible:text-sky-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900"> <span class="underline-offset-4 decoration-2 decoration-sky-200/0 transition hover:underline hover:decoration-sky-400/80 dark:hover:decoration-sky-400/60"> CUDA Graph 学习笔记 </span> </a> </h3> <div class="flex flex-col gap-2 "> <div class="text-sm text-zinc-600 dark:text-zinc-400"> <span class="flex items-center gap-1">📅 2025-12-27</span> </div> <div class="text-sm text-zinc-500 flex items-center gap-4 flex-wrap"> <span class="flex items-center gap-1">✍️ 11598 字</span> <span class="flex items-center gap-1" title="11598 words">
+⏱️ 26 min read </span> </div> <div class="flex flex-wrap gap-1.5 items-center" data-testid="post-list-tags"> <a href="/blog-preview/previews/pr-199/tags/cuda-graphs/" class="inline-flex items-center gap-1 rounded-full border text-xs px-2 py-0.5 transition-colors duration-200 font-medium cursor-pointer
+                          border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 
+                          dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 dark:hover:border-sky-700
+                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-tag-slug="cuda-graphs"> <span class="pointer-events-none">CUDA Graphs</span> </a>  </div> </div> </div>  </div> </article> </li><li class="list-none"> <article class="relative block overflow-hidden rounded-2xl border border-zinc-200/80 bg-neutral-50/80 px-5 py-5 shadow-[0_10px_30px_rgb(24_24_27/0.04)] transition duration-200 ease-out hover:-translate-y-1 hover:border-sky-200 hover:shadow-[0_14px_36px_rgb(2_132_199/0.1)] motion-reduce:transform-none motion-reduce:shadow-none dark:border-zinc-800/80 dark:bg-zinc-900/70 dark:shadow-[0_16px_38px_rgb(0_0_0/0.4)] dark:hover:border-sky-500/35 dark:hover:shadow-[0_18px_40px_rgb(56_189_248/0.12)]"> <div class="flex flex-col gap-4 "> <div class="flex flex-col gap-2 "> <h3 class="text-xl font-semibold leading-tight text-zinc-900 dark:text-zinc-100"> <a href="/blog-preview/previews/pr-199/code-is-not-only-an-implementation-but-also-a-presentation-of-a-way-of-thinking/" class="hover:text-sky-600 focus-visible:text-sky-600 dark:hover:text-sky-400 dark:focus-visible:text-sky-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900"> <span class="underline-offset-4 decoration-2 decoration-sky-200/0 transition hover:underline hover:decoration-sky-400/80 dark:hover:decoration-sky-400/60"> Code is not only an implementation, but also a presentation of a way of thinking </span> </a> </h3> <div class="flex flex-col gap-2 "> <div class="text-sm text-zinc-600 dark:text-zinc-400"> <span class="flex items-center gap-1">📅 2025-12-26</span> </div> <div class="text-sm text-zinc-500 flex items-center gap-4 flex-wrap"> <span class="flex items-center gap-1">✍️ 965 字</span> <span class="flex items-center gap-1" title="965 words">
+⏱️ 3 min read </span> </div> <div class="flex flex-wrap gap-1.5 items-center" data-testid="post-list-tags"> <a href="/blog-preview/previews/pr-199/tags/soft-skills/" class="inline-flex items-center gap-1 rounded-full border text-xs px-2 py-0.5 transition-colors duration-200 font-medium cursor-pointer
+                          border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 
+                          dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 dark:hover:border-sky-700
+                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-tag-slug="soft-skills"> <span class="pointer-events-none">Soft Skills</span> </a>  </div> </div> </div>  </div> </article> </li><li class="list-none"> <article class="relative block overflow-hidden rounded-2xl border border-zinc-200/80 bg-neutral-50/80 px-5 py-5 shadow-[0_10px_30px_rgb(24_24_27/0.04)] transition duration-200 ease-out hover:-translate-y-1 hover:border-sky-200 hover:shadow-[0_14px_36px_rgb(2_132_199/0.1)] motion-reduce:transform-none motion-reduce:shadow-none dark:border-zinc-800/80 dark:bg-zinc-900/70 dark:shadow-[0_16px_38px_rgb(0_0_0/0.4)] dark:hover:border-sky-500/35 dark:hover:shadow-[0_18px_40px_rgb(56_189_248/0.12)]"> <div class="flex flex-col gap-4 "> <div class="flex flex-col gap-2 "> <h3 class="text-xl font-semibold leading-tight text-zinc-900 dark:text-zinc-100"> <a href="/blog-preview/previews/pr-199/understanding-conways-law/" class="hover:text-sky-600 focus-visible:text-sky-600 dark:hover:text-sky-400 dark:focus-visible:text-sky-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900"> <span class="underline-offset-4 decoration-2 decoration-sky-200/0 transition hover:underline hover:decoration-sky-400/80 dark:hover:decoration-sky-400/60"> Understanding Conway’s Law（康威定律） </span> </a> </h3> <div class="flex flex-col gap-2 "> <div class="text-sm text-zinc-600 dark:text-zinc-400"> <span class="flex items-center gap-1">📅 2025-12-25</span> </div> <div class="text-sm text-zinc-500 flex items-center gap-4 flex-wrap"> <span class="flex items-center gap-1">✍️ 815 字</span> <span class="flex items-center gap-1" title="815 words">
+⏱️ 2 min read </span> </div> <div class="flex flex-wrap gap-1.5 items-center" data-testid="post-list-tags"> <a href="/blog-preview/previews/pr-199/tags/soft-skills/" class="inline-flex items-center gap-1 rounded-full border text-xs px-2 py-0.5 transition-colors duration-200 font-medium cursor-pointer
+                          border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 
+                          dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 dark:hover:border-sky-700
+                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-tag-slug="soft-skills"> <span class="pointer-events-none">Soft Skills</span> </a>  </div> </div> </div>  </div> </article> </li> </ul> <nav class="flex justify-center items-center gap-2 mt-10" aria-label="Pagination"> <a href="/blog-preview/previews/pr-199/page/2/" class="px-3 py-2 rounded bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors" aria-label="Go to previous page"> ← Newer </a> <div class="flex gap-1 md:gap-2" role="list"> <a href="/blog-preview/previews/pr-199/" class="px-3 py-2 rounded bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors" aria-label="Go to page 1"> 1 </a><a href="/blog-preview/previews/pr-199/page/2/" class="px-3 py-2 rounded bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors" aria-label="Go to page 2"> 2 </a><span class="px-3 py-2 rounded bg-sky-600 text-white font-semibold" aria-current="page" aria-label="Page 3, current page"> 3 </span><a href="/blog-preview/previews/pr-199/page/4/" class="px-3 py-2 rounded bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors" aria-label="Go to page 4"> 4 </a> </div> <a href="/blog-preview/previews/pr-199/page/4/" class="px-3 py-2 rounded bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors" aria-label="Go to next page"> Older → </a> </nav> </main> <footer class="py-8 mt-auto border-t border-zinc-200 dark:border-zinc-800"> <div class="container mx-auto px-4 text-center text-zinc-500 max-w-4xl">
+&copy; 2026 Yuanle Liu. All rights reserved. </div> </footer>  <script type="module">const i=new WeakMap,c=(e,t)=>{e.dataset.state=t,t==="copied"?e.textContent="Copied":t==="error"?e.textContent="Failed":e.textContent="Copy";const o=i.get(e);if(o&&window.clearTimeout(o),t!=="idle"){const r=window.setTimeout(()=>c(e,"idle"),2e3);i.set(e,r)}},n=async e=>{const t=e.closest(".code-block");if(!t)return;const o=t.getAttribute("data-raw-code")??"";try{await navigator.clipboard.writeText(o),c(e,"copied")}catch(r){console.error("Copy failed",r),c(e,"error")}},s=()=>{document.addEventListener("click",e=>{const o=e.target?.closest("button.code-block__copy");o&&(e.preventDefault(),n(o))})},a=()=>{typeof document>"u"||s()};a();</script> </body> </html>
