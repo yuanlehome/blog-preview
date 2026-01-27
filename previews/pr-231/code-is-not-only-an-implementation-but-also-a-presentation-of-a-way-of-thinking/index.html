@@ -1,0 +1,359 @@
+<!DOCTYPE html><html lang="en" data-astro-cid-sckkx6r4> <head><script>(() => {
+  const storageKey = 'theme';
+  const className = 'dark';
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  const validThemes = ['light', 'dark'];
+  let currentPreference = (() => {
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored && validThemes.includes(stored)) return stored;
+    } catch (error) {
+      console.warn('Unable to access localStorage for theme:', error);
+    }
+    return mediaQuery.matches ? 'dark' : 'light';
+  })();
+
+  const resolveTheme = (preference) => (preference === 'dark' ? 'dark' : 'light');
+
+  const applyTheme = (preference) => {
+    const effectiveTheme = resolveTheme(preference);
+    document.documentElement.classList.toggle(className, effectiveTheme === 'dark');
+    document.documentElement.dataset.theme = effectiveTheme;
+    return effectiveTheme;
+  };
+
+  const dispatchChange = (preference) => {
+    const resolved = document.documentElement.classList.contains(className) ? 'dark' : 'light';
+    window.dispatchEvent(
+      new CustomEvent('themechange', {
+        detail: { theme: preference, resolved },
+      }),
+    );
+  };
+
+  applyTheme(currentPreference);
+
+  window.__setTheme = (next) => {
+    const preference = validThemes.includes(String(next)) ? String(next) : resolveTheme(currentPreference);
+    currentPreference = preference;
+    try {
+      localStorage.setItem(storageKey, preference);
+    } catch (error) {
+      console.warn('Unable to persist theme selection:', error);
+    }
+    applyTheme(preference);
+    dispatchChange(preference);
+  };
+})();</script><meta charset="UTF-8"><meta name="description" content="A minimal Astro blog"><meta name="viewport" content="width=device-width"><link rel="icon" type="image/svg+xml" href="/blog-preview/previews/pr-231/favicon.svg"><meta name="generator" content="Astro v5.16.6"><link rel="canonical" href="https://yuanlehome.github.io/blog-preview/previews/pr-231/code-is-not-only-an-implementation-but-also-a-presentation-of-a-way-of-thinking/"><meta property="og:title" content="Code is not only an implementation, but also a presentation of a way of thinking"><meta property="og:description" content="A minimal Astro blog"><meta property="og:image" content="/blog-preview/previews/pr-231/placeholder-social.jpg"><meta property="og:type" content="article"><meta property="og:url" content="https://yuanlehome.github.io/blog-preview/previews/pr-231/code-is-not-only-an-implementation-but-also-a-presentation-of-a-way-of-thinking/"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Code is not only an implementation, but also a presentation of a way of thinking"><meta name="twitter:description" content="A minimal Astro blog"><meta name="twitter:image" content="/blog-preview/previews/pr-231/placeholder-social.jpg"><title>Code is not only an implementation, but also a presentation of a way of thinking</title><style>:root {
+  /* Typography */
+  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial, Noto Sans SC, PingFang SC, Microsoft YaHei, sans-serif;
+  --font-serif: ui-serif, Georgia, Cambria, Times New Roman, Times, serif;
+  --font-mono: JetBrains Mono, Fira Code, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  --font-size-4xl: 2.25rem;
+  --line-height-body: 1.75;
+  --line-height-heading: 1.3;
+  --line-height-code: 1.65;
+  --line-height-tight: 1.25;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Components */
+  --radius-sm: 0.35rem;
+  --radius-md: 0.65rem;
+  --radius-lg: 0.9rem;
+  --radius-xl: 0.75rem;
+  --shadow-card: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-code-block: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-header: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --border-style: solid;
+  --border-width: 1px;
+  --motion-duration: 160ms;
+  --motion-easing: ease;
+  --spacing-multiplier: 1;
+
+  /* Light Mode Colors */
+  --color-brand: #0284c7;
+  --color-accent: #0284c7;
+  --color-background: #fafafa;
+  --color-foreground: #18181b;
+  --color-muted: #71717a;
+  --color-border: #e4e4e7;
+  --color-card: #f4f4f5;
+  --color-code-background: #f4f4f5;
+  --color-code-foreground: #18181b;
+  --color-code-border: #e4e4e7;
+  --color-code-keyword: #0284c7;
+  --color-code-string: #059669;
+  --color-code-comment: #a1a1aa;
+  --color-code-function: #0284c7;
+
+  /* Code block specific (legacy support) */
+  --code-font: var(--font-mono);
+  --code-radius: 0.9rem;
+  --code-border: 1px solid var(--color-code-border);
+  --code-bg: var(--color-code-background);
+  --code-fg: var(--color-code-foreground);
+  --code-scrollbar: rgb(203 213 225 / 0.75);
+  --code-highlight-bg: rgb(59 130 246 / 0.12);
+  --code-highlight-accent: rgb(59 130 246);
+
+  /* Header specific (legacy support) */
+  --header-bg: rgb(248 250 252 / 0.92);
+  --header-bg-scrolled: rgb(248 250 252 / 0.98);
+  --header-border: rgb(226 232 240 / 0.9);
+  --header-shadow: var(--shadow-header);
+  --header-shadow-strong: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+.dark {
+  /* Dark Mode Colors */
+  --color-brand: #38bdf8;
+  --color-accent: #38bdf8;
+  --color-background: #18181b;
+  --color-foreground: #fafafa;
+  --color-muted: #a1a1aa;
+  --color-border: #3f3f46;
+  --color-card: #27272a;
+  --color-code-background: #1f1f23;
+  --color-code-foreground: #e4e4e7;
+  --color-code-border: #3f3f46;
+  --color-code-keyword: #38bdf8;
+  --color-code-string: #34d399;
+  --color-code-comment: #71717a;
+  --color-code-function: #38bdf8;
+
+  /* Dark mode shadows */
+  --shadow-card: 0 10px 30px rgb(0 0 0 / 0.28);
+  --shadow-code-block: 0 10px 30px rgb(0 0 0 / 0.28);
+  --shadow-header: 0 10px 30px rgb(0 0 0 / 0.28);
+
+  /* Code block specific (legacy support) */
+  --code-border: 1px solid var(--color-code-border);
+  --code-bg: var(--color-code-background);
+  --code-fg: var(--color-code-foreground);
+  --code-scrollbar: rgb(71 85 105 / 0.8);
+  --code-highlight-bg: rgb(59 130 246 / 0.2);
+  --code-highlight-accent: rgb(96 165 250);
+
+  /* Header specific (legacy support) */
+  --header-bg: rgb(15 23 42 / 0.72);
+  --header-bg-scrolled: rgb(15 23 42 / 0.8400000000000001);
+  --header-border: rgb(71 85 105 / 0.8);
+  --header-shadow: var(--shadow-header);
+  --header-shadow-strong: 0 20px 40px rgb(0 0 0 / 0.35);
+}
+</style><link rel="stylesheet" href="/blog-preview/previews/pr-231/_astro/_slug_.CAHcjEuq.css">
+<style>.reading-progress[data-astro-cid-mu6cnre2]{position:fixed;inset:0 0 auto;height:3px;width:100%;background:transparent;z-index:50;pointer-events:none}.reading-progress__bar[data-astro-cid-mu6cnre2]{display:block;height:100%;width:100%;transform:scaleX(var(--progress-value, 0));transform-origin:left center;background:linear-gradient(90deg,var(--progress-color-start),var(--progress-color-end));transition:transform .1s linear}:root{--progress-color-start: #2563eb;--progress-color-end: #22d3ee}:root.dark{--progress-color-start: #38bdf8;--progress-color-end: #a855f7}@media(prefers-reduced-motion:reduce){.reading-progress__bar[data-astro-cid-mu6cnre2]{transition:none}}.reading-progress__controls[data-astro-cid-mu6cnre2]{position:fixed;inset:auto 1rem 1.5rem auto;display:flex;flex-direction:column;gap:.5rem;z-index:60;pointer-events:none}.reading-progress__control[data-astro-cid-mu6cnre2]{pointer-events:auto;border:1px solid var(--progress-control-border);background:var(--progress-control-bg);color:var(--progress-control-text);border-radius:9999px;padding:.5rem .75rem;font-size:.875rem;line-height:1.25rem;box-shadow:0 4px 12px #0000001f;transition:transform .15s ease,box-shadow .15s ease,background-color .15s ease}.reading-progress__control[data-astro-cid-mu6cnre2]:hover,.reading-progress__control[data-astro-cid-mu6cnre2]:focus-visible{transform:translateY(-2px);box-shadow:0 8px 20px #0000002e;outline:none}:root{--progress-control-bg: #ffffff;--progress-control-border: rgba(0, 0, 0, .08);--progress-control-text: #0f172a}:root.dark{--progress-control-bg: #0f172a;--progress-control-border: rgba(255, 255, 255, .08);--progress-control-text: #e2e8f0}@media(max-width:640px){.reading-progress__controls[data-astro-cid-mu6cnre2]{inset:auto .75rem 1rem auto}.reading-progress__control[data-astro-cid-mu6cnre2]{padding:.45rem .65rem;font-size:.8125rem}}@media(max-width:1023px){.reading-progress__controls[data-astro-cid-mu6cnre2]{display:none}}
+</style></head> <body class="bg-neutral-50 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 transition-colors duration-300 min-h-screen flex flex-col" data-astro-cid-sckkx6r4>  <div class="reading-progress" data-reading-progress data-target-selector="[data-article]" data-astro-cid-mu6cnre2> <span class="reading-progress__bar" data-reading-progress-bar data-astro-cid-mu6cnre2></span> </div> <div class="reading-progress__controls" data-reading-progress-controls hidden data-astro-cid-mu6cnre2> <button type="button" class="reading-progress__control" data-scroll-top aria-label="返回文章顶部" data-astro-cid-mu6cnre2>
+⬆️ 顶部
+</button> <button type="button" class="reading-progress__control" data-scroll-bottom aria-label="跳转文章底部" data-astro-cid-mu6cnre2>
+⬇️ 底部
+</button> </div>  <script type="module">const a=document.querySelector("[data-reading-progress]"),p=a?.dataset?.targetSelector||"[data-article]",w=a?.querySelector("[data-reading-progress-bar]"),l=document.querySelector(p),r=document.querySelector("[data-reading-progress-controls]"),h=r?.querySelector("[data-scroll-top]"),v=r?.querySelector("[data-scroll-bottom]");if(a&&w&&l){let e=0,s=0,n=!1;const m=(t,o,c)=>Math.min(Math.max(t,o),c),i=()=>{e=l.getBoundingClientRect().top+window.scrollY,s=l.scrollHeight},d=()=>{const t=Math.max(s-window.innerHeight,1),o=m((window.scrollY-e)/t,0,1);w.style.setProperty("--progress-value",o.toString()),n=!1},u=()=>{n||(n=!0,requestAnimationFrame(d))},g=()=>{i(),u()};if(i(),d(),window.addEventListener("scroll",u,{passive:!0}),window.addEventListener("resize",g),window.addEventListener("load",g,{once:!0}),r){r.hidden=!1;const t=()=>{window.scrollTo({top:e,behavior:"smooth"})},o=()=>{const c=Math.max(e+s-window.innerHeight,e);window.scrollTo({top:c,behavior:"smooth"})};h?.addEventListener("click",t),v?.addEventListener("click",o)}}</script> <header class="site-header header-variant-frosted" data-header> <div class="container mx-auto px-5 py-3 sm:py-4 flex justify-between items-start max-w-5xl"> <a href="/blog-preview/previews/pr-231/" class="text-xl font-bold hover:text-sky-600 dark:hover:text-sky-400">Yuanle Liu</a> <nav class="flex items-start gap-3 items-center"> <a href="/blog-preview/previews/pr-231/" class="hover:underline inline-flex items-center "> Home </a><a href="/blog-preview/previews/pr-231/archive/" class="hover:underline inline-flex items-center "> Archive </a><a href="/blog-preview/previews/pr-231/tags/" class="hover:underline inline-flex items-center "> Tags </a><a href="/blog-preview/previews/pr-231/about/" class="hover:underline inline-flex items-center "> About </a> <button id="theme-toggle" class="inline-flex items-center gap-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 px-1" aria-label="Toggle theme"> 🖥️ ☀️ </button> </nav> </div> </header> <script type="module">const i="theme",c=["light","dark"],d=()=>{try{const e=localStorage.getItem(i);if(e==="light"||e==="dark")return e}catch(e){console.warn("Unable to read theme preference:",e)}return window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"},g=()=>document.documentElement.classList.contains("dark")?"dark":"light",u=e=>e==="dark"?"🌙":"☀️",w=e=>e==="dark"?"Dark":"Light",a=(e,t)=>{const n=document.getElementById("theme-toggle");if(!n)return;const o=t??g(),h=u(o),l=w(o);n.dataset.theme=e,n.textContent="";const r=document.createElement("span");r.className="inline-flex items-center justify-center",r.style.lineHeight="1",r.textContent=h,n.appendChild(r),n.appendChild(document.createTextNode(" "+l)),n.setAttribute("aria-label",`Toggle theme (current: ${l})`)},k=e=>{if(typeof window.__setTheme=="function"){window.__setTheme?.(e);return}const t=e==="dark"?"dark":"light";document.documentElement.classList.toggle("dark",t==="dark");try{localStorage.setItem(i,e)}catch(n){console.warn("Unable to persist theme preference:",n)}window.dispatchEvent(new CustomEvent("themechange",{detail:{theme:e,resolved:t}}))},p=()=>{const e=d(),t=c[(c.indexOf(e)+1)%c.length];k(t),a(t)},s=document.querySelector("[data-header]"),f=window.matchMedia("(prefers-reduced-motion: reduce)").matches,m=()=>{if(!s)return;const e=window.scrollY>6;s.classList.toggle("is-scrolled",e)};document.getElementById("theme-toggle")?.addEventListener("click",p);a(d());window.addEventListener("themechange",e=>{const t=e.detail,n=t?.theme??d(),o=t?.resolved;a(n,o)});m();const v=()=>m();window.addEventListener("scroll",v,{passive:!0});f&&s?.classList.add("reduce-motion");</script> <main class="container mx-auto px-4 py-8 max-w-6xl"> <div class="flex flex-col gap-6 lg:grid lg:items-start lg:gap-12 lg:grid-cols-[minmax(0,1fr)_18rem]" data-post-layout> <article class="prose dark:prose-invert max-w-none prose-img:rounded-xl min-w-0" data-article> <header class="mb-8 not-prose"> <div class="flex flex-col gap-6 md:grid md:grid-cols-1"> <div class="flex flex-col gap-4 "> <h1 class="text-3xl md:text-4xl font-bold leading-tight text-left"> Code is not only an implementation, but also a presentation of a way of thinking </h1> <div class="text-zinc-500 text-sm flex items-start justify-start gap-3 flex-wrap "> <time class="flex items-center gap-1" datetime="2025-12-26T00:00:00.000Z" title="发布于 2025-12-26"> <span aria-hidden="true">📅</span> <span>
+发布于 <span class="font-medium">2025-12-26</span> </span> </time>   <div class="flex items-center gap-1"> <span aria-hidden="true">✍️</span> 965 字
+</div> <div class="flex items-center gap-1" title="965 words"> <span aria-hidden="true">⏱️</span> 3 min read </div> </div> <div class="flex flex-wrap gap-2 items-center" data-testid="post-tags"> <span class="text-zinc-500 text-sm flex items-center gap-1"> <span aria-hidden="true">🏷️</span> <span>标签：</span> </span> <a href="/blog-preview/previews/pr-231/tags/soft-skills/" class="tag-chip inline-flex items-center gap-1.5 rounded-full border transition-colors duration-200 font-medium cursor-pointer text-xs px-2 py-1 
+    border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 
+    dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 dark:hover:border-sky-700
+    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-tag-slug="soft-skills" data-testid="tag-soft-skills"> <span class="tag-name pointer-events-none">Soft Skills</span>  </a> </div> </div>   </div> </header> <p><u><em><strong>在日常开发中，我们往往把重点放在“把功能实现出来”。但一个成熟工程师的代码，并不仅仅是代码本身，而是其思维方式、问题拆解能力、沟通意识与系统理解的外化形式。</strong></em></u></p>
+<hr>
+<h2 id="一系统思维看到代码之外的系统">一、系统思维：看到代码之外的系统<a href="#一系统思维看到代码之外的系统" class="heading-anchor" aria-label="Link to 一、系统思维：看到代码之外的系统">¶</a></h2>
+<p>优秀工程师写代码时并不是只盯着一个函数或一个类，而是思考：</p>
+<ol>
+<li>这个模块在整个系统中承担什么角色？</li>
+<li>它如何与其他模块协作？</li>
+<li>当模块演化时，哪些边界会受到影响？</li>
+<li>未来扩展时，能否复用当前设计？可能的瓶颈是什么？</li>
+</ol>
+<p><u><em>具备系统视角的代码更加稳健，也更容易在团队内被复用，不会因设计局限导致后续开发被“卡住”。</em></u></p>
+<hr>
+<h2 id="二沟通意识代码也是协作产物">二、沟通意识：代码也是协作产物<a href="#二沟通意识代码也是协作产物" class="heading-anchor" aria-label="Link to 二、沟通意识：代码也是协作产物">¶</a></h2>
+<p>软件工程本质上是团队协作。代码写好之后，不是给自己看的，而是给未来的团队成员看的。</p>
+<p>体现沟通意识的方式包括：</p>
+<ol>
+<li>接口设计是否直观？命名是否清晰？</li>
+<li>文档是否表达了输入、输出、限制和边界？</li>
+<li>模块内部逻辑是否容易理解？</li>
+<li>半年后再看还能否在几分钟内重建上下文？</li>
+</ol>
+<p><u><em>清晰、可阅读的代码，就是一种降低沟通成本的方式。</em></u></p>
+<hr>
+<h2 id="三重构意识让代码随时间变得更好">三、重构意识：让代码随时间变得更好<a href="#三重构意识让代码随时间变得更好" class="heading-anchor" aria-label="Link to 三、重构意识：让代码随时间变得更好">¶</a></h2>
+<p>重构是一种对代码健康度的主动维护，而不是“推倒重写”。重构意识体现为：</p>
+<ul>
+<li>发现重复逻辑就抽象；</li>
+<li>职责变复杂及时拆分模块；</li>
+<li>过长函数、过多参数及时整理；</li>
+<li><u><em>看到“坏味道（code smell）”主动修复；</em></u></li>
+<li>避免技术债务持续堆积。</li>
+</ul>
+<p><u><em>重构是成熟工程师的重要标志，是让系统可以长期迭代的重要能力。</em></u></p>
+<hr>
+<h2 id="四文档与知识共享让思考留痕">四、文档与知识共享：让思考留痕<a href="#四文档与知识共享让思考留痕" class="heading-anchor" aria-label="Link to 四、文档与知识共享：让思考留痕">¶</a></h2>
+<p>成熟工程师不会让重要思考只停留在脑中。优秀文档通常包含：</p>
+<ul>
+<li>为什么做这个设计？</li>
+<li>为什么不是另一种方案？</li>
+<li>模块的关键边界条件是什么？</li>
+<li>扩展点和限制在哪里？</li>
+</ul>
+<p><u><em>文档让隐性的思考变成团队可共享的资产，避免重复踩坑，加速新人上手。</em></u></p>
+<hr>
+<h2 id="五可扩展性为未来的演化留空间">五、可扩展性：为未来的演化留空间<a href="#五可扩展性为未来的演化留空间" class="heading-anchor" aria-label="Link to 五、可扩展性：为未来的演化留空间">¶</a></h2>
+<p>优秀代码不仅满足当前需求，也考虑未来变化。体现扩展性的方式包括：</p>
+<ul>
+<li>使用合适的设计模式抽象变化点；</li>
+<li>将业务逻辑与基础逻辑解耦；</li>
+<li>保留可扩展挂载点；</li>
+<li>避免写死逻辑或使用“强绑定”的实现。</li>
+</ul>
+<p><u><em>可扩展性好的模块，使团队在新增业务时成本更低、速度更快。</em></u></p>
+<hr>
+<h2 id="六健壮性与可观察性让系统值得信赖">六、健壮性与可观察性：让系统值得信赖<a href="#六健壮性与可观察性让系统值得信赖" class="heading-anchor" aria-label="Link to 六、健壮性与可观察性：让系统值得信赖">¶</a></h2>
+<p>专业工程师对系统稳定性负责，而不仅仅对“功能正确”负责。健壮代码通常包含：</p>
+<ul>
+<li>完整的异常处理；</li>
+<li>明确的错误提示与返回码；</li>
+<li>关键路径的日志记录；</li>
+<li>完整的监控指标（error rate / latency / load 等）；</li>
+<li>发生问题时能快速定位、快速恢复。</li>
+</ul>
+<p><u><em>可观察性好、异常可控的系统是工程化能力的核心体现。</em></u></p>
+<hr>
+<h2 id="总结">总结<a href="#总结" class="heading-anchor" aria-label="Link to 总结">¶</a></h2>
+<p>代码不仅给机器看，更是你思考方式的直接呈现。一个工程师的成熟度，不止体现在写功能的速度，而体现在：</p>
+<ul>
+<li>对系统的理解深度</li>
+<li>对逻辑的严谨程度</li>
+<li>对团队协作的贡献程度</li>
+<li>对未来演化的前瞻能力</li>
+<li>对系统稳定性的责任感</li>
+</ul>
+<p><u><em>这些思维在代码中的体现，最终累积成：可维护、可扩展、可协作、可托付生产的高质量软件。</em></u></p> <div class="grid md:grid-cols-2 gap-4 mt-10"> <a href="/blog-preview/previews/pr-231/cuda-graph/" class="block p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-sky-500"> <div class="text-xs uppercase text-zinc-500">Previous</div> <div class="font-semibold">CUDA Graph 学习笔记</div> </a> <a href="/blog-preview/previews/pr-231/understanding-conways-law/" class="block p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-sky-500 text-right"> <div class="text-xs uppercase text-zinc-500">Next</div> <div class="font-semibold">Understanding Conway’s Law（康威定律）</div> </a> </div> <div class="mt-10 border-t border-zinc-200 dark:border-zinc-800 pt-6"><h3 class="text-lg font-semibold mb-4">Related posts</h3><div class="grid md:grid-cols-2 gap-4"><a href="/blog-preview/previews/pr-231/understanding-conways-law/" class="block p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-sky-500 hover:-translate-y-0.5 transition"><div class="text-xs text-zinc-500 mb-1">12/25/2025</div><div class="font-semibold">Understanding Conway’s Law（康威定律）</div></a></div></div> <section id="comments" class="mt-12"> <div class="border-t border-zinc-200 dark:border-zinc-700 pt-8"> <script src="https://giscus.app/client.js" data-repo="yuanlehome/blog" data-repo-id="R_kgDOQu2Jjw" data-category="General" data-category-id="DIC_kwDOQu2Jj84C0QDN" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="bottom" data-theme="preferred_color_scheme" data-lang="zh-CN" crossorigin="anonymous" async></script> </div> </section> <script>
+  (() => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+
+    // Mapping uses `pathname` to keep one discussion per URL path, which is stable for static sites.
+    const themeMap = {
+      light: 'light',
+      dark: 'dark_dimmed',
+    };
+
+    const getResolvedTheme = () =>
+      document.documentElement.dataset.theme === 'dark' ||
+      document.documentElement.classList.contains('dark')
+        ? 'dark'
+        : 'light';
+
+    let activeTheme = getResolvedTheme();
+
+    const setContainerTheme = (theme) => {
+      const container = document.getElementById('comments');
+      if (container) {
+        container.setAttribute('data-giscus-theme', theme);
+      }
+    };
+
+    const postThemeMessage = (resolvedTheme) => {
+      const effective = resolvedTheme ?? activeTheme;
+      const nextTheme = themeMap[effective] ?? 'light';
+      setContainerTheme(nextTheme);
+      const iframe = document.querySelector('iframe.giscus-frame');
+      if (iframe) {
+        iframe.contentWindow?.postMessage(
+          { giscus: { setConfig: { theme: nextTheme } } },
+          'https://giscus.app',
+        );
+      }
+      window.dispatchEvent(
+        new CustomEvent('giscus-theme-applied', {
+          detail: { theme: nextTheme, resolved: effective },
+        }),
+      );
+    };
+
+    const syncTheme = (resolvedOverride) => {
+      const detected = resolvedOverride ?? getResolvedTheme();
+      if (detected !== activeTheme) {
+        activeTheme = detected;
+      }
+      postThemeMessage(detected);
+    };
+
+    const observer = new MutationObserver(() => syncTheme());
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class', 'data-theme'],
+    });
+
+    window.addEventListener('themechange', (event) => {
+      const detail = event?.detail || {};
+      if (detail.resolved) {
+        syncTheme(detail.resolved);
+      } else {
+        syncTheme();
+      }
+    });
+
+    const waitForFrame = () => {
+      const frame = document.querySelector('iframe.giscus-frame');
+      if (!frame) {
+        requestAnimationFrame(waitForFrame);
+        return;
+      }
+
+      const sendWhenReady = () => postThemeMessage();
+      if (frame instanceof HTMLIFrameElement) {
+        if (frame.complete) {
+          sendWhenReady();
+        } else {
+          frame.addEventListener('load', sendWhenReady, { once: true });
+        }
+      }
+      // Ensure we apply the current theme even if the iframe was already ready.
+      postThemeMessage();
+    };
+
+    // Run once after load to sync the initial theme and keep retrying until the iframe is present.
+    waitForFrame();
+    syncTheme();
+  })();
+</script> <div id="page-bottom-anchor" aria-hidden="true" style="height: 1px;"></div> </article> <div class="w-full" data-toc-shell> <aside class="hidden lg:block h-full"> <div class="flex h-full w-full flex-col gap-3 overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50/80 p-4 shadow-md backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-800/50 lg:sticky lg:top-[calc(var(--toc-offset)+1rem)] lg:max-h-[calc(100vh-var(--toc-offset)-1.5rem)] lg:h-[calc(100vh-var(--toc-offset)-1.5rem)]" style="--toc-offset: 96px" data-toc-container> <div class="space-y-1"> <p class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">文章目录</p> <p class="text-xs text-zinc-500 dark:text-zinc-400">快速跳转到你关心的章节</p> </div> <nav aria-label="文章目录" class="flex-1 min-h-0 overflow-y-auto pr-1" data-toc-scroll> <ol class="space-y-3 text-sm"> <li><a href="#一系统思维看到代码之外的系统" data-toc-link data-mobile-toc-link data-target="一系统思维看到代码之外的系统" title="一、系统思维：看到代码之外的系统¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>一、系统思维：看到代码之外的系统¶</span></a></li><li><a href="#二沟通意识代码也是协作产物" data-toc-link data-mobile-toc-link data-target="二沟通意识代码也是协作产物" title="二、沟通意识：代码也是协作产物¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>二、沟通意识：代码也是协作产物¶</span></a></li><li><a href="#三重构意识让代码随时间变得更好" data-toc-link data-mobile-toc-link data-target="三重构意识让代码随时间变得更好" title="三、重构意识：让代码随时间变得更好¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>三、重构意识：让代码随时间变得更好¶</span></a></li><li><a href="#四文档与知识共享让思考留痕" data-toc-link data-mobile-toc-link data-target="四文档与知识共享让思考留痕" title="四、文档与知识共享：让思考留痕¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>四、文档与知识共享：让思考留痕¶</span></a></li><li><a href="#五可扩展性为未来的演化留空间" data-toc-link data-mobile-toc-link data-target="五可扩展性为未来的演化留空间" title="五、可扩展性：为未来的演化留空间¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>五、可扩展性：为未来的演化留空间¶</span></a></li><li><a href="#六健壮性与可观察性让系统值得信赖" data-toc-link data-mobile-toc-link data-target="六健壮性与可观察性让系统值得信赖" title="六、健壮性与可观察性：让系统值得信赖¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>六、健壮性与可观察性：让系统值得信赖¶</span></a></li><li><a href="#总结" data-toc-link data-mobile-toc-link data-target="总结" title="总结¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>总结¶</span></a></li> </ol> </nav> </div> </aside> </div> <script type="module">const u=Array.from(document.querySelectorAll("[data-toc-link]")),e=document.querySelector("[data-toc-container]"),r=document.querySelector("[data-toc-shell]"),d=e&&getComputedStyle(e).getPropertyValue("--toc-offset")||"96px",x=parseFloat(d)||0,a=window.matchMedia("(min-width: 1024px)"),h=u.map(t=>document.getElementById(t.dataset.target||"")).filter(t=>!!t),C=()=>{h.forEach(t=>{t.style.scrollMarginTop=`${x+12}px`})},w=t=>`#${encodeURIComponent(t)}`,v=t=>decodeURIComponent(t.replace(/^#/,"")),f=t=>{u.forEach(o=>{const n=o.dataset.target===t;o.dataset.active=n?"true":"false",o.setAttribute("aria-current",n?"true":"false")})},g=(t,o=!1)=>{const n=document.getElementById(t);if(!n)return;const s=window.scrollY+n.getBoundingClientRect().top-x-12;o?history.replaceState(null,"",w(t)):history.pushState(null,"",w(t)),window.scrollTo({top:s,behavior:"smooth"}),f(t)};u.forEach(t=>t.addEventListener("click",o=>{const n=t.dataset.target;n&&(o.preventDefault(),g(n))}));const p=()=>{e&&(e.dataset.fixed="false",e.style.position="",e.style.left="",e.style.width="",e.style.height="",e.style.maxHeight="",e.style.top="",r&&(r.style.minHeight=""))},E=()=>{if(!e||!r)return;const t=r.getBoundingClientRect(),o=`calc(100vh - ${d} - 1.5rem)`;e.dataset.fixed="true",r.style.minHeight=`${e.offsetHeight}px`,e.style.position="fixed",e.style.top=`calc(${d} + 1rem)`,e.style.left=`${t.left}px`,e.style.width=`${t.width}px`,e.style.height=o,e.style.maxHeight=o},c=()=>{if(!e||e.dataset.fixed==="true"||!a.matches)return;const t=parseFloat(getComputedStyle(e).top||"0"),o=e.offsetTop-t;if(Number.isNaN(t)||window.scrollY<o)return;const n=e.getBoundingClientRect().top;Math.abs(n-t)>2&&E()},R=()=>{if(!a.matches){p();return}e?.dataset.fixed==="true"&&E()};if(h.length>0){C();const t=e&&getComputedStyle(e).getPropertyValue("--toc-offset")||"96px",o=new IntersectionObserver(s=>{const m=s.filter(i=>i.isIntersecting).sort((i,l)=>i.target.getBoundingClientRect().top-l.target.getBoundingClientRect().top);if(m[0]){f(m[0].target.id);return}const y=s.filter(i=>i.boundingClientRect.top<0).sort((i,l)=>l.target.getBoundingClientRect().top-i.target.getBoundingClientRect().top);y[0]&&f(y[0].target.id)},{rootMargin:`-${t.trim()} 0% -55% 0%`,threshold:[0,.25,.5,1]});h.forEach(s=>o.observe(s));const n=v(location.hash||"");n&&requestAnimationFrame(()=>g(n,!0)),window.addEventListener("hashchange",()=>{const s=v(location.hash||"");s&&g(s,!0)})}p();a.matches&&c();a.addEventListener("change",()=>{p(),requestAnimationFrame(()=>{a.matches&&c()})});window.addEventListener("scroll",c,{passive:!0});window.addEventListener("resize",R);window.addEventListener("load",()=>{c(),C()},{once:!0});</script> </div> <div class="fixed inset-0 z-50 pointer-events-none data-[open=true]:pointer-events-auto lg:hidden" data-mobile-toc data-open="false" aria-hidden="true"><div class="absolute inset-0 bg-zinc-900/40 opacity-0 transition duration-200 data-[open=true]:opacity-100 dark:bg-black/50" data-mobile-toc-backdrop></div><div id="mobile-toc-drawer" role="dialog" aria-modal="true" aria-label="文章目录" class="absolute inset-x-0 bottom-0 translate-y-full rounded-t-2xl border border-zinc-200 bg-neutral-50/95 shadow-2xl ring-1 ring-black/5 transition duration-200 data-[open=true]:translate-y-0 dark:border-zinc-800 dark:bg-zinc-900/95 dark:ring-white/10" data-mobile-toc-drawer><div class="flex items-center justify-between gap-3 px-4 pt-4 pb-3"><div><p class="text-sm font-semibold text-zinc-900 dark:text-zinc-50">文章目录</p><p class="text-xs text-zinc-500 dark:text-zinc-400">点击条目可跳转</p></div><button type="button" class="rounded-full border border-zinc-200 bg-neutral-50 px-3 py-1 text-sm font-medium text-zinc-800 shadow-sm transition hover:text-sky-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:text-sky-400 dark:focus-visible:ring-offset-zinc-900" data-mobile-toc-close>
+关闭
+</button></div><div class="max-h-[60vh] overflow-y-auto px-4 pb-5" data-mobile-toc-scroll><ol class="space-y-3 text-sm"><li><a href="#一系统思维看到代码之外的系统" data-toc-link data-mobile-toc-link data-target="一系统思维看到代码之外的系统" title="一、系统思维：看到代码之外的系统¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>一、系统思维：看到代码之外的系统¶</span></a></li><li><a href="#二沟通意识代码也是协作产物" data-toc-link data-mobile-toc-link data-target="二沟通意识代码也是协作产物" title="二、沟通意识：代码也是协作产物¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>二、沟通意识：代码也是协作产物¶</span></a></li><li><a href="#三重构意识让代码随时间变得更好" data-toc-link data-mobile-toc-link data-target="三重构意识让代码随时间变得更好" title="三、重构意识：让代码随时间变得更好¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>三、重构意识：让代码随时间变得更好¶</span></a></li><li><a href="#四文档与知识共享让思考留痕" data-toc-link data-mobile-toc-link data-target="四文档与知识共享让思考留痕" title="四、文档与知识共享：让思考留痕¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>四、文档与知识共享：让思考留痕¶</span></a></li><li><a href="#五可扩展性为未来的演化留空间" data-toc-link data-mobile-toc-link data-target="五可扩展性为未来的演化留空间" title="五、可扩展性：为未来的演化留空间¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>五、可扩展性：为未来的演化留空间¶</span></a></li><li><a href="#六健壮性与可观察性让系统值得信赖" data-toc-link data-mobile-toc-link data-target="六健壮性与可观察性让系统值得信赖" title="六、健壮性与可观察性：让系统值得信赖¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>六、健壮性与可观察性：让系统值得信赖¶</span></a></li><li><a href="#总结" data-toc-link data-mobile-toc-link data-target="总结" title="总结¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>总结¶</span></a></li></ol></div></div></div><script type="module">const c=document.querySelector("[data-mobile-toc]"),s=document.querySelector("[data-mobile-toc-drawer]"),a=document.querySelector("[data-mobile-toc-backdrop]"),p=()=>Array.from(document.querySelectorAll("[data-mobile-toc-open]")),w=document.querySelector("[data-mobile-toc-close]"),f=()=>Array.from((s??c)?.querySelectorAll("[data-mobile-toc-link]")??[]),o=document.body,k=window.matchMedia("(prefers-reduced-motion: reduce)"),E=k.matches,g=96;let i=0;const v=e=>window.dispatchEvent(new CustomEvent("mobile-toc:toggle",{detail:{open:e}})),S=e=>{p().forEach(t=>t.setAttribute("aria-expanded",e?"true":"false"))},l=e=>{e.preventDefault(),r(!0)},y=()=>{p().forEach(e=>{e.removeEventListener("click",l),e.addEventListener("click",l)})},A=()=>{i=window.scrollY,o.style.position="fixed",o.style.width="100%",o.style.top=`-${i}px`},L=()=>{o.style.position="",o.style.width="",o.style.top="",window.scrollTo({top:i})},r=e=>{!c||!s||(c.dataset.open=String(e),s.dataset.open=String(e),a?.setAttribute("data-open",String(e)),c.setAttribute("aria-hidden",e?"false":"true"),S(e),v(e),e?A():L())},B=()=>{f().map(t=>document.getElementById(t.dataset.target||"")).filter(t=>!!t).forEach(t=>{t.style.scrollMarginTop=`${g+12}px`})},d=e=>`#${encodeURIComponent(e)}`,h=(e,t=!1)=>{const n=document.getElementById(e);if(!n)return;const b=window.scrollY+n.getBoundingClientRect().top-g-12;t?history.replaceState(null,"",d(e)):history.pushState(null,"",d(e)),window.scrollTo({top:b,behavior:E?"auto":"smooth"})};y();const T=new MutationObserver(y);T.observe(document.body,{subtree:!0,childList:!0,attributes:!0,attributeFilter:["data-mobile-toc-open"]});w?.addEventListener("click",()=>r(!1));a?.addEventListener("click",e=>{e.target===a&&r(!1)});const u=e=>{const n=e.currentTarget?.dataset.target;n&&(e.preventDefault(),e.stopPropagation(),r(!1),requestAnimationFrame(()=>requestAnimationFrame(()=>h(n))))};f().forEach(e=>{e.removeEventListener("click",u),e.addEventListener("click",u)});window.addEventListener("keydown",e=>{e.key==="Escape"&&r(!1)});B();const m=decodeURIComponent(location.hash.replace(/^#/,""));m&&requestAnimationFrame(()=>h(m,!0));</script> <div class="floating-action-stack fixed z-40 flex flex-col items-end gap-3 lg:hidden pointer-events-auto transition-opacity data-[toc-open=true]:opacity-0 data-[toc-open=true]:pointer-events-none" data-floating-action-stack data-target-selector="[data-article]" style="inset-inline-end: calc(env(safe-area-inset-right, 0px) + 1rem); inset-block-end: calc(env(safe-area-inset-bottom, 0px) + 1rem);"><button type="button" class="floating-action-stack__button h-11 w-11 rounded-full border border-gray-200 bg-white/90 text-gray-900 shadow-lg backdrop-blur-sm ring-offset-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 hover:-translate-y-0.5 hover:border-blue-200 hover:text-blue-600 data-[visible=false]:opacity-0 data-[visible=false]:pointer-events-none data-[visible=true]:opacity-100 data-[visible=true]:pointer-events-auto dark:border-gray-800 dark:bg-gray-900/85 dark:text-gray-100 dark:ring-offset-gray-900 dark:hover:border-blue-500/50 dark:hover:text-blue-300" data-floating-action-button data-action="top" data-visible="false" style="transition-delay: 0ms;" aria-label="返回文章顶部"><span class="sr-only">顶部</span><span aria-hidden="true" class="text-base">⬆️</span></button><button type="button" class="floating-action-stack__button h-11 w-11 rounded-full border border-gray-200 bg-white/90 text-gray-900 shadow-lg backdrop-blur-sm ring-offset-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 hover:-translate-y-0.5 hover:border-blue-200 hover:text-blue-600 data-[visible=false]:opacity-0 data-[visible=false]:pointer-events-none data-[visible=true]:opacity-100 data-[visible=true]:pointer-events-auto dark:border-gray-800 dark:bg-gray-900/85 dark:text-gray-100 dark:ring-offset-gray-900 dark:hover:border-blue-500/50 dark:hover:text-blue-300" data-floating-action-button data-action="toc" data-visible="true" style="transition-delay: 10ms;" aria-label="打开目录抽屉" data-mobile-toc-open="true"><span class="sr-only">目录</span><span aria-hidden="true" class="text-base">📑</span></button><button type="button" class="floating-action-stack__button h-11 w-11 rounded-full border border-gray-200 bg-white/90 text-gray-900 shadow-lg backdrop-blur-sm ring-offset-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 hover:-translate-y-0.5 hover:border-blue-200 hover:text-blue-600 data-[visible=false]:opacity-0 data-[visible=false]:pointer-events-none data-[visible=true]:opacity-100 data-[visible=true]:pointer-events-auto dark:border-gray-800 dark:bg-gray-900/85 dark:text-gray-100 dark:ring-offset-gray-900 dark:hover:border-blue-500/50 dark:hover:text-blue-300" data-floating-action-button data-action="bottom" data-visible="true" style="transition-delay: 20ms;" aria-label="跳转文章底部"><span class="sr-only">底部</span><span aria-hidden="true" class="text-base">⬇️</span></button></div><script type="module">const r=document.querySelector("[data-floating-action-stack]"),B=r?.dataset.targetSelector||"[data-article]",v=r?.querySelector('[data-action="top"]'),E=r?.querySelector('[data-action="bottom"]'),f=r?.querySelector('[data-action="toc"]'),M=window.matchMedia("(prefers-reduced-motion: reduce)"),l=M.matches,i=document.querySelector("[data-mobile-toc]"),c=document.querySelector(B);let s=0,y=0,d=!1;const R=()=>{if(!c)return window;let t=c.parentElement;for(;t;){const o=window.getComputedStyle(t).overflowY;if((o==="auto"||o==="scroll")&&t.scrollHeight>t.clientHeight)return t;t=t.parentElement}return window},n=R(),a=()=>{if(!c)return;s=c.getBoundingClientRect().top+window.scrollY,y=c.scrollHeight},x=(t,e,o)=>Math.min(Math.max(t,e),o),p=(t,e)=>{t&&(t.dataset.visible=e?"true":"false")},u=()=>{if(!c)return;const t=120,e=y>window.innerHeight+40,o=window.scrollY>s+t;p(v,o),p(E,e),d=!1},S=()=>{d||(d=!0,requestAnimationFrame(u))},C=()=>{const t=x(s,0,Number.MAX_SAFE_INTEGER);window.scrollTo({top:t,behavior:l?"auto":"smooth"})},k=()=>{const t=document.getElementById("page-bottom-anchor");if(t){const e=t.getBoundingClientRect(),w=window.scrollY+e.bottom-window.innerHeight;window.scrollTo({top:Math.max(0,w),behavior:l?"auto":"smooth"});let h=0;const T=2,g=()=>{h>=T||(h++,setTimeout(()=>{const b=n instanceof Window?document.documentElement:n,H=n instanceof Window?window.scrollY:n.scrollTop;if(b.scrollHeight-b.clientHeight-H>10){const Y=t.getBoundingClientRect(),q=window.scrollY+Y.bottom-window.innerHeight;window.scrollTo({top:Math.max(0,q),behavior:l?"auto":"smooth"}),g()}},400))};g()}else{const e=n instanceof Window?document.documentElement:n,o=Math.max(e.scrollHeight-e.clientHeight,s);n instanceof Window?window.scrollTo({top:o,behavior:l?"auto":"smooth"}):n.scrollTo({top:o,behavior:l?"auto":"smooth"})}},m=t=>{r&&(r.dataset.tocOpen=t?"true":"false")};m(i?.dataset.open==="true");r&&c&&(a(),u(),window.addEventListener("scroll",S,{passive:!0}),window.addEventListener("resize",()=>{a(),S()}),window.addEventListener("load",()=>{a(),u()},{once:!0}),v?.addEventListener("click",C),E?.addEventListener("click",k));f?.addEventListener("click",()=>{requestAnimationFrame(()=>f?.blur())});window.addEventListener("mobile-toc:toggle",t=>{const e=t.detail;e&&m(e.open)});i&&new MutationObserver(()=>{m(i.dataset.open==="true")}).observe(i,{attributes:!0,attributeFilter:["data-open"]});</script> </main> <footer class="py-8 mt-auto border-t border-zinc-200 dark:border-zinc-800"> <div class="container mx-auto px-4 text-center text-zinc-500 max-w-4xl">
+&copy; 2026 Yuanle Liu. All rights reserved. </div> </footer>  <script type="module">const i=new WeakMap,c=(e,t)=>{e.dataset.state=t,t==="copied"?e.textContent="Copied":t==="error"?e.textContent="Failed":e.textContent="Copy";const o=i.get(e);if(o&&window.clearTimeout(o),t!=="idle"){const r=window.setTimeout(()=>c(e,"idle"),2e3);i.set(e,r)}},n=async e=>{const t=e.closest(".code-block");if(!t)return;const o=t.getAttribute("data-raw-code")??"";try{await navigator.clipboard.writeText(o),c(e,"copied")}catch(r){console.error("Copy failed",r),c(e,"error")}},s=()=>{document.addEventListener("click",e=>{const o=e.target?.closest("button.code-block__copy");o&&(e.preventDefault(),n(o))})},a=()=>{typeof document>"u"||s()};a();</script> </body> </html>
