@@ -1,0 +1,1460 @@
+<!DOCTYPE html><html lang="en" data-astro-cid-sckkx6r4> <head><script>(() => {
+  const storageKey = 'theme';
+  const className = 'dark';
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  const validThemes = ['light', 'dark'];
+  let currentPreference = (() => {
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored && validThemes.includes(stored)) return stored;
+    } catch (error) {
+      console.warn('Unable to access localStorage for theme:', error);
+    }
+    return mediaQuery.matches ? 'dark' : 'light';
+  })();
+
+  const resolveTheme = (preference) => (preference === 'dark' ? 'dark' : 'light');
+
+  const applyTheme = (preference) => {
+    const effectiveTheme = resolveTheme(preference);
+    document.documentElement.classList.toggle(className, effectiveTheme === 'dark');
+    document.documentElement.dataset.theme = effectiveTheme;
+    return effectiveTheme;
+  };
+
+  const dispatchChange = (preference) => {
+    const resolved = document.documentElement.classList.contains(className) ? 'dark' : 'light';
+    window.dispatchEvent(
+      new CustomEvent('themechange', {
+        detail: { theme: preference, resolved },
+      }),
+    );
+  };
+
+  applyTheme(currentPreference);
+
+  window.__setTheme = (next) => {
+    const preference = validThemes.includes(String(next)) ? String(next) : resolveTheme(currentPreference);
+    currentPreference = preference;
+    try {
+      localStorage.setItem(storageKey, preference);
+    } catch (error) {
+      console.warn('Unable to persist theme selection:', error);
+    }
+    applyTheme(preference);
+    dispatchChange(preference);
+  };
+})();</script><meta charset="UTF-8"><meta name="description" content="A minimal Astro blog"><meta name="viewport" content="width=device-width"><link rel="icon" type="image/x-icon" href="/blog-preview/previews/pr-286/favicon.ico"><link rel="icon" type="image/png" sizes="32x32" href="/blog-preview/previews/pr-286/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/blog-preview/previews/pr-286/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/blog-preview/previews/pr-286/apple-touch-icon.png"><meta name="generator" content="Astro v5.16.6"><link rel="canonical" href="https://yuanlehome.github.io/blog-preview/previews/pr-286/inside-vllm-anatomy-of-a-high-throughput-llm-inference-system/"><meta property="og:title" content="Inside vLLM: Anatomy of a High-Throughput LLM Inference System"><meta property="og:description" content="A minimal Astro blog"><meta property="og:image" content="/blog-preview/previews/pr-286/images/others/inside-vllm-anatomy-of-a-high-throughput-llm-inference-system/001-f5b11a75.png"><meta property="og:type" content="article"><meta property="og:url" content="https://yuanlehome.github.io/blog-preview/previews/pr-286/inside-vllm-anatomy-of-a-high-throughput-llm-inference-system/"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Inside vLLM: Anatomy of a High-Throughput LLM Inference System"><meta name="twitter:description" content="A minimal Astro blog"><meta name="twitter:image" content="/blog-preview/previews/pr-286/images/others/inside-vllm-anatomy-of-a-high-throughput-llm-inference-system/001-f5b11a75.png"><title>Inside vLLM: Anatomy of a High-Throughput LLM Inference System</title><style>:root {
+  /* Typography */
+  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial, Noto Sans SC, PingFang SC, Microsoft YaHei, sans-serif;
+  --font-serif: ui-serif, Georgia, Cambria, Times New Roman, Times, serif;
+  --font-mono: JetBrains Mono, Fira Code, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  --font-size-4xl: 2.25rem;
+  --line-height-body: 1.75;
+  --line-height-heading: 1.3;
+  --line-height-code: 1.65;
+  --line-height-tight: 1.25;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Components */
+  --radius-sm: 0.35rem;
+  --radius-md: 0.65rem;
+  --radius-lg: 0.9rem;
+  --radius-xl: 0.75rem;
+  --shadow-card: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-code-block: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-header: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --border-style: solid;
+  --border-width: 1px;
+  --motion-duration: 160ms;
+  --motion-easing: ease;
+  --spacing-multiplier: 1;
+
+  /* Light Mode Colors */
+  --color-brand: #0284c7;
+  --color-accent: #0284c7;
+  --color-background: #fafafa;
+  --color-foreground: #18181b;
+  --color-muted: #71717a;
+  --color-border: #e4e4e7;
+  --color-card: #f4f4f5;
+  --color-code-background: #f4f4f5;
+  --color-code-foreground: #18181b;
+  --color-code-border: #e4e4e7;
+  --color-code-keyword: #0284c7;
+  --color-code-string: #059669;
+  --color-code-comment: #a1a1aa;
+  --color-code-function: #0284c7;
+
+  /* Code block specific (legacy support) */
+  --code-font: var(--font-mono);
+  --code-radius: 0.9rem;
+  --code-border: 1px solid var(--color-code-border);
+  --code-bg: var(--color-code-background);
+  --code-fg: var(--color-code-foreground);
+  --code-scrollbar: rgb(203 213 225 / 0.75);
+  --code-highlight-bg: rgb(59 130 246 / 0.12);
+  --code-highlight-accent: rgb(59 130 246);
+
+  /* Header specific (legacy support) */
+  --header-bg: rgb(248 250 252 / 0.92);
+  --header-bg-scrolled: rgb(248 250 252 / 0.98);
+  --header-border: rgb(226 232 240 / 0.9);
+  --header-shadow: var(--shadow-header);
+  --header-shadow-strong: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+.dark {
+  /* Dark Mode Colors */
+  --color-brand: #38bdf8;
+  --color-accent: #38bdf8;
+  --color-background: #18181b;
+  --color-foreground: #fafafa;
+  --color-muted: #a1a1aa;
+  --color-border: #3f3f46;
+  --color-card: #27272a;
+  --color-code-background: #1f1f23;
+  --color-code-foreground: #e4e4e7;
+  --color-code-border: #3f3f46;
+  --color-code-keyword: #38bdf8;
+  --color-code-string: #34d399;
+  --color-code-comment: #71717a;
+  --color-code-function: #38bdf8;
+
+  /* Dark mode shadows */
+  --shadow-card: 0 10px 30px rgb(0 0 0 / 0.28);
+  --shadow-code-block: 0 10px 30px rgb(0 0 0 / 0.28);
+  --shadow-header: 0 10px 30px rgb(0 0 0 / 0.28);
+
+  /* Code block specific (legacy support) */
+  --code-border: 1px solid var(--color-code-border);
+  --code-bg: var(--color-code-background);
+  --code-fg: var(--color-code-foreground);
+  --code-scrollbar: rgb(71 85 105 / 0.8);
+  --code-highlight-bg: rgb(59 130 246 / 0.2);
+  --code-highlight-accent: rgb(96 165 250);
+
+  /* Header specific (legacy support) */
+  --header-bg: rgb(15 23 42 / 0.72);
+  --header-bg-scrolled: rgb(15 23 42 / 0.8400000000000001);
+  --header-border: rgb(71 85 105 / 0.8);
+  --header-shadow: var(--shadow-header);
+  --header-shadow-strong: 0 20px 40px rgb(0 0 0 / 0.35);
+}
+</style><link rel="stylesheet" href="/blog-preview/previews/pr-286/_astro/_slug_.Dib4KVQb.css">
+<style>.reading-progress[data-astro-cid-mu6cnre2]{position:fixed;inset:0 0 auto;height:3px;width:100%;background:transparent;z-index:50;pointer-events:none}.reading-progress__bar[data-astro-cid-mu6cnre2]{display:block;height:100%;width:100%;transform:scaleX(var(--progress-value, 0));transform-origin:left center;background:linear-gradient(90deg,var(--progress-color-start),var(--progress-color-end));transition:transform .1s linear}:root{--progress-color-start: #2563eb;--progress-color-end: #22d3ee}:root.dark{--progress-color-start: #38bdf8;--progress-color-end: #a855f7}@media(prefers-reduced-motion:reduce){.reading-progress__bar[data-astro-cid-mu6cnre2]{transition:none}}.reading-progress__controls[data-astro-cid-mu6cnre2]{position:fixed;inset:auto 1rem 1.5rem auto;display:flex;flex-direction:column;gap:.5rem;z-index:60;pointer-events:none}.reading-progress__control[data-astro-cid-mu6cnre2]{pointer-events:auto;border:1px solid var(--progress-control-border);background:var(--progress-control-bg);color:var(--progress-control-text);border-radius:9999px;padding:.5rem .75rem;font-size:.875rem;line-height:1.25rem;box-shadow:0 4px 12px #0000001f;transition:transform .15s ease,box-shadow .15s ease,background-color .15s ease}.reading-progress__control[data-astro-cid-mu6cnre2]:hover,.reading-progress__control[data-astro-cid-mu6cnre2]:focus-visible{transform:translateY(-2px);box-shadow:0 8px 20px #0000002e;outline:none}:root{--progress-control-bg: #ffffff;--progress-control-border: rgba(0, 0, 0, .08);--progress-control-text: #0f172a}:root.dark{--progress-control-bg: #0f172a;--progress-control-border: rgba(255, 255, 255, .08);--progress-control-text: #e2e8f0}@media(max-width:640px){.reading-progress__controls[data-astro-cid-mu6cnre2]{inset:auto .75rem 1rem auto}.reading-progress__control[data-astro-cid-mu6cnre2]{padding:.45rem .65rem;font-size:.8125rem}}@media(max-width:1023px){.reading-progress__controls[data-astro-cid-mu6cnre2]{display:none}}
+</style></head> <body class="bg-neutral-50 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 transition-colors duration-300 min-h-screen flex flex-col" data-astro-cid-sckkx6r4>  <div class="reading-progress" data-reading-progress data-target-selector="[data-article]" data-astro-cid-mu6cnre2> <span class="reading-progress__bar" data-reading-progress-bar data-astro-cid-mu6cnre2></span> </div> <div class="reading-progress__controls" data-reading-progress-controls hidden data-astro-cid-mu6cnre2> <button type="button" class="reading-progress__control" data-scroll-top aria-label="返回文章顶部" data-astro-cid-mu6cnre2>
+⬆️ 顶部
+</button> <button type="button" class="reading-progress__control" data-scroll-bottom aria-label="跳转文章底部" data-astro-cid-mu6cnre2>
+⬇️ 底部
+</button> </div>  <script type="module">const a=document.querySelector("[data-reading-progress]"),p=a?.dataset?.targetSelector||"[data-article]",w=a?.querySelector("[data-reading-progress-bar]"),l=document.querySelector(p),r=document.querySelector("[data-reading-progress-controls]"),h=r?.querySelector("[data-scroll-top]"),v=r?.querySelector("[data-scroll-bottom]");if(a&&w&&l){let e=0,s=0,n=!1;const m=(t,o,c)=>Math.min(Math.max(t,o),c),i=()=>{e=l.getBoundingClientRect().top+window.scrollY,s=l.scrollHeight},d=()=>{const t=Math.max(s-window.innerHeight,1),o=m((window.scrollY-e)/t,0,1);w.style.setProperty("--progress-value",o.toString()),n=!1},u=()=>{n||(n=!0,requestAnimationFrame(d))},g=()=>{i(),u()};if(i(),d(),window.addEventListener("scroll",u,{passive:!0}),window.addEventListener("resize",g),window.addEventListener("load",g,{once:!0}),r){r.hidden=!1;const t=()=>{window.scrollTo({top:e,behavior:"smooth"})},o=()=>{const c=Math.max(e+s-window.innerHeight,e);window.scrollTo({top:c,behavior:"smooth"})};h?.addEventListener("click",t),v?.addEventListener("click",o)}}</script> <header class="site-header header-variant-frosted" data-header> <div class="container mx-auto px-5 py-3 sm:py-4 flex justify-between items-start max-w-5xl"> <a href="/blog-preview/previews/pr-286/" class="text-xl font-bold hover:text-sky-600 dark:hover:text-sky-400 flex items-center gap-2"> <img src="/blog-preview/previews/pr-286/placeholder-social.jpg" alt="Yuanle Liu" width="32" height="32" class="h-8 w-8 rounded"> Yuanle Liu </a> <nav class="flex items-start gap-3 items-center"> <a href="/blog-preview/previews/pr-286/" class="hover:underline inline-flex items-center "> Home </a><a href="/blog-preview/previews/pr-286/archive/" class="hover:underline inline-flex items-center "> Archive </a><a href="/blog-preview/previews/pr-286/tags/" class="hover:underline inline-flex items-center "> Tags </a><a href="/blog-preview/previews/pr-286/about/" class="hover:underline inline-flex items-center "> About </a> <button id="theme-toggle" class="inline-flex items-center gap-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 px-1" aria-label="Toggle theme"> 🖥️ ☀️ </button> </nav> </div> </header> <script type="module">const i="theme",c=["light","dark"],d=()=>{try{const e=localStorage.getItem(i);if(e==="light"||e==="dark")return e}catch(e){console.warn("Unable to read theme preference:",e)}return window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"},g=()=>document.documentElement.classList.contains("dark")?"dark":"light",u=e=>e==="dark"?"🌙":"☀️",w=e=>e==="dark"?"Dark":"Light",a=(e,t)=>{const n=document.getElementById("theme-toggle");if(!n)return;const o=t??g(),h=u(o),l=w(o);n.dataset.theme=e,n.textContent="";const r=document.createElement("span");r.className="inline-flex items-center justify-center",r.style.lineHeight="1",r.textContent=h,n.appendChild(r),n.appendChild(document.createTextNode(" "+l)),n.setAttribute("aria-label",`Toggle theme (current: ${l})`)},k=e=>{if(typeof window.__setTheme=="function"){window.__setTheme?.(e);return}const t=e==="dark"?"dark":"light";document.documentElement.classList.toggle("dark",t==="dark");try{localStorage.setItem(i,e)}catch(n){console.warn("Unable to persist theme preference:",n)}window.dispatchEvent(new CustomEvent("themechange",{detail:{theme:e,resolved:t}}))},p=()=>{const e=d(),t=c[(c.indexOf(e)+1)%c.length];k(t),a(t)},s=document.querySelector("[data-header]"),f=window.matchMedia("(prefers-reduced-motion: reduce)").matches,m=()=>{if(!s)return;const e=window.scrollY>6;s.classList.toggle("is-scrolled",e)};document.getElementById("theme-toggle")?.addEventListener("click",p);a(d());window.addEventListener("themechange",e=>{const t=e.detail,n=t?.theme??d(),o=t?.resolved;a(n,o)});m();const v=()=>m();window.addEventListener("scroll",v,{passive:!0});f&&s?.classList.add("reduce-motion");</script> <main class="container mx-auto px-4 py-8 max-w-6xl"> <div class="flex flex-col gap-6 lg:grid lg:items-start lg:gap-12 lg:grid-cols-[minmax(0,1fr)_18rem]" data-post-layout> <article class="prose dark:prose-invert max-w-none prose-img:rounded-xl min-w-0" data-article> <header class="mb-8 not-prose"> <div class="flex flex-col gap-6 md:grid md:grid-cols-[minmax(0,1fr)_220px] md:items-start md:gap-8"> <div class="flex flex-col gap-4 md:h-full"> <h1 class="text-3xl md:text-4xl font-bold leading-tight text-left"> Inside vLLM: Anatomy of a High-Throughput LLM Inference System </h1> <div class="text-zinc-500 text-sm flex items-start justify-start gap-3 flex-wrap md:mt-auto"> <time class="flex items-center gap-1" datetime="2025-12-29T00:00:00.000Z" title="发布于 2025-12-29"> <span aria-hidden="true">📅</span> <span>
+发布于 <span class="font-medium">2025-12-29</span> </span> </time>   <div class="flex items-center gap-1"> <span aria-hidden="true">✍️</span> 12857 字
+</div> <div class="flex items-center gap-1" title="12857 words"> <span aria-hidden="true">⏱️</span> 29 min read </div> </div> <div class="flex flex-wrap gap-2 items-center" data-testid="post-tags"> <span class="text-zinc-500 text-sm flex items-center gap-1"> <span aria-hidden="true">🏷️</span> <span>标签：</span> </span> <a href="/blog-preview/previews/pr-286/tags/source-code-analysis/" class="tag-chip inline-flex items-center gap-1.5 rounded-full border transition-colors duration-200 font-medium cursor-pointer text-xs px-2 py-1 
+    border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 
+    dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 dark:hover:border-sky-700
+    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-tag-slug="source-code-analysis" data-testid="tag-source-code-analysis"> <span class="tag-name pointer-events-none">Source Code Analysis</span>  </a><a href="/blog-preview/previews/pr-286/tags/architecture-design/" class="tag-chip inline-flex items-center gap-1.5 rounded-full border transition-colors duration-200 font-medium cursor-pointer text-xs px-2 py-1 
+    border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 
+    dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 dark:hover:border-sky-700
+    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-tag-slug="architecture-design" data-testid="tag-architecture-design"> <span class="tag-name pointer-events-none">Architecture Design</span>  </a> </div> </div> <figure class="hidden md:block md:justify-self-end overflow-hidden rounded-xl border border-zinc-200/80 shadow-md dark:border-zinc-800/80 w-full max-w-[320px] md:max-w-[220px] md:min-w-[160px]" data-post-cover> <img src="/blog-preview/previews/pr-286/images/others/inside-vllm-anatomy-of-a-high-throughput-llm-inference-system/001-f5b11a75.png" alt="Inside vLLM: Anatomy of a High-Throughput LLM Inference System" class="aspect-[4/3] w-full object-cover transition duration-200" loading="eager" decoding="async"> </figure> <div class="w-full rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 dark:border-sky-900 dark:bg-sky-950 md:col-span-2"> <p class="text-sm text-zinc-700 dark:text-zinc-300 break-words"> <span class="font-semibold">📝 转载 / 引用来源：</span> <span>
+作者 <span class="font-medium">www.aleksagordic.com</span> ·  </span> <a href="https://www.aleksagordic.com/blog/vllm" target="_blank" rel="noopener noreferrer" class="text-sky-600 underline hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300">
+查看原文
+</a> </p> </div> </div> </header> <h1 id="深入-vllm剖析一个高吞吐量-llm-推理系统">深入 vLLM：剖析一个高吞吐量 LLM 推理系统<a href="#深入-vllm剖析一个高吞吐量-llm-推理系统" class="heading-anchor" aria-label="Link to 深入 vLLM：剖析一个高吞吐量 LLM 推理系统">¶</a></h1>
+<p><strong>从分页注意力（paged attention）、连续批处理（continuous batching）、前缀缓存（prefix caching）、推测解码（specdec）等，到多 GPU、多节点的动态大规模服务</strong></p>
+<p>在这篇文章中，我将逐步介绍构成现代高吞吐量 LLM 推理系统的所有核心系统组件和高级功能。特别是，我将详细剖析 vLLM <a href="#ref-1">[1]</a> 的工作原理。</p>
+<p>这是系列文章的第一篇。它从宏观开始，然后层层深入细节（采用倒金字塔方法），以便您能形成对整个系统准确的高层次心智模型，而不会淹没在细枝末节中。</p>
+<p>后续文章将深入探讨特定子系统。</p>
+<p>本文分为五个部分：</p>
+<ol>
+<li><a href="#llm-%E5%BC%95%E6%93%8E%E4%B8%8E%E5%BC%95%E6%93%8E%E6%A0%B8%E5%BF%83">LLM 引擎与引擎核心</a>：vLLM 的基础（调度、分页注意力（paged attention）、连续批处理（continuous batching）等）</li>
+<li><a href="#%E9%AB%98%E7%BA%A7%E5%8A%9F%E8%83%BD--%E6%89%A9%E5%B1%95%E6%A0%B8%E5%BF%83%E5%BC%95%E6%93%8E%E9%80%BB%E8%BE%91">高级功能</a>：分块预填充（chunked prefill）、前缀缓存（prefix caching）、引导与推测解码（guided &#x26; speculative decoding）、解耦的 P/D（disaggregated P/D）</li>
+<li><a href="#%E4%BB%8Euniprocexecutor%E5%88%B0multiprocexecutor">扩展规模</a>：从单 GPU 到多 GPU 执行</li>
+<li><a href="#%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F%E6%9C%8D%E5%8A%A1vllm">服务层</a>：分布式 / 并发网络框架</li>
+<li><a href="#%E5%9F%BA%E5%87%86%E6%B5%8B%E8%AF%95%E5%92%8C%E8%87%AA%E5%8A%A8%E8%B0%83%E4%BC%98---%E5%BB%B6%E8%BF%9F%E4%B8%8E%E5%90%9E%E5%90%90%E9%87%8F">基准测试与自动调优</a>：测量延迟和吞吐量</li>
+</ol>
+<p>📝笔记</p>
+<ul>
+<li>分析基于 <a href="https://github.com/vllm-project/vllm/tree/42172ad" target="_blank" rel="noopener noreferrer">commit 42172ad</a>（2025年8月9日）。</li>
+<li>目标受众：任何对最先进 LLM 引擎工作原理感到好奇的人，以及有兴趣为 vLLM、SGLang 等做出贡献的人。</li>
+<li>我将专注于 <a href="https://docs.vllm.ai/en/latest/usage/v1_guide.html" target="_blank" rel="noopener noreferrer">V1 引擎</a>。我还探索了 V0（<a href="https://github.com/vllm-project/vllm/issues/18571" target="_blank" rel="noopener noreferrer">现已弃用</a>），这对于理解项目如何演变很有价值，许多概念仍然适用。</li>
+<li>关于 LLM 引擎/引擎核心的第一部分可能有点令人不知所措/枯燥——但博客的其余部分有很多示例和视觉效果。 :)</li>
+</ul>
+<h2 id="llm-引擎与引擎核心">LLM 引擎与引擎核心<a href="#llm-引擎与引擎核心" class="heading-anchor" aria-label="Link to LLM 引擎与引擎核心">¶</a></h2>
+<p>LLM 引擎是 vLLM 的基本构建块。仅凭它本身，它已经能够实现高吞吐量推理——但仅限于离线设置。您还不能通过网络将其服务提供给客户。</p>
+<p>我们将使用以下离线推理代码片段作为我们的运行示例（改编自 <a href="https://github.com/vllm-project/vllm/blob/main/examples/offline_inference/basic/basic.py" target="_blank" rel="noopener noreferrer">basic.py</a>）。</p>
+<figure class="code-block not-prose" data-language="python" data-raw-code="from vllm import LLM, SamplingParams
+
+prompts = [
+    &#x22;Hello, my name is&#x22;,
+    &#x22;The president of the United States is&#x22;,
+]
+
+sampling_params = SamplingParams(temperature=0.8, top_p=0.95)
+
+def main():
+    llm = LLM(model=&#x22;TinyLlama/TinyLlama-1.1B-Chat-v1.0&#x22;)
+
+    outputs = llm.generate(prompts, sampling_params)
+
+if __name__ == &#x22;__main__&#x22;:
+    main()" data-line-numbers="true"><div class="code-block__header"><div class="code-block__title">python</div><button type="button" class="code-block__copy" aria-label="复制代码">Copy</button></div><pre class="code-block__pre" tabindex="0" data-theme="light" data-language="python"><code data-language="python"><span class="line" data-line-number="1"><span style="color:#D73A49">from</span><span style="color:#24292E"> vllm </span><span style="color:#D73A49">import</span><span style="color:#005CC5"> LLM</span><span style="color:#24292E">, SamplingParams</span></span>
+<span class="line" data-line-number="2"> </span>
+<span class="line" data-line-number="3"><span style="color:#24292E">prompts </span><span style="color:#D73A49">=</span><span style="color:#24292E"> [</span></span>
+<span class="line" data-line-number="4"><span style="color:#032F62">    "Hello, my name is"</span><span style="color:#24292E">,</span></span>
+<span class="line" data-line-number="5"><span style="color:#032F62">    "The president of the United States is"</span><span style="color:#24292E">,</span></span>
+<span class="line" data-line-number="6"><span style="color:#24292E">]</span></span>
+<span class="line" data-line-number="7"> </span>
+<span class="line" data-line-number="8"><span style="color:#24292E">sampling_params </span><span style="color:#D73A49">=</span><span style="color:#24292E"> SamplingParams(</span><span style="color:#E36209">temperature</span><span style="color:#D73A49">=</span><span style="color:#005CC5">0.8</span><span style="color:#24292E">, </span><span style="color:#E36209">top_p</span><span style="color:#D73A49">=</span><span style="color:#005CC5">0.95</span><span style="color:#24292E">)</span></span>
+<span class="line" data-line-number="9"> </span>
+<span class="line" data-line-number="10"><span style="color:#D73A49">def</span><span style="color:#6F42C1"> main</span><span style="color:#24292E">():</span></span>
+<span class="line" data-line-number="11"><span style="color:#24292E">    llm </span><span style="color:#D73A49">=</span><span style="color:#24292E"> LLM(</span><span style="color:#E36209">model</span><span style="color:#D73A49">=</span><span style="color:#032F62">"TinyLlama/TinyLlama-1.1B-Chat-v1.0"</span><span style="color:#24292E">)</span></span>
+<span class="line" data-line-number="12"> </span>
+<span class="line" data-line-number="13"><span style="color:#24292E">    outputs </span><span style="color:#D73A49">=</span><span style="color:#24292E"> llm.generate(prompts, sampling_params)</span></span>
+<span class="line" data-line-number="14"> </span>
+<span class="line" data-line-number="15"><span style="color:#D73A49">if</span><span style="color:#005CC5"> __name__</span><span style="color:#D73A49"> ==</span><span style="color:#032F62"> "__main__"</span><span style="color:#24292E">:</span></span>
+<span class="line" data-line-number="16"><span style="color:#24292E">    main()</span></span></code></pre><pre class="code-block__pre" tabindex="0" data-theme="dark" data-language="python"><code data-language="python"><span class="line" data-line-number="1"><span style="color:#C586C0">from</span><span style="color:#D4D4D4"> vllm </span><span style="color:#C586C0">import</span><span style="color:#D4D4D4"> LLM, SamplingParams</span></span>
+<span class="line" data-line-number="2"> </span>
+<span class="line" data-line-number="3"><span style="color:#D4D4D4">prompts = [</span></span>
+<span class="line" data-line-number="4"><span style="color:#CE9178">    "Hello, my name is"</span><span style="color:#D4D4D4">,</span></span>
+<span class="line" data-line-number="5"><span style="color:#CE9178">    "The president of the United States is"</span><span style="color:#D4D4D4">,</span></span>
+<span class="line" data-line-number="6"><span style="color:#D4D4D4">]</span></span>
+<span class="line" data-line-number="7"> </span>
+<span class="line" data-line-number="8"><span style="color:#D4D4D4">sampling_params = SamplingParams(</span><span style="color:#9CDCFE">temperature</span><span style="color:#D4D4D4">=</span><span style="color:#B5CEA8">0.8</span><span style="color:#D4D4D4">, </span><span style="color:#9CDCFE">top_p</span><span style="color:#D4D4D4">=</span><span style="color:#B5CEA8">0.95</span><span style="color:#D4D4D4">)</span></span>
+<span class="line" data-line-number="9"> </span>
+<span class="line" data-line-number="10"><span style="color:#569CD6">def</span><span style="color:#DCDCAA"> main</span><span style="color:#D4D4D4">():</span></span>
+<span class="line" data-line-number="11"><span style="color:#D4D4D4">    llm = LLM(</span><span style="color:#9CDCFE">model</span><span style="color:#D4D4D4">=</span><span style="color:#CE9178">"TinyLlama/TinyLlama-1.1B-Chat-v1.0"</span><span style="color:#D4D4D4">)</span></span>
+<span class="line" data-line-number="12"> </span>
+<span class="line" data-line-number="13"><span style="color:#D4D4D4">    outputs = llm.generate(prompts, sampling_params)</span></span>
+<span class="line" data-line-number="14"> </span>
+<span class="line" data-line-number="15"><span style="color:#C586C0">if</span><span style="color:#9CDCFE"> __name__</span><span style="color:#D4D4D4"> == </span><span style="color:#CE9178">"__main__"</span><span style="color:#D4D4D4">:</span></span>
+<span class="line" data-line-number="16"><span style="color:#D4D4D4">    main()</span></span></code></pre></figure>
+<p>📝环境变量：</p>
+<ul>
+<li>VLLM_USE_V1=“1” # 我们正在使用引擎 V1</li>
+<li>VLLM_ENABLE_V1_MULTIPROCESSING=“0” # 我们在单个进程中运行</li>
+</ul>
+<p>此配置为：</p>
+<ul>
+<li>离线（无网络/分布式系统框架）</li>
+<li>同步（所有执行都在单个阻塞进程中发生）</li>
+<li>单 GPU（无数据/模型/流水线/专家并行；DP/TP/PP/EP = 1）</li>
+<li>使用标准 Transformer <a href="#ref-2">[2]</a>（支持像 Jamba 这样的混合模型需要更复杂的混合 KV 缓存内存分配器）</li>
+</ul>
+<p>从这里开始，我们将逐步构建一个在线、异步、多 GPU、多节点的推理系统——但仍然服务一个标准 Transformer。</p>
+<p>在这个例子中，我们做两件事：</p>
+<ol>
+<li>实例化一个引擎</li>
+<li>调用 <code>generate</code> 来从给定的提示中采样</li>
+</ol>
+<p>让我们开始分析构造函数。</p>
+<h2 id="llm-引擎构造函数">LLM 引擎构造函数<a href="#llm-引擎构造函数" class="heading-anchor" aria-label="Link to LLM 引擎构造函数">¶</a></h2>
+<p>引擎的主要组件包括：</p>
+<ul>
+<li>vLLM 配置（包含所有用于配置模型、缓存、并行性等的旋钮）</li>
+<li>处理器（将原始输入转换为 <code>EngineCoreRequests</code>，通过验证、分词和处理）</li>
+<li>引擎核心客户端（在我们的运行示例中，我们使用 <code>InprocClient</code>，这基本上等于 <code>EngineCore</code>；我们将逐步构建到 <code>DPLBAsyncMPClient</code>，它允许大规模服务）</li>
+<li>输出处理器（将原始 <code>EngineCoreOutputs</code> 转换为用户看到的 <code>RequestOutput</code>）</li>
+</ul>
+<p>📝注意：</p>
+<p>随着 V0 引擎被弃用，类名和细节可能会变化。我将强调核心思想而非确切的签名。我会抽象掉一些但不是所有这些细节。</p>
+<p>引擎核心本身由几个子组件组成：</p>
+<ul>
+<li>
+<p>模型执行器（驱动模型的前向传递，我们目前处理的是 <code>UniProcExecutor</code>，它在单个 GPU 上有一个 <code>Worker</code> 进程）。我们将逐步构建到 <code>MultiProcExecutor</code>，它支持多个 GPU</p>
+</li>
+<li>
+<p>结构化输出管理器（用于引导解码——我们稍后会介绍）</p>
+</li>
+<li>
+<p>调度器（决定哪些请求进入下一个引擎步骤）——它进一步包含：</p>
+<ol>
+<li>策略设置——可以是 <strong>FCFS</strong>（先到先服务）或 <strong>priority</strong>（优先级较高的请求优先服务）</li>
+<li><code>waiting</code> 和 <code>running</code> 队列</li>
+<li>KV 缓存管理器——分页注意力（paged attention）的核心 <a href="#ref-3">[3]</a></li>
+</ol>
+</li>
+</ul>
+<p>KV 缓存管理器维护一个 <code>free_block_queue</code>——一个可用的 KV 缓存块池（通常数量在数十万级别，取决于 VRAM 大小和块大小）。在分页注意力（paged attention）期间，这些块作为索引结构，将令牌映射到它们计算的 KV 缓存块。</p>
+<p><img src="/blog-preview/previews/pr-286/images/others/inside-vllm-anatomy-of-a-high-throughput-llm-inference-system/001-f5b11a75.png" alt="LLM 引擎构造函数"></p>
+<p>本节描述的核心组件及其关系</p>
+<p>标准 Transformer 层（非 MLA <a href="#ref-4">[4]</a>）的块大小计算如下：<br>
+2（键/值） * <code>block_size</code>（默认=16） * <code>num_kv_heads</code> * <code>head_size</code> * <code>dtype_num_bytes</code>（例如，bf16 为 2）</p>
+<p>在模型执行器构造期间，创建一个 <code>Worker</code> 对象，并执行三个关键过程。（稍后，使用 <code>MultiProcExecutor</code> 时，这些相同的过程在不同 GPU 上的每个工作进程中独立运行。）</p>
+<ol>
+<li>
+<p>初始化设备：</p>
+<ul>
+<li>分配一个 CUDA 设备（例如 “cuda:0”）给工作进程，并检查模型数据类型是否受支持（例如 bf16）</li>
+<li>验证是否有足够的 VRAM，给定请求的 <code>gpu_memory_utilization</code>（例如 0.8 → 总 VRAM 的 80%）</li>
+<li>设置分布式设置（DP / TP / PP / EP 等）</li>
+<li>实例化一个 <code>model_runner</code>（持有采样器、KV 缓存和前向传递缓冲区，如 <code>input_ids</code>、<code>positions</code> 等）</li>
+<li>实例化一个 <code>InputBatch</code> 对象（持有 CPU 端前向传递缓冲区、KV 缓存索引的块表、采样元数据等）</li>
+</ul>
+</li>
+<li>
+<p>加载模型：</p>
+<ul>
+<li>实例化模型架构</li>
+<li>加载模型权重</li>
+<li>调用 model.eval()（PyTorch 的推理模式）</li>
+<li>可选：在模型上调用 torch.compile()</li>
+</ul>
+</li>
+<li>
+<p>初始化 KV 缓存</p>
+<ul>
+<li>获取每层 KV 缓存规范。历史上这总是 <code>FullAttentionSpec</code>（同质 Transformer），但使用混合模型（滑动窗口、像 Jamba 这样的 Transformer/SSM）时变得更复杂（见 Jenga <a href="#ref-5">[5]</a>）</li>
+<li>运行一个虚拟/性能分析前向传递，并拍摄 GPU 内存快照，以计算有多少 KV 缓存块适合可用 VRAM</li>
+<li>分配、重塑并将 KV 缓存张量绑定到注意力层</li>
+<li>准备注意力元数据（例如，将后端设置为 FlashAttention），稍后在前向传递期间由内核使用</li>
+<li>如果没有提供 <code>--enforce-eager</code> 标志，且提供了预热批次大小，则对每个预热批次大小执行一次虚拟运行并捕获 CUDA 图。CUDA 图将整个 GPU 工作序列记录到一个 DAG 中。之后在前向传递期间，我们启动/重放预烘焙的图，减少内核启动开销，从而改善延迟。</li>
+</ul>
+</li>
+</ol>
+<p>我在这里抽象了许多底层细节——但这些是我现在要介绍的核心部分，因为我将在后续章节中反复引用它们。</p>
+<p>现在引擎已初始化，让我们继续到 <code>generate</code> 函数。</p>
+<h2 id="生成函数">生成函数<a href="#生成函数" class="heading-anchor" aria-label="Link to 生成函数">¶</a></h2>
+<p>第一步是验证并将请求输入引擎。对于每个提示，我们：</p>
+<ol>
+<li>创建唯一的请求 ID 并捕获其到达时间</li>
+<li>调用输入预处理器，对提示进行分词，并返回一个包含 <code>prompt</code>、<code>prompt_token_ids</code> 和 <code>type</code>（文本、令牌、嵌入等）的字典</li>
+<li>将此信息打包到一个 <code>EngineCoreRequest</code> 中，添加优先级、采样参数和其他元数据</li>
+<li>将请求传递给引擎核心，核心将其包装在一个 <code>Request</code> 对象中，并将其状态设置为 <code>WAITING</code>。然后此请求被添加到调度器的 <code>waiting</code> 队列中（如果是 FCFS 则追加，如果是优先级则堆推入）</li>
+</ol>
+<p>此时引擎已接收输入，可以开始执行。在同步引擎示例中，这些初始提示是我们将处理的唯一请求——没有机制在运行中注入新请求。相比之下，异步引擎支持此功能（即<strong>连续批处理</strong> <a href="#ref-6">[6]</a>）：在每一步之后，新旧请求都会被考虑。</p>
+<p>由于前向传递将批次展平为单个序列，且自定义内核高效处理，连续批处理在同步引擎中本质上得到支持。</p>
+<p>接下来，只要有请求要处理，引擎就重复调用其 <code>step()</code> 函数。每一步有三个阶段：</p>
+<ol>
+<li>调度：选择在此步骤中运行哪些请求（解码和/或（分块）预填充）</li>
+<li>前向传递：运行模型并采样令牌</li>
+<li>后处理：将采样的令牌 ID 附加到每个 <code>Request</code>，进行反分词，并检查停止条件。如果请求完成，则清理（例如，将其 KV 缓存块返回到 <code>free_block_queue</code>）并提前返回输出</li>
+</ol>
+<p>📝停止条件包括：</p>
+<ul>
+<li>请求超过其长度限制（<code>max_model_length</code> 或其自身的 <code>max_tokens</code>）</li>
+<li>采样的令牌是 EOS ID（除非 <code>ignore_eos</code> 启用——在基准测试中很有用，当我们想强制生成一定数量的输出令牌时）</li>
+<li>采样的令牌匹配采样参数中指定的任何 <code>stop_token_ids</code></li>
+<li>停止字符串出现在输出中——我们将输出截断到第一个停止字符串出现处，并在引擎中中止请求（注意 <code>stop_token_ids</code> 将出现在输出中，但停止字符串不会）。</li>
+</ul>
+<p><img src="/blog-preview/previews/pr-286/images/others/inside-vllm-anatomy-of-a-high-throughput-llm-inference-system/002-f0c7c57b.png" alt="引擎循环"></p>
+<p>引擎循环</p>
+<p>在流式模式下，我们会发送生成的中间令牌，但我们现在忽略这一点。</p>
+<p>接下来，我们将更详细地检查调度。</p>
+<h2 id="调度器">调度器<a href="#调度器" class="heading-anchor" aria-label="Link to 调度器">¶</a></h2>
+<p>推理引擎处理两种主要类型的工作负载：</p>
+<ol>
+<li><strong>预填充</strong>请求——对所有提示令牌的前向传递。这些通常是<strong>计算受限</strong>（阈值取决于硬件和提示长度）。最后，我们从最终令牌位置的概率分布中采样一个令牌。</li>
+<li><strong>解码</strong>请求——仅对最近令牌的前向传递。所有早期的 KV 向量已缓存。这些是<strong>内存带宽受限</strong>，因为我们仍需要加载所有 LLM 权重（和 KV 缓存）来计算一个令牌。</li>
+</ol>
+<p>在<a href="#%E5%9F%BA%E5%87%86%E6%B5%8B%E8%AF%95%E5%92%8C%E8%87%AA%E5%8A%A8%E8%B0%83%E4%BC%98---%E5%BB%B6%E8%BF%9F%E4%B8%8E%E5%90%9E%E5%90%90%E9%87%8F">基准测试部分</a>，我们将分析 GPU 性能的所谓屋顶线模型。这将更详细地探讨预填充 / 解码性能概况。</p>
+<p>V1 调度器可以在同一步骤中混合两种类型的请求，这得益于更智能的设计选择。相比之下，V0 引擎一次只能处理预填充或解码。</p>
+<p>调度器优先处理解码请求——即那些已在 <code>running</code> 队列中的请求。对于每个此类请求，它：</p>
+<ol>
+<li>计算要生成的新令牌数量（不总是 1，由于推测解码和异步调度——稍后详述）。</li>
+<li>调用 KV 缓存管理器的<code>allocate_slots</code>函数（详情如下）。</li>
+<li>通过减去步骤 1 中的令牌数量来更新令牌预算。</li>
+</ol>
+<p>之后，它处理来自 <code>waiting</code> 队列的预填充请求，它：</p>
+<ol>
+<li>检索计算块的数量（如果前缀缓存禁用则返回 0——稍后介绍）。</li>
+<li>调用 KV 缓存管理器的 <code>allocate_slots</code> 函数。</li>
+<li>将请求从等待队列弹出并移动到运行队列，将其状态设置为 <code>RUNNING</code>。</li>
+<li>更新令牌预算。</li>
+</ol>
+<p>现在让我们看看 <code>allocate_slots</code> 做什么，它：</p>
+<ol>
+<li><strong>计算块数量</strong>——确定需要分配多少新的 KV 缓存块（<code>n</code>）。每个块默认存储 16 个令牌。例如，如果预填充请求有 17 个新令牌，我们需要 <code>ceil(17/16) = 2</code> 个块。</li>
+<li><strong>检查可用性</strong>——如果管理器池中没有足够的块，则提前退出。根据是解码还是预填充请求，引擎可能尝试重新计算抢占（V0 中支持交换抢占），通过驱逐低优先级请求（调用 <code>kv_cache_manager.free</code>，将 KV 块返回到块池），或者可能跳过调度并继续执行。</li>
+<li><strong>分配块</strong>——通过 KV 缓存管理器的协调器，从块池中获取前 <code>n</code> 个块（之前提到的 <code>free_block_queue</code> 双向链表）。存储到 <code>req_to_blocks</code>，这是映射每个 <code>request_id</code> 到其 KV 缓存块列表的字典。</li>
+</ol>
+<p><img src="/blog-preview/previews/pr-286/images/others/inside-vllm-anatomy-of-a-high-throughput-llm-inference-system/003-92ff8d14.png" alt="KV缓存块"></p>
+<p>KV 缓存块列表</p>
+<p>我们终于准备好进行前向传递了！</p>
+<h2 id="运行前向传递">运行前向传递<a href="#运行前向传递" class="heading-anchor" aria-label="Link to 运行前向传递">¶</a></h2>
+<p>我们调用模型执行器的 <code>execute_model</code>，它委托给 <code>Worker</code>，后者又委托给模型运行器。</p>
+<p>以下是主要步骤：</p>
+<ol>
+<li><strong>更新状态</strong>——从 <code>input_batch</code> 中修剪完成的请求；更新与前向传递相关的杂项元数据（例如，每个请求的 KV 缓存块，将用于索引到分页 KV 缓存内存）。</li>
+<li><strong>准备输入</strong>——从 CPU→GPU 复制缓冲区；计算位置；构建 <code>slot_mapping</code>（在示例中详述）；构建注意力元数据。</li>
+<li><strong>前向传递</strong>——使用自定义分页注意力内核运行模型。所有序列被展平并连接成一个长的“超级序列”。位置索引和注意力掩码确保每个序列仅关注其自身的令牌，从而实现无需右填充的连续批处理。</li>
+<li><strong>收集最后令牌状态</strong>——提取每个序列最终位置的隐藏状态并计算逻辑值。</li>
+<li><strong>样本</strong> — 根据采样配置（贪婪、温度、top-p、top-k 等）从计算出的 logits 中采样 token。</li>
+</ol>
+<p>前向传播步骤本身有两种执行模式：</p>
+<ol>
+<li><strong>Eager 模式</strong> — 当启用 eager 执行时，运行标准的 PyTorch 前向传播。</li>
+<li><strong>“捕获”模式</strong> — 当未强制使用 eager 时，执行/重放预捕获的 CUDA 图（记得我们在引擎构建的初始化 KV 缓存过程中捕获了这些图）。</li>
+</ol>
+<p>这里有一个具体示例，应该能让连续批处理和分页注意力变得清晰：</p>
+<p><img src="/blog-preview/previews/pr-286/images/others/inside-vllm-anatomy-of-a-high-throughput-llm-inference-system/004-3e6a70d8.png" alt="fwd pass - continuous batching &#x26; paged attn"></p>
+<p>前向传播：连续批处理和分页注意力</p>
+<h2 id="高级功能--扩展核心引擎逻辑">高级功能 — 扩展核心引擎逻辑<a href="#高级功能--扩展核心引擎逻辑" class="heading-anchor" aria-label="Link to 高级功能 — 扩展核心引擎逻辑">¶</a></h2>
+<p>有了基本的引擎流程，我们现在可以看看高级功能。</p>
+<p>我们已经讨论了抢占、分页注意力和连续批处理。</p>
+<p>接下来，我们将深入探讨：</p>
+<ol>
+<li>分块预填充</li>
+<li>前缀缓存</li>
+<li>引导解码（通过语法约束的有限状态机）</li>
+<li>推测解码</li>
+<li>分离的P/D（预填充/解码）</li>
+</ol>
+<h2 id="分块预填充">分块预填充<a href="#分块预填充" class="heading-anchor" aria-label="Link to 分块预填充">¶</a></h2>
+<p>分块预填充是一种通过将长提示的预填充步骤拆分为更小的块来处理长提示的技术。没有它，我们可能会遇到一个非常长的请求独占一个引擎步骤，阻止其他预填充请求运行。这会推迟所有其他请求并增加它们的延迟。</p>
+<p>例如，让每个块包含<code>n</code>（=8）个 token，用小写字母标记并用”-“分隔。一个长提示<code>P</code>可能看起来像<code>x-y-z</code>，其中<code>z</code>是一个不完整的块（例如2 个 token）。执行<code>P</code>的完整预填充将需要≥3 个引擎步骤（>可能发生，如果它未在某个步骤中调度执行），并且只有在最后一个分块预填充步骤中我们才会采样一个新 token。</p>
+<p>这里是同一个示例的视觉表示：</p>
+<p><img src="/blog-preview/previews/pr-286/images/others/inside-vllm-anatomy-of-a-high-throughput-llm-inference-system/005-e0b3ede8.png" alt="Chunked prefilling - pt 1"></p>
+<p>实现很简单：限制每个步骤的新 token 数量。如果请求的数量超过<code>long_prefill_token_threshold</code>，则将其重置为该值。底层的索引逻辑（如前所述）会处理其余部分。</p>
+<p>在 vLLM V1 中，您可以通过将 <code>long_prefill_token_threshold</code> 设置为正整数来启用分块预填充。（技术上，无论是否设置，如果提示长度超过 token 预算，我们会截断它并运行分块预填充。）</p>
+<h2 id="前缀缓存">前缀缓存<a href="#前缀缓存" class="heading-anchor" aria-label="Link to 前缀缓存">¶</a></h2>
+<p>为了解释前缀缓存的工作原理，让我们拿原始代码示例并稍作调整：</p>
+<figure class="code-block not-prose" data-language="python" data-raw-code="from vllm import LLM, SamplingParams
+
+long_prefix = &#x22;<a piece of text that is encoded into more than block_size tokens>&#x22;
+
+prompts = [
+    &#x22;Hello, my name is&#x22;,
+    &#x22;The president of the United States is&#x22;,
+]
+
+sampling_params = SamplingParams(temperature=0.8, top_p=0.95)
+
+def main():
+    llm = LLM(model=&#x22;TinyLlama/TinyLlama-1.1B-Chat-v1.0&#x22;)
+
+    outputs = llm.generate(long_prefix + prompts[0], sampling_params)
+    outputs = llm.generate(long_prefix + prompts[1], sampling_params)
+
+if __name__ == &#x22;__main__&#x22;:
+    main()" data-line-numbers="true"><div class="code-block__header"><div class="code-block__title">python</div><button type="button" class="code-block__copy" aria-label="复制代码">Copy</button></div><pre class="code-block__pre" tabindex="0" data-theme="light" data-language="python"><code data-language="python"><span class="line" data-line-number="1"><span style="color:#D73A49">from</span><span style="color:#24292E"> vllm </span><span style="color:#D73A49">import</span><span style="color:#005CC5"> LLM</span><span style="color:#24292E">, SamplingParams</span></span>
+<span class="line" data-line-number="2"> </span>
+<span class="line" data-line-number="3"><span style="color:#24292E">long_prefix </span><span style="color:#D73A49">=</span><span style="color:#032F62"> "&#x3C;a piece of text that is encoded into more than block_size tokens>"</span></span>
+<span class="line" data-line-number="4"> </span>
+<span class="line" data-line-number="5"><span style="color:#24292E">prompts </span><span style="color:#D73A49">=</span><span style="color:#24292E"> [</span></span>
+<span class="line" data-line-number="6"><span style="color:#032F62">    "Hello, my name is"</span><span style="color:#24292E">,</span></span>
+<span class="line" data-line-number="7"><span style="color:#032F62">    "The president of the United States is"</span><span style="color:#24292E">,</span></span>
+<span class="line" data-line-number="8"><span style="color:#24292E">]</span></span>
+<span class="line" data-line-number="9"> </span>
+<span class="line" data-line-number="10"><span style="color:#24292E">sampling_params </span><span style="color:#D73A49">=</span><span style="color:#24292E"> SamplingParams(</span><span style="color:#E36209">temperature</span><span style="color:#D73A49">=</span><span style="color:#005CC5">0.8</span><span style="color:#24292E">, </span><span style="color:#E36209">top_p</span><span style="color:#D73A49">=</span><span style="color:#005CC5">0.95</span><span style="color:#24292E">)</span></span>
+<span class="line" data-line-number="11"> </span>
+<span class="line" data-line-number="12"><span style="color:#D73A49">def</span><span style="color:#6F42C1"> main</span><span style="color:#24292E">():</span></span>
+<span class="line" data-line-number="13"><span style="color:#24292E">    llm </span><span style="color:#D73A49">=</span><span style="color:#24292E"> LLM(</span><span style="color:#E36209">model</span><span style="color:#D73A49">=</span><span style="color:#032F62">"TinyLlama/TinyLlama-1.1B-Chat-v1.0"</span><span style="color:#24292E">)</span></span>
+<span class="line" data-line-number="14"> </span>
+<span class="line" data-line-number="15"><span style="color:#24292E">    outputs </span><span style="color:#D73A49">=</span><span style="color:#24292E"> llm.generate(long_prefix </span><span style="color:#D73A49">+</span><span style="color:#24292E"> prompts[</span><span style="color:#005CC5">0</span><span style="color:#24292E">], sampling_params)</span></span>
+<span class="line" data-line-number="16"><span style="color:#24292E">    outputs </span><span style="color:#D73A49">=</span><span style="color:#24292E"> llm.generate(long_prefix </span><span style="color:#D73A49">+</span><span style="color:#24292E"> prompts[</span><span style="color:#005CC5">1</span><span style="color:#24292E">], sampling_params)</span></span>
+<span class="line" data-line-number="17"> </span>
+<span class="line" data-line-number="18"><span style="color:#D73A49">if</span><span style="color:#005CC5"> __name__</span><span style="color:#D73A49"> ==</span><span style="color:#032F62"> "__main__"</span><span style="color:#24292E">:</span></span>
+<span class="line" data-line-number="19"><span style="color:#24292E">    main()</span></span></code></pre><pre class="code-block__pre" tabindex="0" data-theme="dark" data-language="python"><code data-language="python"><span class="line" data-line-number="1"><span style="color:#C586C0">from</span><span style="color:#D4D4D4"> vllm </span><span style="color:#C586C0">import</span><span style="color:#D4D4D4"> LLM, SamplingParams</span></span>
+<span class="line" data-line-number="2"> </span>
+<span class="line" data-line-number="3"><span style="color:#D4D4D4">long_prefix = </span><span style="color:#CE9178">"&#x3C;a piece of text that is encoded into more than block_size tokens>"</span></span>
+<span class="line" data-line-number="4"> </span>
+<span class="line" data-line-number="5"><span style="color:#D4D4D4">prompts = [</span></span>
+<span class="line" data-line-number="6"><span style="color:#CE9178">    "Hello, my name is"</span><span style="color:#D4D4D4">,</span></span>
+<span class="line" data-line-number="7"><span style="color:#CE9178">    "The president of the United States is"</span><span style="color:#D4D4D4">,</span></span>
+<span class="line" data-line-number="8"><span style="color:#D4D4D4">]</span></span>
+<span class="line" data-line-number="9"> </span>
+<span class="line" data-line-number="10"><span style="color:#D4D4D4">sampling_params = SamplingParams(</span><span style="color:#9CDCFE">temperature</span><span style="color:#D4D4D4">=</span><span style="color:#B5CEA8">0.8</span><span style="color:#D4D4D4">, </span><span style="color:#9CDCFE">top_p</span><span style="color:#D4D4D4">=</span><span style="color:#B5CEA8">0.95</span><span style="color:#D4D4D4">)</span></span>
+<span class="line" data-line-number="11"> </span>
+<span class="line" data-line-number="12"><span style="color:#569CD6">def</span><span style="color:#DCDCAA"> main</span><span style="color:#D4D4D4">():</span></span>
+<span class="line" data-line-number="13"><span style="color:#D4D4D4">    llm = LLM(</span><span style="color:#9CDCFE">model</span><span style="color:#D4D4D4">=</span><span style="color:#CE9178">"TinyLlama/TinyLlama-1.1B-Chat-v1.0"</span><span style="color:#D4D4D4">)</span></span>
+<span class="line" data-line-number="14"> </span>
+<span class="line" data-line-number="15"><span style="color:#D4D4D4">    outputs = llm.generate(long_prefix + prompts[</span><span style="color:#B5CEA8">0</span><span style="color:#D4D4D4">], sampling_params)</span></span>
+<span class="line" data-line-number="16"><span style="color:#D4D4D4">    outputs = llm.generate(long_prefix + prompts[</span><span style="color:#B5CEA8">1</span><span style="color:#D4D4D4">], sampling_params)</span></span>
+<span class="line" data-line-number="17"> </span>
+<span class="line" data-line-number="18"><span style="color:#C586C0">if</span><span style="color:#9CDCFE"> __name__</span><span style="color:#D4D4D4"> == </span><span style="color:#CE9178">"__main__"</span><span style="color:#D4D4D4">:</span></span>
+<span class="line" data-line-number="19"><span style="color:#D4D4D4">    main()</span></span></code></pre></figure>
+<p>前缀缓存避免重新计算多个提示在开头共享的 token — 因此称为<strong>前缀</strong>。</p>
+<p>关键部分是 <code>long_prefix</code>：它被定义为任何长于 KV 缓存块（默认为 16 个 token）的前缀。为了简化我们的示例，假设 <code>long_prefix</code> 的长度正好是 <code>n x block_size</code>（其中 <code>n ≥ 1</code>）。</p>
+<p>即，它完美对齐块边界 — 否则我们将不得不重新计算 <code>long_prefix_len % block_size</code> 个 token，因为我们无法缓存不完整的块。</p>
+<p>没有前缀缓存，每次我们处理具有相同 <code>long_prefix</code> 的新请求时，我们会重新计算所有 <code>n x block_size</code> 个 token。</p>
+<p>有了前缀缓存，这些 token 只计算一次（它们的 KV 存储在 KV 缓存分页内存中），然后被重用，因此只有新的提示 token 需要处理。这加速了预填充请求（尽管对解码没有帮助）。</p>
+<p>这在vLLM中是如何工作的？</p>
+<p>在第一次 <code>generate</code> 调用期间，在调度阶段，在 <code>kv_cache_manager.get_computed_blocks</code> 内部，引擎调用 <code>hash_request_tokens</code>：</p>
+<ol>
+<li>
+<p>此函数将 <code>long_prefix + prompts[0]</code> 拆分为 16 个 token 的块。</p>
+</li>
+<li>
+<p>对于每个完整块，它计算一个哈希（使用内置哈希或 SHA-256，后者较慢但碰撞较少）。哈希结合了前一个块的哈希、当前 token 和可选的元数据。</p>
+</li>
+<li>
+<p>可选元数据包括：MM 哈希、LoRA ID、缓存盐（注入第一个块的哈希中，确保只有具有此缓存盐的请求可以重用块）。</p>
+<p>每个结果存储为一个 <code>BlockHash</code> 对象，包含哈希和其 token ID。我们返回一个块哈希列表。</p>
+</li>
+</ol>
+<p>该列表存储在 <code>self.req_to_block_hashes[request_id]</code> 中。</p>
+<p>接下来，引擎调用 <code>find_longest_cache_hit</code> 来检查这些哈希是否已存在于 <code>cached_block_hash_to_block</code> 中。在第一个请求上，未找到匹配项。</p>
+<p><img src="/blog-preview/previews/pr-286/images/others/inside-vllm-anatomy-of-a-high-throughput-llm-inference-system/006-498abd38.png" alt="Prefix caching logic - pt 1"></p>
+<p>然后我们调用 <code>allocate_slots</code>，它调用 <code>coordinator.cache_blocks</code>，将新的 <code>BlockHash</code> 条目与分配的 KV 块关联，并在 <code>cached_block_hash_to_block</code> 中记录它们。</p>
+<p>之后，前向传播将填充分页 KV 缓存内存中的 KV，对应于我们上面分配的 KV 缓存块。</p>
+<p>经过许多引擎步骤后，它将分配更多 KV 缓存块，但这对我们的示例无关紧要，因为前缀在 <code>long_prefix</code> 之后立即分叉。</p>
+<p><img src="/blog-preview/previews/pr-286/images/others/inside-vllm-anatomy-of-a-high-throughput-llm-inference-system/007-c5c73ae4.png" alt="Prefix caching logic - pt 2"></p>
+<p>在第二次具有相同前缀的 <code>generate</code> 调用上，步骤 1-3 重复，但现在 <code>find_longest_cache_hit</code> 找到所有 <code>n</code> 块的匹配项（通过线性搜索）。引擎可以直接重用那些 KV 块。</p>
+<p><img src="/blog-preview/previews/pr-286/images/others/inside-vllm-anatomy-of-a-high-throughput-llm-inference-system/008-2a7fe4e7.png" alt="Prefix caching logic - pt 3"></p>
+<p>如果原始请求仍然存活，那些块的引用计数会增加（例如到 2）。在这个示例中，第一个请求已经完成，所以块被释放回池中，它们的引用计数重置为 0。因为我们能够从 <code>cached_block_hash_to_block</code> 中检索它们，我们知道它们是有效的（KV 缓存管理器的逻辑设置如此），所以我们只是再次将它们从 <code>free_block_queue</code> 中移除。</p>
+<p>📝高级说明：</p>
+<p>KV 缓存块仅在即将从 <code>free_block_queue</code>（从左弹出）重新分配时变得无效，并且我们发现该块仍然有关联的哈希并存在于 <code>cached_block_hash_to_block</code> 中。在那一刻，我们清除块的哈希并从 <code>cached_block_hash_to_block</code> 中移除其条目，确保它不能通过前缀缓存被重用（至少对于那个旧前缀）。</p>
+<p>这就是前缀缓存的要点：不要重新计算你已经见过的前缀 — 只需重用它们的 KV 缓存！</p>
+<p>如果你理解了这个示例，你也理解了分页注意力是如何工作的。</p>
+<p>前缀缓存默认启用。要禁用它：<code>enable_prefix_caching = False</code>。</p>
+<h2 id="引导解码fsm">引导解码（FSM）<a href="#引导解码fsm" class="heading-anchor" aria-label="Link to 引导解码（FSM）">¶</a></h2>
+<p>引导解码是一种技术，在每个解码步骤中，logits受到基于语法的有限状态机的约束。这确保只有语法允许的 token 可以被采样。</p>
+<p>这是一个强大的设置：你可以强制执行从正则语法（乔姆斯基类型-3，例如任意正则表达式模式）一直到上下文无关语法（类型-2，涵盖大多数编程语言）的任何内容。</p>
+<p>为了让这更具体，让我们从最简单的例子开始，基于我们之前的代码：</p>
+<figure class="code-block not-prose" data-language="python" data-raw-code="from vllm import LLM, SamplingParams
+from vllm.sampling_params import GuidedDecodingParams
+
+prompts = [
+    &#x22;This sucks&#x22;,
+    &#x22;The weather is beautiful&#x22;,
+]
+
+guided_decoding_params = GuidedDecodingParams(choice=[&#x22;Positive&#x22;, &#x22;Negative&#x22;])
+sampling_params = SamplingParams(guided_decoding=guided_decoding_params)
+
+def main():
+    llm = LLM(model=&#x22;TinyLlama/TinyLlama-1.1B-Chat-v1.0&#x22;)
+
+    outputs = llm.generate(prompts, sampling_params)
+
+if __name__ == &#x22;__main__&#x22;:
+    main()" data-line-numbers="true"><div class="code-block__header"><div class="code-block__title">python</div><button type="button" class="code-block__copy" aria-label="复制代码">Copy</button></div><pre class="code-block__pre" tabindex="0" data-theme="light" data-language="python"><code data-language="python"><span class="line" data-line-number="1"><span style="color:#D73A49">from</span><span style="color:#24292E"> vllm </span><span style="color:#D73A49">import</span><span style="color:#005CC5"> LLM</span><span style="color:#24292E">, SamplingParams</span></span>
+<span class="line" data-line-number="2"><span style="color:#D73A49">from</span><span style="color:#24292E"> vllm.sampling_params </span><span style="color:#D73A49">import</span><span style="color:#24292E"> GuidedDecodingParams</span></span>
+<span class="line" data-line-number="3"> </span>
+<span class="line" data-line-number="4"><span style="color:#24292E">prompts </span><span style="color:#D73A49">=</span><span style="color:#24292E"> [</span></span>
+<span class="line" data-line-number="5"><span style="color:#032F62">    "This sucks"</span><span style="color:#24292E">,</span></span>
+<span class="line" data-line-number="6"><span style="color:#032F62">    "The weather is beautiful"</span><span style="color:#24292E">,</span></span>
+<span class="line" data-line-number="7"><span style="color:#24292E">]</span></span>
+<span class="line" data-line-number="8"> </span>
+<span class="line" data-line-number="9"><span style="color:#24292E">guided_decoding_params </span><span style="color:#D73A49">=</span><span style="color:#24292E"> GuidedDecodingParams(</span><span style="color:#E36209">choice</span><span style="color:#D73A49">=</span><span style="color:#24292E">[</span><span style="color:#032F62">"Positive"</span><span style="color:#24292E">, </span><span style="color:#032F62">"Negative"</span><span style="color:#24292E">])</span></span>
+<span class="line" data-line-number="10"><span style="color:#24292E">sampling_params </span><span style="color:#D73A49">=</span><span style="color:#24292E"> SamplingParams(</span><span style="color:#E36209">guided_decoding</span><span style="color:#D73A49">=</span><span style="color:#24292E">guided_decoding_params)</span></span>
+<span class="line" data-line-number="11"> </span>
+<span class="line" data-line-number="12"><span style="color:#D73A49">def</span><span style="color:#6F42C1"> main</span><span style="color:#24292E">():</span></span>
+<span class="line" data-line-number="13"><span style="color:#24292E">    llm </span><span style="color:#D73A49">=</span><span style="color:#24292E"> LLM(</span><span style="color:#E36209">model</span><span style="color:#D73A49">=</span><span style="color:#032F62">"TinyLlama/TinyLlama-1.1B-Chat-v1.0"</span><span style="color:#24292E">)</span></span>
+<span class="line" data-line-number="14"> </span>
+<span class="line" data-line-number="15"><span style="color:#24292E">    outputs </span><span style="color:#D73A49">=</span><span style="color:#24292E"> llm.generate(prompts, sampling_params)</span></span>
+<span class="line" data-line-number="16"> </span>
+<span class="line" data-line-number="17"><span style="color:#D73A49">if</span><span style="color:#005CC5"> __name__</span><span style="color:#D73A49"> ==</span><span style="color:#032F62"> "__main__"</span><span style="color:#24292E">:</span></span>
+<span class="line" data-line-number="18"><span style="color:#24292E">    main()</span></span></code></pre><pre class="code-block__pre" tabindex="0" data-theme="dark" data-language="python"><code data-language="python"><span class="line" data-line-number="1"><span style="color:#C586C0">from</span><span style="color:#D4D4D4"> vllm </span><span style="color:#C586C0">import</span><span style="color:#D4D4D4"> LLM, SamplingParams</span></span>
+<span class="line" data-line-number="2"><span style="color:#C586C0">from</span><span style="color:#D4D4D4"> vllm.sampling_params </span><span style="color:#C586C0">import</span><span style="color:#D4D4D4"> GuidedDecodingParams</span></span>
+<span class="line" data-line-number="3"> </span>
+<span class="line" data-line-number="4"><span style="color:#D4D4D4">prompts = [</span></span>
+<span class="line" data-line-number="5"><span style="color:#CE9178">    "This sucks"</span><span style="color:#D4D4D4">,</span></span>
+<span class="line" data-line-number="6"><span style="color:#CE9178">    "The weather is beautiful"</span><span style="color:#D4D4D4">,</span></span>
+<span class="line" data-line-number="7"><span style="color:#D4D4D4">]</span></span>
+<span class="line" data-line-number="8"> </span>
+<span class="line" data-line-number="9"><span style="color:#D4D4D4">guided_decoding_params = GuidedDecodingParams(</span><span style="color:#9CDCFE">choice</span><span style="color:#D4D4D4">=[</span><span style="color:#CE9178">"Positive"</span><span style="color:#D4D4D4">, </span><span style="color:#CE9178">"Negative"</span><span style="color:#D4D4D4">])</span></span>
+<span class="line" data-line-number="10"><span style="color:#D4D4D4">sampling_params = SamplingParams(</span><span style="color:#9CDCFE">guided_decoding</span><span style="color:#D4D4D4">=guided_decoding_params)</span></span>
+<span class="line" data-line-number="11"> </span>
+<span class="line" data-line-number="12"><span style="color:#569CD6">def</span><span style="color:#DCDCAA"> main</span><span style="color:#D4D4D4">():</span></span>
+<span class="line" data-line-number="13"><span style="color:#D4D4D4">    llm = LLM(</span><span style="color:#9CDCFE">model</span><span style="color:#D4D4D4">=</span><span style="color:#CE9178">"TinyLlama/TinyLlama-1.1B-Chat-v1.0"</span><span style="color:#D4D4D4">)</span></span>
+<span class="line" data-line-number="14"> </span>
+<span class="line" data-line-number="15"><span style="color:#D4D4D4">    outputs = llm.generate(prompts, sampling_params)</span></span>
+<span class="line" data-line-number="16"> </span>
+<span class="line" data-line-number="17"><span style="color:#C586C0">if</span><span style="color:#9CDCFE"> __name__</span><span style="color:#D4D4D4"> == </span><span style="color:#CE9178">"__main__"</span><span style="color:#D4D4D4">:</span></span>
+<span class="line" data-line-number="18"><span style="color:#D4D4D4">    main()</span></span></code></pre></figure>
+<p>在我给出的玩具示例中（假设字符级分词）：在预填充阶段，FSM（有限状态机）掩码logits，使得只有”P”或”N”是可行的。如果采样到”P”，FSM移动到”Positive”分支；下一步只允许”o”，依此类推。</p>
+<p><img src="/blog-preview/previews/pr-286/images/others/inside-vllm-anatomy-of-a-high-throughput-llm-inference-system/009-44c19ee7.png" alt="FSM"></p>
+<p>玩具示例FSM（有限状态机）</p>
+<p>这在vLLM中如何工作：</p>
+<ol>
+<li>在 LLM 引擎构建时，创建一个 <code>StructuredOutputManager</code>；它可以访问分词器并维护一个 <code>_grammar_bitmask</code> 张量。</li>
+<li>当添加请求时，其状态设置为 <code>WAITING_FOR_FSM</code>，并且 <code>grammar_init</code> 选择后端编译器（例如，<code>xgrammar</code> <a href="#ref-7">[7]</a>；注意后端是第三方代码）。</li>
+<li>该请求的语法被异步编译。</li>
+<li>在调度期间，如果异步编译已完成，状态切换到 <code>WAITING</code>，并且 <code>request_id</code> 被添加到 <code>structured_output_request_ids</code>；否则它被放入 <code>skipped_waiting_requests</code> 以在下一个引擎步骤重试。</li>
+<li>在调度循环之后（仍在调度内部），如果有 FSM 请求，<code>StructuredOutputManager</code> 要求后端准备 / 更新 <code>_grammar_bitmask</code>。</li>
+<li>在前向传递产生 logits 后，xgr_torch_compile 的函数将位掩码扩展到词汇表大小（32 倍扩展比，因为我们使用 32 位整数），并将不允许的 logits 掩码为 –∞。</li>
+<li>在采样下一个 token 后，请求的 FSM 通过 <code>accept_tokens</code> 前进。视觉上，我们在 FSM 图上移动到下一个状态。</li>
+</ol>
+<p>步骤6值得进一步澄清。</p>
+<p>如果 <code>vocab_size = 32</code>，<code>_grammar_bitmask</code> 是单个整数；其二进制表示编码哪些 token 是允许的（“1”）与不允许的（“0”）。例如，“101…001”扩展为长度为 32 的数组 <code>[1, 0, 1, …, 0, 0, 1]</code>；位置为 0 的 logits 被设置为 –∞。对于更大的词汇表，使用多个 32 位字并相应扩展 / 连接。后端（例如，<code>xgrammar</code>）负责使用当前 FSM 状态产生这些位模式。</p>
+<p>📝注意：</p>
+<p>这里的大部分复杂性隐藏在第三方库中，如 xgrammar。</p>
+<p>这是一个更简单的例子，词汇表大小 = 8 且使用 8 位整数（适合喜欢我视觉化的人）：</p>
+<p><img src="/blog-preview/previews/pr-286/images/others/inside-vllm-anatomy-of-a-high-throughput-llm-inference-system/010-d812ac8e.png" alt="FSM"></p>
+<p>玩具示例</p>
+<p>您可以在 vLLM 中通过传入所需的 <code>guided_decoding</code> 配置来启用此功能。</p>
+<h2 id="推测解码">推测解码<a href="#推测解码" class="heading-anchor" aria-label="Link to 推测解码">¶</a></h2>
+<p>在自回归生成中，每个新 token 都需要大型语言模型的前向传递。这很昂贵——每一步都重新加载并应用所有模型权重，仅为了计算单个 token！（假设批次大小 == 1，通常为 <code>B</code>）</p>
+<p>推测解码<a href="#ref-8">[8]</a>通过引入较小的草稿语言模型来加速此过程。草稿廉价地提出 <code>k</code> 个 token。但我们最终不想从较小的模型采样——它仅用于猜测候选延续。大型模型仍然决定什么是有效的。</p>
+<p>以下是步骤：</p>
+<ol>
+<li>
+<p>**草稿：**在上下文中运行小模型并提出 <code>k</code> 个 token</p>
+</li>
+<li>
+<p>**验证：**在上下文 + <code>k</code> 个草稿 token 上运行大型模型一次。这为这些 <code>k</code> 个位置加上一个额外位置产生概率（所以我们得到 <code>k+1</code> 个候选）</p>
+</li>
+<li>
+<p>**接受 / 拒绝：**从左到右遍历 <code>k</code> 个草稿 token：</p>
+<ul>
+<li>如果大型模型对草稿 token 的概率 ≥ 草稿的概率，接受它</li>
+<li>否则，以概率 <code>p_large(token)/p_draft(token)</code> 接受它</li>
+<li>在第一次拒绝时停止，或接受所有 <code>k</code> 个草稿 token。如果所有 <code>k</code> 个草稿 token 都被接受，也从大型模型中”免费”采样额外的第 <code>(k+1)</code> 个 token（我们已经计算了该分布）</li>
+<li>如果有拒绝，在该位置创建新的重新平衡分布（<code>p_large - p_draft</code>，最小值为 0，归一化总和为 1）并从其中采样最后一个 token</li>
+</ul>
+</li>
+</ol>
+<p>**为什么这有效：**尽管我们使用小模型提出候选，但接受/拒绝规则保证在期望中，序列的分布与我们从大型模型逐个 token 采样完全相同。这意味着推测解码在统计上等同于标准自回归解码——但可能快得多，因为单个大型模型传递可以产生多达<code>k+1</code>个 token。</p>
+<p>📝注意：可查看 <a href="https://github.com/meta-pytorch/gpt-fast" target="_blank" rel="noopener noreferrer">gpt-fast</a> 的简单实现，以及<a href="https://arxiv.org/abs/2302.01318" target="_blank" rel="noopener noreferrer">原始论文</a>了解数学细节和与完整模型采样等价的证明。</p>
+<p>vLLM V1 不支持 LLM 草稿模型方法，而是实现更快——但准确性较低——的提议方案：n-gram、EAGLE<a href="#ref-9">[9]</a>和 Medusa<a href="#ref-10">[10]</a>。</p>
+<p>每个的简要说明：</p>
+<ol>
+<li>
+<p><strong>n-gram：<strong>取最后 <code>prompt_lookup_max</code> 个 token；在序列中找到先前的匹配；如果找到，提出跟随该匹配的 <code>k</code> 个 token；否则减小窗口并重试，直到 <code>prompt_lookup_min</code>。当前实现返回 <code>k</code> 个 token，在</strong>第一次</strong>匹配之后。引入最近性偏差并反转搜索方向感觉更自然吗？（即最后一次匹配）</p>
+</li>
+<li>
+<p>**Eagle：**对大型语言模型进行”模型手术”——保留嵌入和 LM 头，用轻量级 MLP 替换 transformer 堆栈；微调它作为廉价草稿</p>
+</li>
+<li>
+<p>**Medusa：**在大型模型顶部（LM 头之前的嵌入）训练辅助线性头，以并行预测下一个 <code>k</code> 个 token；使用这些头更高效地提出 token，比运行单独的小语言模型</p>
+</li>
+</ol>
+<figure class="code-block not-prose" data-language="python" data-raw-code="from vllm import LLM, SamplingParams
+
+prompts = [
+    &#x22;Hello, my name is&#x22;,
+    &#x22;The president of the United States is&#x22;,
+]
+
+sampling_params = SamplingParams(temperature=0.8, top_p=0.95)
+
+speculative_config={
+    &#x22;method&#x22;: &#x22;ngram&#x22;,
+    &#x22;prompt_lookup_max&#x22;: 5,
+    &#x22;prompt_lookup_min&#x22;: 3,
+    &#x22;num_speculative_tokens&#x22;: 3,
+}
+
+def main():
+    llm = LLM(model=&#x22;TinyLlama/TinyLlama-1.1B-Chat-v1.0&#x22;, speculative_config=speculative_config)
+
+    outputs = llm.generate(prompts, sampling_params)
+
+if __name__ == &#x22;__main__&#x22;:
+    main()" data-line-numbers="true"><div class="code-block__header"><div class="code-block__title">python</div><button type="button" class="code-block__copy" aria-label="复制代码">Copy</button></div><pre class="code-block__pre" tabindex="0" data-theme="light" data-language="python"><code data-language="python"><span class="line" data-line-number="1"><span style="color:#D73A49">from</span><span style="color:#24292E"> vllm </span><span style="color:#D73A49">import</span><span style="color:#005CC5"> LLM</span><span style="color:#24292E">, SamplingParams</span></span>
+<span class="line" data-line-number="2"> </span>
+<span class="line" data-line-number="3"><span style="color:#24292E">prompts </span><span style="color:#D73A49">=</span><span style="color:#24292E"> [</span></span>
+<span class="line" data-line-number="4"><span style="color:#032F62">    "Hello, my name is"</span><span style="color:#24292E">,</span></span>
+<span class="line" data-line-number="5"><span style="color:#032F62">    "The president of the United States is"</span><span style="color:#24292E">,</span></span>
+<span class="line" data-line-number="6"><span style="color:#24292E">]</span></span>
+<span class="line" data-line-number="7"> </span>
+<span class="line" data-line-number="8"><span style="color:#24292E">sampling_params </span><span style="color:#D73A49">=</span><span style="color:#24292E"> SamplingParams(</span><span style="color:#E36209">temperature</span><span style="color:#D73A49">=</span><span style="color:#005CC5">0.8</span><span style="color:#24292E">, </span><span style="color:#E36209">top_p</span><span style="color:#D73A49">=</span><span style="color:#005CC5">0.95</span><span style="color:#24292E">)</span></span>
+<span class="line" data-line-number="9"> </span>
+<span class="line" data-line-number="10"><span style="color:#24292E">speculative_config</span><span style="color:#D73A49">=</span><span style="color:#24292E">{</span></span>
+<span class="line" data-line-number="11"><span style="color:#032F62">    "method"</span><span style="color:#24292E">: </span><span style="color:#032F62">"ngram"</span><span style="color:#24292E">,</span></span>
+<span class="line" data-line-number="12"><span style="color:#032F62">    "prompt_lookup_max"</span><span style="color:#24292E">: </span><span style="color:#005CC5">5</span><span style="color:#24292E">,</span></span>
+<span class="line" data-line-number="13"><span style="color:#032F62">    "prompt_lookup_min"</span><span style="color:#24292E">: </span><span style="color:#005CC5">3</span><span style="color:#24292E">,</span></span>
+<span class="line" data-line-number="14"><span style="color:#032F62">    "num_speculative_tokens"</span><span style="color:#24292E">: </span><span style="color:#005CC5">3</span><span style="color:#24292E">,</span></span>
+<span class="line" data-line-number="15"><span style="color:#24292E">}</span></span>
+<span class="line" data-line-number="16"> </span>
+<span class="line" data-line-number="17"><span style="color:#D73A49">def</span><span style="color:#6F42C1"> main</span><span style="color:#24292E">():</span></span>
+<span class="line" data-line-number="18"><span style="color:#24292E">    llm </span><span style="color:#D73A49">=</span><span style="color:#24292E"> LLM(</span><span style="color:#E36209">model</span><span style="color:#D73A49">=</span><span style="color:#032F62">"TinyLlama/TinyLlama-1.1B-Chat-v1.0"</span><span style="color:#24292E">, </span><span style="color:#E36209">speculative_config</span><span style="color:#D73A49">=</span><span style="color:#24292E">speculative_config)</span></span>
+<span class="line" data-line-number="19"> </span>
+<span class="line" data-line-number="20"><span style="color:#24292E">    outputs </span><span style="color:#D73A49">=</span><span style="color:#24292E"> llm.generate(prompts, sampling_params)</span></span>
+<span class="line" data-line-number="21"> </span>
+<span class="line" data-line-number="22"><span style="color:#D73A49">if</span><span style="color:#005CC5"> __name__</span><span style="color:#D73A49"> ==</span><span style="color:#032F62"> "__main__"</span><span style="color:#24292E">:</span></span>
+<span class="line" data-line-number="23"><span style="color:#24292E">    main()</span></span></code></pre><pre class="code-block__pre" tabindex="0" data-theme="dark" data-language="python"><code data-language="python"><span class="line" data-line-number="1"><span style="color:#C586C0">from</span><span style="color:#D4D4D4"> vllm </span><span style="color:#C586C0">import</span><span style="color:#D4D4D4"> LLM, SamplingParams</span></span>
+<span class="line" data-line-number="2"> </span>
+<span class="line" data-line-number="3"><span style="color:#D4D4D4">prompts = [</span></span>
+<span class="line" data-line-number="4"><span style="color:#CE9178">    "Hello, my name is"</span><span style="color:#D4D4D4">,</span></span>
+<span class="line" data-line-number="5"><span style="color:#CE9178">    "The president of the United States is"</span><span style="color:#D4D4D4">,</span></span>
+<span class="line" data-line-number="6"><span style="color:#D4D4D4">]</span></span>
+<span class="line" data-line-number="7"> </span>
+<span class="line" data-line-number="8"><span style="color:#D4D4D4">sampling_params = SamplingParams(</span><span style="color:#9CDCFE">temperature</span><span style="color:#D4D4D4">=</span><span style="color:#B5CEA8">0.8</span><span style="color:#D4D4D4">, </span><span style="color:#9CDCFE">top_p</span><span style="color:#D4D4D4">=</span><span style="color:#B5CEA8">0.95</span><span style="color:#D4D4D4">)</span></span>
+<span class="line" data-line-number="9"> </span>
+<span class="line" data-line-number="10"><span style="color:#D4D4D4">speculative_config={</span></span>
+<span class="line" data-line-number="11"><span style="color:#CE9178">    "method"</span><span style="color:#D4D4D4">: </span><span style="color:#CE9178">"ngram"</span><span style="color:#D4D4D4">,</span></span>
+<span class="line" data-line-number="12"><span style="color:#CE9178">    "prompt_lookup_max"</span><span style="color:#D4D4D4">: </span><span style="color:#B5CEA8">5</span><span style="color:#D4D4D4">,</span></span>
+<span class="line" data-line-number="13"><span style="color:#CE9178">    "prompt_lookup_min"</span><span style="color:#D4D4D4">: </span><span style="color:#B5CEA8">3</span><span style="color:#D4D4D4">,</span></span>
+<span class="line" data-line-number="14"><span style="color:#CE9178">    "num_speculative_tokens"</span><span style="color:#D4D4D4">: </span><span style="color:#B5CEA8">3</span><span style="color:#D4D4D4">,</span></span>
+<span class="line" data-line-number="15"><span style="color:#D4D4D4">}</span></span>
+<span class="line" data-line-number="16"> </span>
+<span class="line" data-line-number="17"><span style="color:#569CD6">def</span><span style="color:#DCDCAA"> main</span><span style="color:#D4D4D4">():</span></span>
+<span class="line" data-line-number="18"><span style="color:#D4D4D4">    llm = LLM(</span><span style="color:#9CDCFE">model</span><span style="color:#D4D4D4">=</span><span style="color:#CE9178">"TinyLlama/TinyLlama-1.1B-Chat-v1.0"</span><span style="color:#D4D4D4">, </span><span style="color:#9CDCFE">speculative_config</span><span style="color:#D4D4D4">=speculative_config)</span></span>
+<span class="line" data-line-number="19"> </span>
+<span class="line" data-line-number="20"><span style="color:#D4D4D4">    outputs = llm.generate(prompts, sampling_params)</span></span>
+<span class="line" data-line-number="21"> </span>
+<span class="line" data-line-number="22"><span style="color:#C586C0">if</span><span style="color:#9CDCFE"> __name__</span><span style="color:#D4D4D4"> == </span><span style="color:#CE9178">"__main__"</span><span style="color:#D4D4D4">:</span></span>
+<span class="line" data-line-number="23"><span style="color:#D4D4D4">    main()</span></span></code></pre></figure>
+<p>这在 vLLM 中如何工作？</p>
+<p><strong>设置（在引擎构建期间）：</strong></p>
+<ol>
+<li>初始化设备：创建一个<code>drafter</code>（草稿模型，例如，<code>NgramProposer</code>）和一个<code>rejection_sampler</code>（部分用Triton编写）。</li>
+<li>加载模型：加载草稿模型权重（对于n-gram无操作）。</li>
+</ol>
+<p><strong>之后在<code>generate</code>函数中</strong>（假设我们获得全新请求）：</p>
+<ol>
+<li>使用大型模型运行常规预填充步骤。</li>
+<li>在前向传递和标准采样后，调用<code>propose_draft_token_ids(k)</code>从草稿模型中采样<code>k</code>个草稿 token。</li>
+<li>将这些存储在<code>request.spec_token_ids</code>中（更新请求元数据）。</li>
+<li>在下一个引擎步骤，当请求在运行队列中时，添加<code>len(request.spec_token_ids)</code>到“新 token”计数，以便<code>allocate_slots</code>为前向传递保留足够的KV块。</li>
+<li>复制<code>spec_token_ids</code>到<code>input_batch.token_ids_cpu</code>以形成（上下文+草稿）token。</li>
+<li>通过<code>_calc_spec_decode_metadata</code>计算元数据（这从<code>input_batch.token_ids_cpu</code>复制 token，准备logits等），然后在草稿 token 上运行大型模型前向传递。</li>
+<li>代替从logits进行常规采样，使用<code>rejection_sampler</code>从左到右接受/拒绝并产生<code>output_token_ids</code>。</li>
+<li>重复步骤2-7，直到满足停止条件。</li>
+</ol>
+<p>理解此过程的最佳方式是启动调试器并逐步执行代码库，但本节希望给您一个初步印象。还有这个：</p>
+<p><img src="/blog-preview/previews/pr-286/images/others/inside-vllm-anatomy-of-a-high-throughput-llm-inference-system/011-0ba74f4c.png" alt="Drafting stage"></p>
+<p><img src="/blog-preview/previews/pr-286/images/others/inside-vllm-anatomy-of-a-high-throughput-llm-inference-system/012-f94f19bc.png" alt="Verify stage &#x26; rejection sampling stage"></p>
+<h2 id="解耦-pd">解耦 P/D<a href="#解耦-pd" class="heading-anchor" aria-label="Link to 解耦 P/D">¶</a></h2>
+<p>我之前已经暗示过解耦 P/D（预填充 / 解码）背后的动机。</p>
+<p>预填充和解码具有非常不同的性能特征（计算密集型与内存带宽密集型），因此分离它们的执行是一个合理的设计。这提供了对延迟的更严格控制——包括 <code>TFTT</code>（首令牌时间）和 <code>ITL</code>（令牌间延迟）——更多细节将在<a href="#%E5%9F%BA%E5%87%86%E6%B5%8B%E8%AF%95%E5%92%8C%E8%87%AA%E5%8A%A8%E8%B0%83%E4%BC%98---%E5%BB%B6%E8%BF%9F%E4%B8%8E%E5%90%9E%E5%90%90%E9%87%8F">基准测试</a>部分讨论。</p>
+<p>在实践中，我们运行 <code>N</code> vLLM 预填充实例和 <code>M</code> vLLM 解码实例，根据实时请求混合自动扩展它们。预填充工作器将 KV 写入专用的 KV 缓存服务；解码工作器从中读取。这隔离了长而突发的预填充与稳定、对延迟敏感的解码。</p>
+<p>这在 vLLM 中是如何工作的？</p>
+<p>为清晰起见，下面的示例依赖于<code>SharedStorageConnector</code>，一个用于说明机制的调试连接器实现。</p>
+<p>连接器是vLLM处理实例间KV交换的抽象。连接器接口尚未稳定，计划进行一些近期改进，可能涉及更改，有些可能是破坏性的。</p>
+<p>我们启动 2 个 vLLM 实例（GPU 0 用于预填充，GPU 1 用于解码），然后在它们之间传输 KV 缓存：</p>
+<figure class="code-block not-prose" data-language="python" data-raw-code="
+import os
+import time
+from multiprocessing import Event, Process
+import multiprocessing as mp
+
+from vllm import LLM, SamplingParams
+from vllm.config import KVTransferConfig
+
+prompts = [
+    &#x22;Hello, my name is&#x22;,
+    &#x22;The president of the United States is&#x22;,
+]
+
+def run_prefill(prefill_done):
+  os.environ[&#x22;CUDA_VISIBLE_DEVICES&#x22;] = &#x22;0&#x22;
+
+  sampling_params = SamplingParams(temperature=0, top_p=0.95, max_tokens=1)
+
+  ktc=KVTransferConfig(
+      kv_connector=&#x22;SharedStorageConnector&#x22;,
+      kv_role=&#x22;kv_both&#x22;,
+      kv_connector_extra_config={&#x22;shared_storage_path&#x22;: &#x22;local_storage&#x22;},
+  )
+
+  llm = LLM(model=&#x22;TinyLlama/TinyLlama-1.1B-Chat-v1.0&#x22;, kv_transfer_config=ktc)
+  llm.generate(prompts, sampling_params)
+
+  prefill_done.set()  # notify decode instance that KV cache is ready
+
+  # To keep the prefill node running in case the decode node is not done;
+  # otherwise, the script might exit prematurely, causing incomplete decoding.
+  try:
+      while True:
+          time.sleep(1)
+  except KeyboardInterrupt:
+      print(&#x22;Script stopped by user.&#x22;)
+
+def run_decode(prefill_done):
+  os.environ[&#x22;CUDA_VISIBLE_DEVICES&#x22;] = &#x22;1&#x22;
+
+  sampling_params = SamplingParams(temperature=0, top_p=0.95)
+
+  ktc=KVTransferConfig(
+      kv_connector=&#x22;SharedStorageConnector&#x22;,
+      kv_role=&#x22;kv_both&#x22;,
+      kv_connector_extra_config={&#x22;shared_storage_path&#x22;: &#x22;local_storage&#x22;},
+  )
+
+  llm = LLM(model=&#x22;TinyLlama/TinyLlama-1.1B-Chat-v1.0&#x22;, kv_transfer_config=ktc)
+
+  prefill_done.wait()  # block waiting for KV cache from prefill instance
+
+  # Internally it&#x27;ll first fetch KV cache before starting the decoding loop
+  outputs = llm.generate(prompts, sampling_params)
+
+if __name__ == &#x22;__main__&#x22;:
+  prefill_done = Event()
+  prefill_process = Process(target=run_prefill, args=(prefill_done,))
+  decode_process = Process(target=run_decode, args=(prefill_done,))
+
+  prefill_process.start()
+  decode_process.start()
+
+  decode_process.join()
+  prefill_process.terminate()" data-line-numbers="true"><div class="code-block__header"><div class="code-block__title">python</div><button type="button" class="code-block__copy" aria-label="复制代码">Copy</button></div><pre class="code-block__pre" tabindex="0" data-theme="light" data-language="python"><code data-language="python"><span class="line" data-line-number="1"> </span>
+<span class="line" data-line-number="2"><span style="color:#D73A49">import</span><span style="color:#24292E"> os</span></span>
+<span class="line" data-line-number="3"><span style="color:#D73A49">import</span><span style="color:#24292E"> time</span></span>
+<span class="line" data-line-number="4"><span style="color:#D73A49">from</span><span style="color:#24292E"> multiprocessing </span><span style="color:#D73A49">import</span><span style="color:#24292E"> Event, Process</span></span>
+<span class="line" data-line-number="5"><span style="color:#D73A49">import</span><span style="color:#24292E"> multiprocessing </span><span style="color:#D73A49">as</span><span style="color:#24292E"> mp</span></span>
+<span class="line" data-line-number="6"> </span>
+<span class="line" data-line-number="7"><span style="color:#D73A49">from</span><span style="color:#24292E"> vllm </span><span style="color:#D73A49">import</span><span style="color:#005CC5"> LLM</span><span style="color:#24292E">, SamplingParams</span></span>
+<span class="line" data-line-number="8"><span style="color:#D73A49">from</span><span style="color:#24292E"> vllm.config </span><span style="color:#D73A49">import</span><span style="color:#24292E"> KVTransferConfig</span></span>
+<span class="line" data-line-number="9"> </span>
+<span class="line" data-line-number="10"><span style="color:#24292E">prompts </span><span style="color:#D73A49">=</span><span style="color:#24292E"> [</span></span>
+<span class="line" data-line-number="11"><span style="color:#032F62">    "Hello, my name is"</span><span style="color:#24292E">,</span></span>
+<span class="line" data-line-number="12"><span style="color:#032F62">    "The president of the United States is"</span><span style="color:#24292E">,</span></span>
+<span class="line" data-line-number="13"><span style="color:#24292E">]</span></span>
+<span class="line" data-line-number="14"> </span>
+<span class="line" data-line-number="15"><span style="color:#D73A49">def</span><span style="color:#6F42C1"> run_prefill</span><span style="color:#24292E">(prefill_done):</span></span>
+<span class="line" data-line-number="16"><span style="color:#24292E">  os.environ[</span><span style="color:#032F62">"CUDA_VISIBLE_DEVICES"</span><span style="color:#24292E">] </span><span style="color:#D73A49">=</span><span style="color:#032F62"> "0"</span></span>
+<span class="line" data-line-number="17"> </span>
+<span class="line" data-line-number="18"><span style="color:#24292E">  sampling_params </span><span style="color:#D73A49">=</span><span style="color:#24292E"> SamplingParams(</span><span style="color:#E36209">temperature</span><span style="color:#D73A49">=</span><span style="color:#005CC5">0</span><span style="color:#24292E">, </span><span style="color:#E36209">top_p</span><span style="color:#D73A49">=</span><span style="color:#005CC5">0.95</span><span style="color:#24292E">, </span><span style="color:#E36209">max_tokens</span><span style="color:#D73A49">=</span><span style="color:#005CC5">1</span><span style="color:#24292E">)</span></span>
+<span class="line" data-line-number="19"> </span>
+<span class="line" data-line-number="20"><span style="color:#24292E">  ktc</span><span style="color:#D73A49">=</span><span style="color:#24292E">KVTransferConfig(</span></span>
+<span class="line" data-line-number="21"><span style="color:#E36209">      kv_connector</span><span style="color:#D73A49">=</span><span style="color:#032F62">"SharedStorageConnector"</span><span style="color:#24292E">,</span></span>
+<span class="line" data-line-number="22"><span style="color:#E36209">      kv_role</span><span style="color:#D73A49">=</span><span style="color:#032F62">"kv_both"</span><span style="color:#24292E">,</span></span>
+<span class="line" data-line-number="23"><span style="color:#E36209">      kv_connector_extra_config</span><span style="color:#D73A49">=</span><span style="color:#24292E">{</span><span style="color:#032F62">"shared_storage_path"</span><span style="color:#24292E">: </span><span style="color:#032F62">"local_storage"</span><span style="color:#24292E">},</span></span>
+<span class="line" data-line-number="24"><span style="color:#24292E">  )</span></span>
+<span class="line" data-line-number="25"> </span>
+<span class="line" data-line-number="26"><span style="color:#24292E">  llm </span><span style="color:#D73A49">=</span><span style="color:#24292E"> LLM(</span><span style="color:#E36209">model</span><span style="color:#D73A49">=</span><span style="color:#032F62">"TinyLlama/TinyLlama-1.1B-Chat-v1.0"</span><span style="color:#24292E">, </span><span style="color:#E36209">kv_transfer_config</span><span style="color:#D73A49">=</span><span style="color:#24292E">ktc)</span></span>
+<span class="line" data-line-number="27"><span style="color:#24292E">  llm.generate(prompts, sampling_params)</span></span>
+<span class="line" data-line-number="28"> </span>
+<span class="line" data-line-number="29"><span style="color:#24292E">  prefill_done.set()  </span><span style="color:#6A737D"># notify decode instance that KV cache is ready</span></span>
+<span class="line" data-line-number="30"> </span>
+<span class="line" data-line-number="31"><span style="color:#6A737D">  # To keep the prefill node running in case the decode node is not done;</span></span>
+<span class="line" data-line-number="32"><span style="color:#6A737D">  # otherwise, the script might exit prematurely, causing incomplete decoding.</span></span>
+<span class="line" data-line-number="33"><span style="color:#D73A49">  try</span><span style="color:#24292E">:</span></span>
+<span class="line" data-line-number="34"><span style="color:#D73A49">      while</span><span style="color:#005CC5"> True</span><span style="color:#24292E">:</span></span>
+<span class="line" data-line-number="35"><span style="color:#24292E">          time.sleep(</span><span style="color:#005CC5">1</span><span style="color:#24292E">)</span></span>
+<span class="line" data-line-number="36"><span style="color:#D73A49">  except</span><span style="color:#005CC5"> KeyboardInterrupt</span><span style="color:#24292E">:</span></span>
+<span class="line" data-line-number="37"><span style="color:#005CC5">      print</span><span style="color:#24292E">(</span><span style="color:#032F62">"Script stopped by user."</span><span style="color:#24292E">)</span></span>
+<span class="line" data-line-number="38"> </span>
+<span class="line" data-line-number="39"><span style="color:#D73A49">def</span><span style="color:#6F42C1"> run_decode</span><span style="color:#24292E">(prefill_done):</span></span>
+<span class="line" data-line-number="40"><span style="color:#24292E">  os.environ[</span><span style="color:#032F62">"CUDA_VISIBLE_DEVICES"</span><span style="color:#24292E">] </span><span style="color:#D73A49">=</span><span style="color:#032F62"> "1"</span></span>
+<span class="line" data-line-number="41"> </span>
+<span class="line" data-line-number="42"><span style="color:#24292E">  sampling_params </span><span style="color:#D73A49">=</span><span style="color:#24292E"> SamplingParams(</span><span style="color:#E36209">temperature</span><span style="color:#D73A49">=</span><span style="color:#005CC5">0</span><span style="color:#24292E">, </span><span style="color:#E36209">top_p</span><span style="color:#D73A49">=</span><span style="color:#005CC5">0.95</span><span style="color:#24292E">)</span></span>
+<span class="line" data-line-number="43"> </span>
+<span class="line" data-line-number="44"><span style="color:#24292E">  ktc</span><span style="color:#D73A49">=</span><span style="color:#24292E">KVTransferConfig(</span></span>
+<span class="line" data-line-number="45"><span style="color:#E36209">      kv_connector</span><span style="color:#D73A49">=</span><span style="color:#032F62">"SharedStorageConnector"</span><span style="color:#24292E">,</span></span>
+<span class="line" data-line-number="46"><span style="color:#E36209">      kv_role</span><span style="color:#D73A49">=</span><span style="color:#032F62">"kv_both"</span><span style="color:#24292E">,</span></span>
+<span class="line" data-line-number="47"><span style="color:#E36209">      kv_connector_extra_config</span><span style="color:#D73A49">=</span><span style="color:#24292E">{</span><span style="color:#032F62">"shared_storage_path"</span><span style="color:#24292E">: </span><span style="color:#032F62">"local_storage"</span><span style="color:#24292E">},</span></span>
+<span class="line" data-line-number="48"><span style="color:#24292E">  )</span></span>
+<span class="line" data-line-number="49"> </span>
+<span class="line" data-line-number="50"><span style="color:#24292E">  llm </span><span style="color:#D73A49">=</span><span style="color:#24292E"> LLM(</span><span style="color:#E36209">model</span><span style="color:#D73A49">=</span><span style="color:#032F62">"TinyLlama/TinyLlama-1.1B-Chat-v1.0"</span><span style="color:#24292E">, </span><span style="color:#E36209">kv_transfer_config</span><span style="color:#D73A49">=</span><span style="color:#24292E">ktc)</span></span>
+<span class="line" data-line-number="51"> </span>
+<span class="line" data-line-number="52"><span style="color:#24292E">  prefill_done.wait()  </span><span style="color:#6A737D"># block waiting for KV cache from prefill instance</span></span>
+<span class="line" data-line-number="53"> </span>
+<span class="line" data-line-number="54"><span style="color:#6A737D">  # Internally it'll first fetch KV cache before starting the decoding loop</span></span>
+<span class="line" data-line-number="55"><span style="color:#24292E">  outputs </span><span style="color:#D73A49">=</span><span style="color:#24292E"> llm.generate(prompts, sampling_params)</span></span>
+<span class="line" data-line-number="56"> </span>
+<span class="line" data-line-number="57"><span style="color:#D73A49">if</span><span style="color:#005CC5"> __name__</span><span style="color:#D73A49"> ==</span><span style="color:#032F62"> "__main__"</span><span style="color:#24292E">:</span></span>
+<span class="line" data-line-number="58"><span style="color:#24292E">  prefill_done </span><span style="color:#D73A49">=</span><span style="color:#24292E"> Event()</span></span>
+<span class="line" data-line-number="59"><span style="color:#24292E">  prefill_process </span><span style="color:#D73A49">=</span><span style="color:#24292E"> Process(</span><span style="color:#E36209">target</span><span style="color:#D73A49">=</span><span style="color:#24292E">run_prefill, </span><span style="color:#E36209">args</span><span style="color:#D73A49">=</span><span style="color:#24292E">(prefill_done,))</span></span>
+<span class="line" data-line-number="60"><span style="color:#24292E">  decode_process </span><span style="color:#D73A49">=</span><span style="color:#24292E"> Process(</span><span style="color:#E36209">target</span><span style="color:#D73A49">=</span><span style="color:#24292E">run_decode, </span><span style="color:#E36209">args</span><span style="color:#D73A49">=</span><span style="color:#24292E">(prefill_done,))</span></span>
+<span class="line" data-line-number="61"> </span>
+<span class="line" data-line-number="62"><span style="color:#24292E">  prefill_process.start()</span></span>
+<span class="line" data-line-number="63"><span style="color:#24292E">  decode_process.start()</span></span>
+<span class="line" data-line-number="64"> </span>
+<span class="line" data-line-number="65"><span style="color:#24292E">  decode_process.join()</span></span>
+<span class="line" data-line-number="66"><span style="color:#24292E">  prefill_process.terminate()</span></span></code></pre><pre class="code-block__pre" tabindex="0" data-theme="dark" data-language="python"><code data-language="python"><span class="line" data-line-number="1"> </span>
+<span class="line" data-line-number="2"><span style="color:#C586C0">import</span><span style="color:#D4D4D4"> os</span></span>
+<span class="line" data-line-number="3"><span style="color:#C586C0">import</span><span style="color:#D4D4D4"> time</span></span>
+<span class="line" data-line-number="4"><span style="color:#C586C0">from</span><span style="color:#D4D4D4"> multiprocessing </span><span style="color:#C586C0">import</span><span style="color:#D4D4D4"> Event, Process</span></span>
+<span class="line" data-line-number="5"><span style="color:#C586C0">import</span><span style="color:#D4D4D4"> multiprocessing </span><span style="color:#C586C0">as</span><span style="color:#D4D4D4"> mp</span></span>
+<span class="line" data-line-number="6"> </span>
+<span class="line" data-line-number="7"><span style="color:#C586C0">from</span><span style="color:#D4D4D4"> vllm </span><span style="color:#C586C0">import</span><span style="color:#D4D4D4"> LLM, SamplingParams</span></span>
+<span class="line" data-line-number="8"><span style="color:#C586C0">from</span><span style="color:#D4D4D4"> vllm.config </span><span style="color:#C586C0">import</span><span style="color:#D4D4D4"> KVTransferConfig</span></span>
+<span class="line" data-line-number="9"> </span>
+<span class="line" data-line-number="10"><span style="color:#D4D4D4">prompts = [</span></span>
+<span class="line" data-line-number="11"><span style="color:#CE9178">    "Hello, my name is"</span><span style="color:#D4D4D4">,</span></span>
+<span class="line" data-line-number="12"><span style="color:#CE9178">    "The president of the United States is"</span><span style="color:#D4D4D4">,</span></span>
+<span class="line" data-line-number="13"><span style="color:#D4D4D4">]</span></span>
+<span class="line" data-line-number="14"> </span>
+<span class="line" data-line-number="15"><span style="color:#569CD6">def</span><span style="color:#DCDCAA"> run_prefill</span><span style="color:#D4D4D4">(</span><span style="color:#9CDCFE">prefill_done</span><span style="color:#D4D4D4">):</span></span>
+<span class="line" data-line-number="16"><span style="color:#D4D4D4">  os.environ[</span><span style="color:#CE9178">"CUDA_VISIBLE_DEVICES"</span><span style="color:#D4D4D4">] = </span><span style="color:#CE9178">"0"</span></span>
+<span class="line" data-line-number="17"> </span>
+<span class="line" data-line-number="18"><span style="color:#D4D4D4">  sampling_params = SamplingParams(</span><span style="color:#9CDCFE">temperature</span><span style="color:#D4D4D4">=</span><span style="color:#B5CEA8">0</span><span style="color:#D4D4D4">, </span><span style="color:#9CDCFE">top_p</span><span style="color:#D4D4D4">=</span><span style="color:#B5CEA8">0.95</span><span style="color:#D4D4D4">, </span><span style="color:#9CDCFE">max_tokens</span><span style="color:#D4D4D4">=</span><span style="color:#B5CEA8">1</span><span style="color:#D4D4D4">)</span></span>
+<span class="line" data-line-number="19"> </span>
+<span class="line" data-line-number="20"><span style="color:#D4D4D4">  ktc=KVTransferConfig(</span></span>
+<span class="line" data-line-number="21"><span style="color:#9CDCFE">      kv_connector</span><span style="color:#D4D4D4">=</span><span style="color:#CE9178">"SharedStorageConnector"</span><span style="color:#D4D4D4">,</span></span>
+<span class="line" data-line-number="22"><span style="color:#9CDCFE">      kv_role</span><span style="color:#D4D4D4">=</span><span style="color:#CE9178">"kv_both"</span><span style="color:#D4D4D4">,</span></span>
+<span class="line" data-line-number="23"><span style="color:#9CDCFE">      kv_connector_extra_config</span><span style="color:#D4D4D4">={</span><span style="color:#CE9178">"shared_storage_path"</span><span style="color:#D4D4D4">: </span><span style="color:#CE9178">"local_storage"</span><span style="color:#D4D4D4">},</span></span>
+<span class="line" data-line-number="24"><span style="color:#D4D4D4">  )</span></span>
+<span class="line" data-line-number="25"> </span>
+<span class="line" data-line-number="26"><span style="color:#D4D4D4">  llm = LLM(</span><span style="color:#9CDCFE">model</span><span style="color:#D4D4D4">=</span><span style="color:#CE9178">"TinyLlama/TinyLlama-1.1B-Chat-v1.0"</span><span style="color:#D4D4D4">, </span><span style="color:#9CDCFE">kv_transfer_config</span><span style="color:#D4D4D4">=ktc)</span></span>
+<span class="line" data-line-number="27"><span style="color:#D4D4D4">  llm.generate(prompts, sampling_params)</span></span>
+<span class="line" data-line-number="28"> </span>
+<span class="line" data-line-number="29"><span style="color:#D4D4D4">  prefill_done.set()  </span><span style="color:#6A9955"># notify decode instance that KV cache is ready</span></span>
+<span class="line" data-line-number="30"> </span>
+<span class="line" data-line-number="31"><span style="color:#6A9955">  # To keep the prefill node running in case the decode node is not done;</span></span>
+<span class="line" data-line-number="32"><span style="color:#6A9955">  # otherwise, the script might exit prematurely, causing incomplete decoding.</span></span>
+<span class="line" data-line-number="33"><span style="color:#C586C0">  try</span><span style="color:#D4D4D4">:</span></span>
+<span class="line" data-line-number="34"><span style="color:#C586C0">      while</span><span style="color:#569CD6"> True</span><span style="color:#D4D4D4">:</span></span>
+<span class="line" data-line-number="35"><span style="color:#D4D4D4">          time.sleep(</span><span style="color:#B5CEA8">1</span><span style="color:#D4D4D4">)</span></span>
+<span class="line" data-line-number="36"><span style="color:#C586C0">  except</span><span style="color:#4EC9B0"> KeyboardInterrupt</span><span style="color:#D4D4D4">:</span></span>
+<span class="line" data-line-number="37"><span style="color:#DCDCAA">      print</span><span style="color:#D4D4D4">(</span><span style="color:#CE9178">"Script stopped by user."</span><span style="color:#D4D4D4">)</span></span>
+<span class="line" data-line-number="38"> </span>
+<span class="line" data-line-number="39"><span style="color:#569CD6">def</span><span style="color:#DCDCAA"> run_decode</span><span style="color:#D4D4D4">(</span><span style="color:#9CDCFE">prefill_done</span><span style="color:#D4D4D4">):</span></span>
+<span class="line" data-line-number="40"><span style="color:#D4D4D4">  os.environ[</span><span style="color:#CE9178">"CUDA_VISIBLE_DEVICES"</span><span style="color:#D4D4D4">] = </span><span style="color:#CE9178">"1"</span></span>
+<span class="line" data-line-number="41"> </span>
+<span class="line" data-line-number="42"><span style="color:#D4D4D4">  sampling_params = SamplingParams(</span><span style="color:#9CDCFE">temperature</span><span style="color:#D4D4D4">=</span><span style="color:#B5CEA8">0</span><span style="color:#D4D4D4">, </span><span style="color:#9CDCFE">top_p</span><span style="color:#D4D4D4">=</span><span style="color:#B5CEA8">0.95</span><span style="color:#D4D4D4">)</span></span>
+<span class="line" data-line-number="43"> </span>
+<span class="line" data-line-number="44"><span style="color:#D4D4D4">  ktc=KVTransferConfig(</span></span>
+<span class="line" data-line-number="45"><span style="color:#9CDCFE">      kv_connector</span><span style="color:#D4D4D4">=</span><span style="color:#CE9178">"SharedStorageConnector"</span><span style="color:#D4D4D4">,</span></span>
+<span class="line" data-line-number="46"><span style="color:#9CDCFE">      kv_role</span><span style="color:#D4D4D4">=</span><span style="color:#CE9178">"kv_both"</span><span style="color:#D4D4D4">,</span></span>
+<span class="line" data-line-number="47"><span style="color:#9CDCFE">      kv_connector_extra_config</span><span style="color:#D4D4D4">={</span><span style="color:#CE9178">"shared_storage_path"</span><span style="color:#D4D4D4">: </span><span style="color:#CE9178">"local_storage"</span><span style="color:#D4D4D4">},</span></span>
+<span class="line" data-line-number="48"><span style="color:#D4D4D4">  )</span></span>
+<span class="line" data-line-number="49"> </span>
+<span class="line" data-line-number="50"><span style="color:#D4D4D4">  llm = LLM(</span><span style="color:#9CDCFE">model</span><span style="color:#D4D4D4">=</span><span style="color:#CE9178">"TinyLlama/TinyLlama-1.1B-Chat-v1.0"</span><span style="color:#D4D4D4">, </span><span style="color:#9CDCFE">kv_transfer_config</span><span style="color:#D4D4D4">=ktc)</span></span>
+<span class="line" data-line-number="51"> </span>
+<span class="line" data-line-number="52"><span style="color:#D4D4D4">  prefill_done.wait()  </span><span style="color:#6A9955"># block waiting for KV cache from prefill instance</span></span>
+<span class="line" data-line-number="53"> </span>
+<span class="line" data-line-number="54"><span style="color:#6A9955">  # Internally it'll first fetch KV cache before starting the decoding loop</span></span>
+<span class="line" data-line-number="55"><span style="color:#D4D4D4">  outputs = llm.generate(prompts, sampling_params)</span></span>
+<span class="line" data-line-number="56"> </span>
+<span class="line" data-line-number="57"><span style="color:#C586C0">if</span><span style="color:#9CDCFE"> __name__</span><span style="color:#D4D4D4"> == </span><span style="color:#CE9178">"__main__"</span><span style="color:#D4D4D4">:</span></span>
+<span class="line" data-line-number="58"><span style="color:#D4D4D4">  prefill_done = Event()</span></span>
+<span class="line" data-line-number="59"><span style="color:#D4D4D4">  prefill_process = Process(</span><span style="color:#9CDCFE">target</span><span style="color:#D4D4D4">=run_prefill, </span><span style="color:#9CDCFE">args</span><span style="color:#D4D4D4">=(prefill_done,))</span></span>
+<span class="line" data-line-number="60"><span style="color:#D4D4D4">  decode_process = Process(</span><span style="color:#9CDCFE">target</span><span style="color:#D4D4D4">=run_decode, </span><span style="color:#9CDCFE">args</span><span style="color:#D4D4D4">=(prefill_done,))</span></span>
+<span class="line" data-line-number="61"> </span>
+<span class="line" data-line-number="62"><span style="color:#D4D4D4">  prefill_process.start()</span></span>
+<span class="line" data-line-number="63"><span style="color:#D4D4D4">  decode_process.start()</span></span>
+<span class="line" data-line-number="64"> </span>
+<span class="line" data-line-number="65"><span style="color:#D4D4D4">  decode_process.join()</span></span>
+<span class="line" data-line-number="66"><span style="color:#D4D4D4">  prefill_process.terminate()</span></span></code></pre></figure>
+<p>📝注意：</p>
+<p>我还尝试过<code>LMCache</code> <a href="#ref-11">[11]</a>，最快的生产就绪连接器（使用NVIDIA的NIXL作为后端），但它仍处于前沿，我遇到了一些错误。由于其大部分复杂性位于外部仓库中，<code>SharedStorageConnector</code>是更好的解释选择。</p>
+<p>以下是vLLM中的步骤：</p>
+<ol>
+<li>
+<p><strong>实例化</strong>——在引擎构建期间，连接器在两个地方创建：</p>
+<ul>
+<li>在工作器的初始化设备过程中（在初始化工作器分布式环境函数下），角色为“工作器”。</li>
+<li>在调度器构造函数中，角色为“调度器”。</li>
+</ul>
+</li>
+<li>
+<p><strong>缓存查找</strong>——当调度器处理来自<code>waiting</code>队列的预填充请求（在本地前缀缓存检查后）时，它调用连接器的<code>get_num_new_matched_tokens</code>。这检查KV缓存服务器中是否有外部缓存的令牌。预填充总是看到0；解码可能有缓存命中。结果在调用<code>allocate_slots</code>之前添加到本地计数中。</p>
+</li>
+<li>
+<p><strong>状态更新</strong>——调度器然后调用<code>connector.update_state_after_alloc</code>，记录有缓存的请求（对预填充无操作）。</p>
+</li>
+<li>
+<p><strong>元构建</strong>——在调度结束时，调度器调用<code>meta = connector.build_connector_meta</code>：</p>
+<ul>
+<li>预填充添加所有具有<code>is_store=True</code>的请求（用于上传KV）。</li>
+<li>解码添加具有<code>is_store=False</code>的请求（用于获取KV）。</li>
+</ul>
+</li>
+<li>
+<p><strong>上下文管理器</strong>——在前向传递之前，引擎进入KV连接器上下文管理器：</p>
+<ul>
+<li>进入时：调用<code>kv_connector.start_load_kv</code>。对于解码，这从外部服务器加载KV并注入到分页内存中。对于预填充，这是无操作。</li>
+<li>退出时：调用<code>kv_connector.wait_for_save</code>。对于预填充，这会阻塞直到KV上传到外部服务器。对于解码，这是无操作。</li>
+</ul>
+</li>
+</ol>
+<p>这是一个可视化示例：</p>
+<p><img src="/blog-preview/previews/pr-286/images/others/inside-vllm-anatomy-of-a-high-throughput-llm-inference-system/013-c27c3e57.png" alt="disaggregated P/D"></p>
+<p>解耦P/D</p>
+<p>📝附加说明：</p>
+<ul>
+<li>对于<code>SharedStorageConnector</code>，“外部服务器”只是本地文件系统。</li>
+<li>根据配置，KV传输也可以逐层进行（在每个注意力层之前/之后）。</li>
+<li>解码仅在请求的第一步加载外部KV；之后在本地计算/存储。</li>
+</ul>
+<h2 id="从uniprocexecutor到multiprocexecutor">从UniprocExecutor到MultiProcExecutor<a href="#从uniprocexecutor到multiprocexecutor" class="heading-anchor" aria-label="Link to 从UniprocExecutor到MultiProcExecutor">¶</a></h2>
+<p>有了核心技术，我们现在可以讨论扩展。</p>
+<p>假设您的模型权重不再适合单个 GPU 的 VRAM。</p>
+<p>第一个选项是使用张量并行（例如 <code>TP=8</code>）将模型分片到同一节点上的多个 GPU 上。如果模型仍然不适合，下一步是在节点间进行流水线并行。</p>
+<p>📝注意：</p>
+<ul>
+<li>节点内带宽显著高于节点间，这就是为什么张量并行（TP）通常优于流水线并行（PP）。（PP 通信的数据量也少于 TP。）</li>
+<li>我不涵盖专家并行（EP），因为我们专注于标准 Transformer 而非 MoE，也不涵盖序列并行，因为 TP 和 PP 在实践中最常用。</li>
+</ul>
+<p>在这个阶段，我们需要多个 GPU 进程（工作器）和一个编排层来协调它们。这正是 <code>MultiProcExecutor</code> 提供的。</p>
+<p><img src="/blog-preview/previews/pr-286/images/others/inside-vllm-anatomy-of-a-high-throughput-llm-inference-system/014-63e1eb31.png" alt="MultiProcExecutor"></p>
+<p>MultiProcExecutor 在 TP=8 设置中（驱动工作器为 rank 0）</p>
+<p>这在 vLLM 中如何工作：</p>
+<ol>
+<li>
+<p><code>MultiProcExecutor</code> 初始化一个 <code>rpc_broadcast_mq</code> 消息队列（底层使用共享内存实现）。</p>
+</li>
+<li>
+<p>构造函数循环遍历 <code>world_size</code>（例如 <code>TP=8 ⇒ world_size=8</code>）并通过 <code>WorkerProc.make_worker_process</code> 为每个 rank 生成一个守护进程。</p>
+</li>
+<li>
+<p>对于每个工作器，父进程首先创建一个读取器和写入器管道。</p>
+</li>
+<li>
+<p>新进程运行<code>WorkerProc.worker_main</code>，它实例化一个工作器（经过与<code>UniprocExecutor</code>中相同的“初始化设备”、“加载模型”等步骤）。</p>
+</li>
+<li>
+<p>每个工作器确定它是驱动（TP组中的rank 0）还是常规工作器。每个工作器设置两个队列：</p>
+<ul>
+<li><code>rpc_broadcast_mq</code>（与父进程共享）用于接收工作。</li>
+<li><code>worker_response_mq</code>用于发送响应回。</li>
+</ul>
+</li>
+<li>
+<p>在初始化期间，每个子进程通过管道将其<code>worker_response_mq</code>句柄发送给父进程。一旦全部接收，父进程解除阻塞——这完成协调。</p>
+</li>
+<li>
+<p>工作器然后进入忙循环，阻塞在<code>rpc_broadcast_mq.dequeue</code>上。当工作项到达时，它们执行它（就像在<code>UniprocExecutor</code>中一样，但现在有TP/PP特定的分区工作）。结果通过<code>worker_response_mq.enqueue</code>发送回。</p>
+</li>
+<li>
+<p>在运行时，当请求到达时，<code>MultiProcExecutor</code>将其入队到<code>rpc_broadcast_mq</code>（非阻塞）中，用于所有子工作器。然后它等待指定输出rank的<code>worker_response_mq.dequeue</code>以收集最终结果。</p>
+</li>
+</ol>
+<p>从引擎的角度看，没有任何变化——所有这些多进程复杂性都通过调用模型执行器的 <code>execute_model</code> 被抽象掉。</p>
+<ul>
+<li>在 <code>UniProcExecutor</code> 情况下：execute_model 直接导致在工作器上调用 execute_model</li>
+<li>在 <code>MultiProcExecutor</code> 情况下：execute_model 间接通过 <code>rpc_broadcast_mq</code> 在每个工作器上调用 execute_model</li>
+</ul>
+<p>此时，我们可以使用相同的引擎接口运行资源允许的任意大模型。下一步是扩展：启用数据并行（<code>DP > 1</code>），但这属于服务层的内容。</p>
+<h2 id="分布式系统服务-vllm">分布式系统服务 vLLM<a href="#分布式系统服务-vllm" class="heading-anchor" aria-label="Link to 分布式系统服务 vLLM">¶</a></h2>
+<p>设置服务基础设施有很多方法，但为具体起见，这里有一个示例：假设我们有两个 H100 节点，并希望在其上运行四个 vLLM 引擎。</p>
+<p>如果模型需要 <code>TP=4</code>，我们可以这样配置节点。</p>
+<p><img src="/blog-preview/previews/pr-286/images/others/inside-vllm-anatomy-of-a-high-throughput-llm-inference-system/015-b9dd52a1.png" alt="服务器配置包含2 个8xH100节点"></p>
+<p>服务器配置包含 2 个 8xH100 节点（1 个无头节点，1 个 API 服务器节点）</p>
+<p>在第一个节点上，以无头模式（无 API 服务器）运行引擎，使用以下参数：</p>
+<figure class="code-block not-prose" data-language="bash" data-raw-code="vllm serve <model-name>
+  --tensor-parallel-size 4
+  --data-parallel-size 4
+  --data-parallel-size-local 2
+  --data-parallel-start-rank 0
+  --data-parallel-address <master-ip>
+  --data-parallel-rpc-port 13345
+  --headless" data-line-numbers="true"><div class="code-block__header"><div class="code-block__title">bash</div><button type="button" class="code-block__copy" aria-label="复制代码">Copy</button></div><pre class="code-block__pre" tabindex="0" data-theme="light" data-language="bash"><code data-language="bash"><span class="line" data-line-number="1"><span style="color:#6F42C1">vllm</span><span style="color:#032F62"> serve</span><span style="color:#D73A49"> &#x3C;</span><span style="color:#032F62">model-nam</span><span style="color:#24292E">e</span><span style="color:#D73A49">></span></span>
+<span class="line" data-line-number="2"><span style="color:#6F42C1">  --tensor-parallel-size</span><span style="color:#005CC5"> 4</span></span>
+<span class="line" data-line-number="3"><span style="color:#6F42C1">  --data-parallel-size</span><span style="color:#005CC5"> 4</span></span>
+<span class="line" data-line-number="4"><span style="color:#6F42C1">  --data-parallel-size-local</span><span style="color:#005CC5"> 2</span></span>
+<span class="line" data-line-number="5"><span style="color:#6F42C1">  --data-parallel-start-rank</span><span style="color:#005CC5"> 0</span></span>
+<span class="line" data-line-number="6"><span style="color:#6F42C1">  --data-parallel-address</span><span style="color:#D73A49"> &#x3C;</span><span style="color:#032F62">master-i</span><span style="color:#24292E">p</span><span style="color:#D73A49">></span></span>
+<span class="line" data-line-number="7"><span style="color:#6F42C1">  --data-parallel-rpc-port</span><span style="color:#005CC5"> 13345</span></span>
+<span class="line" data-line-number="8"><span style="color:#6F42C1">  --headless</span></span></code></pre><pre class="code-block__pre" tabindex="0" data-theme="dark" data-language="bash"><code data-language="bash"><span class="line" data-line-number="1"><span style="color:#DCDCAA">vllm</span><span style="color:#CE9178"> serve</span><span style="color:#D4D4D4"> &#x3C;</span><span style="color:#CE9178">model-nam</span><span style="color:#D4D4D4">e></span></span>
+<span class="line" data-line-number="2"><span style="color:#DCDCAA">  --tensor-parallel-size</span><span style="color:#B5CEA8"> 4</span></span>
+<span class="line" data-line-number="3"><span style="color:#DCDCAA">  --data-parallel-size</span><span style="color:#B5CEA8"> 4</span></span>
+<span class="line" data-line-number="4"><span style="color:#DCDCAA">  --data-parallel-size-local</span><span style="color:#B5CEA8"> 2</span></span>
+<span class="line" data-line-number="5"><span style="color:#DCDCAA">  --data-parallel-start-rank</span><span style="color:#B5CEA8"> 0</span></span>
+<span class="line" data-line-number="6"><span style="color:#DCDCAA">  --data-parallel-address</span><span style="color:#D4D4D4"> &#x3C;</span><span style="color:#CE9178">master-i</span><span style="color:#D4D4D4">p></span></span>
+<span class="line" data-line-number="7"><span style="color:#DCDCAA">  --data-parallel-rpc-port</span><span style="color:#B5CEA8"> 13345</span></span>
+<span class="line" data-line-number="8"><span style="color:#DCDCAA">  --headless</span></span></code></pre></figure>
+<p>并在另一个节点上运行相同的命令，稍作调整：</p>
+<ul>
+<li>无 <code>--headless</code></li>
+<li>修改 DP 起始排名</li>
+</ul>
+<figure class="code-block not-prose" data-language="bash" data-raw-code="vllm serve <model-name>
+  --tensor-parallel-size 4
+  --data-parallel-size 4
+  --data-parallel-size-local 2
+  --data-parallel-start-rank 2
+  --data-parallel-address <master-ip>
+  --data-parallel-rpc-port 13345" data-line-numbers="true"><div class="code-block__header"><div class="code-block__title">bash</div><button type="button" class="code-block__copy" aria-label="复制代码">Copy</button></div><pre class="code-block__pre" tabindex="0" data-theme="light" data-language="bash"><code data-language="bash"><span class="line" data-line-number="1"><span style="color:#6F42C1">vllm</span><span style="color:#032F62"> serve</span><span style="color:#D73A49"> &#x3C;</span><span style="color:#032F62">model-nam</span><span style="color:#24292E">e</span><span style="color:#D73A49">></span></span>
+<span class="line" data-line-number="2"><span style="color:#6F42C1">  --tensor-parallel-size</span><span style="color:#005CC5"> 4</span></span>
+<span class="line" data-line-number="3"><span style="color:#6F42C1">  --data-parallel-size</span><span style="color:#005CC5"> 4</span></span>
+<span class="line" data-line-number="4"><span style="color:#6F42C1">  --data-parallel-size-local</span><span style="color:#005CC5"> 2</span></span>
+<span class="line" data-line-number="5"><span style="color:#6F42C1">  --data-parallel-start-rank</span><span style="color:#005CC5"> 2</span></span>
+<span class="line" data-line-number="6"><span style="color:#6F42C1">  --data-parallel-address</span><span style="color:#D73A49"> &#x3C;</span><span style="color:#032F62">master-i</span><span style="color:#24292E">p</span><span style="color:#D73A49">></span></span>
+<span class="line" data-line-number="7"><span style="color:#6F42C1">  --data-parallel-rpc-port</span><span style="color:#005CC5"> 13345</span></span></code></pre><pre class="code-block__pre" tabindex="0" data-theme="dark" data-language="bash"><code data-language="bash"><span class="line" data-line-number="1"><span style="color:#DCDCAA">vllm</span><span style="color:#CE9178"> serve</span><span style="color:#D4D4D4"> &#x3C;</span><span style="color:#CE9178">model-nam</span><span style="color:#D4D4D4">e></span></span>
+<span class="line" data-line-number="2"><span style="color:#DCDCAA">  --tensor-parallel-size</span><span style="color:#B5CEA8"> 4</span></span>
+<span class="line" data-line-number="3"><span style="color:#DCDCAA">  --data-parallel-size</span><span style="color:#B5CEA8"> 4</span></span>
+<span class="line" data-line-number="4"><span style="color:#DCDCAA">  --data-parallel-size-local</span><span style="color:#B5CEA8"> 2</span></span>
+<span class="line" data-line-number="5"><span style="color:#DCDCAA">  --data-parallel-start-rank</span><span style="color:#B5CEA8"> 2</span></span>
+<span class="line" data-line-number="6"><span style="color:#DCDCAA">  --data-parallel-address</span><span style="color:#D4D4D4"> &#x3C;</span><span style="color:#CE9178">master-i</span><span style="color:#D4D4D4">p></span></span>
+<span class="line" data-line-number="7"><span style="color:#DCDCAA">  --data-parallel-rpc-port</span><span style="color:#B5CEA8"> 13345</span></span></code></pre></figure>
+<p>📝注意：</p>
+<p>这假设网络已配置，所有节点都能访问指定的 IP 和端口。</p>
+<p>这在 VLLM 中如何工作？</p>
+<h2 id="在无头服务器节点上">在无头服务器节点上<a href="#在无头服务器节点上" class="heading-anchor" aria-label="Link to 在无头服务器节点上">¶</a></h2>
+<p>在无头节点上，一个<code>CoreEngineProcManager</code>启动2 个进程（每个<code>--data-parallel-size-local</code>）各运行<code>EngineCoreProc.run_engine_core</code>。这些函数中的每一个都创建一个<code>DPEngineCoreProc</code>（引擎核心），然后进入其忙循环。</p>
+<p><code>DPEngineCoreProc</code>初始化其父<code>EngineCoreProc</code>（的子<code>EngineCore</code>），它：</p>
+<ol>
+<li>创建一个<code>input_queue</code>和<code>output_queue</code>（<code>queue.Queue</code>）。</li>
+<li>使用一个<code>DEALER</code> ZMQ套接字（异步消息库）与另一个节点上的前端执行初始握手，并接收协调地址信息。</li>
+<li>初始化DP组（例如使用NCCL后端）。</li>
+<li>用<code>EngineCore</code>初始化<code>MultiProcExecutor</code>（<code>TP=4</code>在4 个GPU上，如前所述）。</li>
+<li>创建一个<code>ready_event</code>（<code>threading.Event</code>）。</li>
+<li>启动一个输入守护线程（<code>threading.Thread</code>）运行<code>process_input_sockets(…, ready_event)</code>。类似地启动一个输出线程。</li>
+<li>仍在主线程中，等待<code>ready_event</code>，直到所有4 个进程（跨越2 个节点）的输入线程完成协调握手，最终执行<code>ready_event.set()</code>。</li>
+<li>一旦解除阻塞，向前端发送“就绪”消息，包含元数据（例如，<code>num_gpu_blocks</code>在分页KV缓存内存中可用）。</li>
+<li>主线程、输入线程和输出线程随后进入各自的忙循环。</li>
+</ol>
+<p>TL;DR：我们最终得到 4 个子进程（每个 DP 副本一个），每个运行一个主线程、输入线程和输出线程。它们与 DP 协调器和前端完成协调握手，然后每个进程的所有三个线程在稳态忙循环中运行。</p>
+<p><img src="/blog-preview/previews/pr-286/images/others/inside-vllm-anatomy-of-a-high-throughput-llm-inference-system/016-65b08a2c.png" alt="分布式系统包含4 个DPEngineCoreProc"></p>
+<p>分布式系统包含 4 个 DP 副本运行 4 个 DPEngineCoreProc</p>
+<p><strong>当前稳态：</strong></p>
+<ul>
+<li><strong>输入线程</strong>— 在输入套接字上阻塞，直到请求从 API 服务器路由过来；收到后，解码有效载荷，通过 <code>input_queue.put_nowait(...)</code> 入队一个工作项，然后返回在套接字上阻塞。</li>
+<li><strong>主线程</strong>— 在 <code>input_queue.get(...)</code> 上唤醒，将请求馈送到引擎；<code>MultiProcExecutor</code> 运行前向传递并将结果入队到 <code>output_queue</code>。</li>
+<li><strong>输出线程</strong>— 在 <code>output_queue.get(...)</code> 上唤醒，将结果发送回 API 服务器，然后恢复阻塞。</li>
+</ul>
+<p><strong>额外机制：</strong></p>
+<ul>
+<li><strong>DP波计数器</strong>— 系统跟踪“波”；当所有引擎变为空闲时，它们静止，计数器在新工作到达时递增（用于协调/指标）。</li>
+<li><strong>控制消息</strong>— API服务器可以发送不仅仅是推理请求（例如，中止和实用/控制RPC）。</li>
+<li><strong>用于锁步的虚拟步骤</strong>— 如果任何DP副本有工作，所有副本执行一个前向步骤；没有请求的副本执行一个虚拟步骤以参与所需的同步点（避免阻塞活动副本）。</li>
+</ul>
+<p>锁步澄清：这实际上仅对MoE模型是必需的，其中专家层形成EP或TP组，而注意力层仍然是DP。目前总是用DP完成—这只是因为“内置”非MoE DP的用途有限，因为你可以以正常方式运行多个独立的vLLM并在它们之间进行负载均衡。</p>
+<p>现在对于第二部分，API服务器节点上发生了什么？</p>
+<h2 id="在api服务器节点上">在API服务器节点上<a href="#在api服务器节点上" class="heading-anchor" aria-label="Link to 在API服务器节点上">¶</a></h2>
+<p>我们实例化一个 <code>AsyncLLM</code> 对象（LLM 引擎的 asyncio 包装器）。内部创建一个 <code>DPLBAsyncMPClient</code>（数据并行、负载均衡、异步、多处理客户端）。</p>
+<p>在 <code>MPClient</code> 的父类中，<code>launch_core_engines</code> 函数运行并：</p>
+<ol>
+<li>创建用于启动握手的 ZMQ 地址（如在无头节点上所见）。</li>
+<li>生成一个 <code>DPCoordinator</code> 进程。</li>
+<li>创建一个 <code>CoreEngineProcManager</code>（与无头节点上相同）。</li>
+</ol>
+<p>在 <code>AsyncMPClient</code>（的子 <code>MPClient</code>）内部，我们：</p>
+<ol>
+<li>创建一个 <code>outputs_queue</code>（<code>asyncio.Queue</code>）。</li>
+<li>我们创建一个 asyncio 任务 <code>process_outputs_socket</code>，它（通过输出套接字）与所有 4 个 <code>DPEngineCoreProc</code> 的输出线程通信，并写入 <code>outputs_queue</code>。</li>
+<li>随后，另一个 asyncio 任务 <code>output_handler</code> 从 <code>AsyncLLM</code> 读取此队列，并最终将信息发送到 <code>create_completion</code> 函数。</li>
+</ol>
+<p>在 <code>DPAsyncMPClient</code> 内部，我们创建一个 asyncio 任务 <code>run_engine_stats_update_task</code>，它与 DP 协调器通信。</p>
+<p>DP 协调器在前端（API 服务器）和后端（引擎核心）之间调解。它：</p>
+<ul>
+<li>定期向前端的 <code>run_engine_stats_update_task</code> 发送负载均衡信息（队列大小、等待 / 运行请求）。</li>
+<li>处理来自前端的 <code>SCALE_ELASTIC_EP</code> 命令，通过动态更改引擎数量（仅适用于 Ray 后端）。</li>
+<li>向后端发送 <code>START_DP_WAVE</code> 事件（当由前端触发）并报告波状态更新。</li>
+</ul>
+<p>回顾一下，前端（<code>AsyncLLM</code>）运行几个 asyncio 任务（记住：并发，非并行）：</p>
+<ul>
+<li>一类任务通过 <code>generate</code> 路径处理输入请求（每个新客户端请求生成一个新的 asyncio 任务）。</li>
+<li>两个任务（<code>process_outputs_socket</code>，<code>output_handler</code>）处理来自底层引擎的输出消息。</li>
+<li>一个任务（<code>run_engine_stats_update_task</code>）维护与 DP 协调器的通信：发送波触发器、轮询 LB 状态和处理动态缩放请求。</li>
+</ul>
+<p>最后，主服务器进程创建一个 FastAPI 应用并挂载端点，如 <code>OpenAIServingCompletion</code> 和 <code>OpenAIServingChat</code>，它们暴露 <code>/completion</code>、<code>/chat/completion</code> 等。然后通过 Uvicorn 提供堆栈。</p>
+<p>所以，将所有内容放在一起，这是完整的请求生命周期！</p>
+<p>您从终端发送：</p>
+<figure class="code-block not-prose" data-language="bash" data-raw-code="curl -X POST http://localhost:8000/v1/completions -H &#x22;Content-Type: application/json&#x22; -d &#x27;{
+  &#x22;model&#x22;: &#x22;TinyLlama/TinyLlama-1.1B-Chat-v1.0&#x22;,
+  &#x22;prompt&#x22;: &#x22;The capital of France is&#x22;,
+  &#x22;max_tokens&#x22;: 50,
+  &#x22;temperature&#x22;: 0.7
+}&#x27;" data-line-numbers="true"><div class="code-block__header"><div class="code-block__title">bash</div><button type="button" class="code-block__copy" aria-label="复制代码">Copy</button></div><pre class="code-block__pre" tabindex="0" data-theme="light" data-language="bash"><code data-language="bash"><span class="line" data-line-number="1"><span style="color:#6F42C1">curl</span><span style="color:#005CC5"> -X</span><span style="color:#032F62"> POST</span><span style="color:#032F62"> http://localhost:8000/v1/completions</span><span style="color:#005CC5"> -H</span><span style="color:#032F62"> "Content-Type: application/json"</span><span style="color:#005CC5"> -d</span><span style="color:#032F62"> '{</span></span>
+<span class="line" data-line-number="2"><span style="color:#032F62">  "model": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",</span></span>
+<span class="line" data-line-number="3"><span style="color:#032F62">  "prompt": "The capital of France is",</span></span>
+<span class="line" data-line-number="4"><span style="color:#032F62">  "max_tokens": 50,</span></span>
+<span class="line" data-line-number="5"><span style="color:#032F62">  "temperature": 0.7</span></span>
+<span class="line" data-line-number="6"><span style="color:#032F62">}'</span></span></code></pre><pre class="code-block__pre" tabindex="0" data-theme="dark" data-language="bash"><code data-language="bash"><span class="line" data-line-number="1"><span style="color:#DCDCAA">curl</span><span style="color:#569CD6"> -X</span><span style="color:#CE9178"> POST</span><span style="color:#CE9178"> http://localhost:8000/v1/completions</span><span style="color:#569CD6"> -H</span><span style="color:#CE9178"> "Content-Type: application/json"</span><span style="color:#569CD6"> -d</span><span style="color:#CE9178"> '{</span></span>
+<span class="line" data-line-number="2"><span style="color:#CE9178">  "model": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",</span></span>
+<span class="line" data-line-number="3"><span style="color:#CE9178">  "prompt": "The capital of France is",</span></span>
+<span class="line" data-line-number="4"><span style="color:#CE9178">  "max_tokens": 50,</span></span>
+<span class="line" data-line-number="5"><span style="color:#CE9178">  "temperature": 0.7</span></span>
+<span class="line" data-line-number="6"><span style="color:#CE9178">}'</span></span></code></pre></figure>
+<p>接下来发生什么：</p>
+<ol>
+<li>
+<p>请求命中 API 服务器上的 <code>OpenAIServingCompletion</code> 的 <code>create_completion</code> 路由。</p>
+</li>
+<li>
+<p>该函数异步标记化提示，并准备元数据（请求 ID、采样参数、时间戳等）。</p>
+</li>
+<li>
+<p>然后调用 <code>AsyncLLM.generate</code>，它遵循与同步引擎相同的流程，最终调用 <code>DPAsyncMPClient.add_request_async</code>。</p>
+</li>
+<li>
+<p>这反过来调用 <code>get_core_engine_for_request</code>，它基于 DP 协调器的状态在引擎之间进行负载均衡（选择具有最小分数 / 最低负载的引擎：<code>score = len(waiting) * 4 + len(running)</code>）。</p>
+</li>
+<li>
+<p>将 <code>ADD</code> 请求发送到所选引擎的 <code>input_socket</code>。</p>
+</li>
+<li>
+<p>在该引擎上：</p>
+<ul>
+<li>
+<p>输入线程—解除阻塞，从输入套接字解码数据，并将工作项放置在 <code>input_queue</code> 上供主线程使用。</p>
+</li>
+<li>
+<p>主线程—在 <code>input_queue</code> 上解除阻塞，将请求添加到引擎，并重复调用 <code>engine_core.step()</code>，将中间结果入队到 <code>output_queue</code>，直到满足停止条件。</p>
+</li>
+<li>
+<p>提醒：<code>step()</code> 调用调度器、模型执行器（这又可以是 <code>MultiProcExecutor</code>！）等。我们已经见过这个了！</p>
+<p>输出线程—在 <code>output_queue</code> 上解除阻塞，并通过输出套接字发送结果。</p>
+</li>
+</ul>
+</li>
+<li>
+<p>这些结果触发 <code>AsyncLLM</code> 输出 asyncio 任务（<code>process_outputs_socket</code> 和 <code>output_handler</code>），它们将令牌传播回 FastAPI 的 <code>create_completion</code> 路由。</p>
+</li>
+<li>
+<p>FastAPI 附加元数据（完成原因、对数概率、使用信息等）并返回一个 <code>JSONResponse</code> 通过 Uvicorn 到您的终端！</p>
+</li>
+</ol>
+<p>就这样，您的完成结果返回了——整个分布式机制隐藏在一个简单的 <code>curl</code> 命令之后！ :) 太有趣了！</p>
+<p>📝附加说明：</p>
+<ul>
+<li>当添加更多 API 服务器时，负载均衡在操作系统 / 套接字级别处理。从应用程序的角度看，没有显著变化——复杂性被隐藏了。</li>
+<li>使用 Ray 作为 DP 后端，您可以暴露一个 URL 端点（<code>/scale_elastic_ep</code>），支持自动向上或向下扩展引擎副本的数量。</li>
+</ul>
+<h2 id="基准测试和自动调优---延迟与吞吐量">基准测试和自动调优 - 延迟与吞吐量<a href="#基准测试和自动调优---延迟与吞吐量" class="heading-anchor" aria-label="Link to 基准测试和自动调优 - 延迟与吞吐量">¶</a></h2>
+<p>到目前为止，我们一直在分析“气体粒子”——请求如何通过引擎/系统内部流动的细节。现在是时候放大视角，将系统作为一个整体来看，并问：我们如何衡量推理系统的性能？</p>
+<p>在最高级别，有两个相互竞争的指标：</p>
+<ol>
+<li><strong>延迟</strong>——从提交请求到返回令牌的时间</li>
+<li><strong>吞吐量</strong>——系统每秒可以生成/处理的令牌/请求数量</li>
+</ol>
+<p><strong>延迟</strong>对于交互式应用程序最重要，用户正在等待响应。</p>
+<p><strong>吞吐量</strong>在离线工作负载中很重要，如用于预训练 / 后训练运行的合成数据生成、数据清洗 / 处理，以及一般任何类型的离线批量推理作业。</p>
+<p>在解释为什么延迟和吞吐量相互竞争之前，让我们定义一些常见的推理指标：</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>指标</th><th>定义</th></tr></thead><tbody><tr><td><code>TTFT</code>（首令牌时间）</td><td>从提交请求到接收到第一个输出令牌的时间</td></tr><tr><td><code>ITL</code>（令牌间延迟）</td><td>两个连续令牌之间的时间（例如，从令牌 i-1 到令牌 i）</td></tr><tr><td><code>TPOT</code>（每个输出令牌时间）</td><td>请求中所有输出令牌的平均 ITL</td></tr><tr><td><code>Latency / E2E</code>（端到端延迟）</td><td>处理请求的总时间，即 TTFT + 所有 ITL 的总和，或等效于提交请求和接收到最后一个输出令牌之间的时间</td></tr><tr><td><code>Throughput</code></td><td>每秒处理的总令牌数（输入、输出或两者），或每秒请求数</td></tr><tr><td><code>Goodput</code></td><td>满足服务水平目标（SLOs）的吞吐量，如最大 TTFT、TPOT 或 e2e 延迟。例如，只计算来自满足这些 SLOs 的请求的令牌</td></tr></tbody></table>
+<p><img src="/blog-preview/previews/pr-286/images/others/inside-vllm-anatomy-of-a-high-throughput-llm-inference-system/017-fc530c2a.png" alt="ttft, itl, e2e latency"></p>
+<p>ttft, itl, e2e latency</p>
+<p>这是一个简化模型，解释了这两个指标的竞争性质。</p>
+<p>假设：权重 I/O 而非 KV 缓存 I/O 占主导；即我们处理的是短序列。</p>
+<p>当查看批次大小<code>B</code>如何影响单个解码步骤时，权衡变得清晰。随着<code>B ↓</code>趋近于 1，ITL 下降：每个步骤的工作量减少，令牌不与其他令牌“竞争”。随着<code>B ↑</code>趋近于无穷大，ITL 上升，因为每个步骤执行更多 FLOPs——但吞吐量提高（直到达到峰值性能），因为权重 I/O 在更多令牌上分摊。</p>
+<p>屋顶线模型有助于理解这里：在饱和批次<code>B_sat</code>以下，步骤时间由 HBM 带宽主导（逐层将权重流式传输到片上内存），因此步骤延迟几乎平坦——计算 1 个与 10 个令牌可能花费相似时间。超过<code>B_sat</code>，内核变得计算受限，步骤时间大致随<code>B</code>增长；每个额外令牌都会增加 ITL。</p>
+<p><img src="/blog-preview/previews/pr-286/images/others/inside-vllm-anatomy-of-a-high-throughput-llm-inference-system/018-f7e689f7.png" alt="roofline perf model"></p>
+<p>roofline perf model</p>
+<p>📝注意：</p>
+<p>为了更严格的处理，我们必须考虑内核自动调优：随着 <code>B</code> 增长，运行时可能切换到针对该形状更高效的内核，改变实现的性能 <code>P_kernel</code>。步骤延迟是 <code>t = FLOPs_step / P_kernel</code>，其中 <code>FLOPs_step</code> 是步骤中的工作量。您可以看到，当 <code>P_kernel</code> 达到 <code>P_peak</code> 时，每个步骤的更多计算将直接导致延迟增加。</p>
+<h2 id="如何在-vllm-中进行基准测试">如何在 vLLM 中进行基准测试<a href="#如何在-vllm-中进行基准测试" class="heading-anchor" aria-label="Link to 如何在 vLLM 中进行基准测试">¶</a></h2>
+<p>vLLM 提供了一个 <code>vllm bench {serve,latency,throughput}</code> CLI，包装了 vllm / benchmarks / {server,latency,throughput}.py。</p>
+<p>以下是脚本的功能：</p>
+<ul>
+<li><strong>latency</strong>——使用短输入（默认 32 个令牌）并以小批次（默认 8）采样 128 个输出令牌。它运行多次迭代并报告批次的 e2e 延迟。</li>
+<li><strong>throughput</strong>——一次性提交一组固定的提示（默认：1000 个 ShareGPT 样本）（也称为 <code>QPS=Inf</code> 模式），并报告运行期间的输入 / 输出 / 总令牌数和每秒请求数。</li>
+<li><strong>serve</strong>——启动一个 vLLM 服务器，并通过从泊松（或更一般地，伽马）分布采样请求到达间隔时间来模拟真实世界工作负载。它在时间窗口内发送请求，测量我们讨论过的所有指标，并可以选择强制执行服务器端最大并发数（通过信号量，例如将服务器限制为 64 个并发请求）。</li>
+</ul>
+<p>以下是运行延迟脚本的示例：</p>
+<figure class="code-block not-prose" data-language="bash" data-raw-code="vllm bench latency
+  --model <model-name>
+  --input-tokens 32
+  --output-tokens 128
+  --batch-size 8" data-line-numbers="true"><div class="code-block__header"><div class="code-block__title">bash</div><button type="button" class="code-block__copy" aria-label="复制代码">Copy</button></div><pre class="code-block__pre" tabindex="0" data-theme="light" data-language="bash"><code data-language="bash"><span class="line" data-line-number="1"><span style="color:#6F42C1">vllm</span><span style="color:#032F62"> bench</span><span style="color:#032F62"> latency</span></span>
+<span class="line" data-line-number="2"><span style="color:#6F42C1">  --model</span><span style="color:#D73A49"> &#x3C;</span><span style="color:#032F62">model-nam</span><span style="color:#24292E">e</span><span style="color:#D73A49">></span></span>
+<span class="line" data-line-number="3"><span style="color:#6F42C1">  --input-tokens</span><span style="color:#005CC5"> 32</span></span>
+<span class="line" data-line-number="4"><span style="color:#6F42C1">  --output-tokens</span><span style="color:#005CC5"> 128</span></span>
+<span class="line" data-line-number="5"><span style="color:#6F42C1">  --batch-size</span><span style="color:#005CC5"> 8</span></span></code></pre><pre class="code-block__pre" tabindex="0" data-theme="dark" data-language="bash"><code data-language="bash"><span class="line" data-line-number="1"><span style="color:#DCDCAA">vllm</span><span style="color:#CE9178"> bench</span><span style="color:#CE9178"> latency</span></span>
+<span class="line" data-line-number="2"><span style="color:#DCDCAA">  --model</span><span style="color:#D4D4D4"> &#x3C;</span><span style="color:#CE9178">model-nam</span><span style="color:#D4D4D4">e></span></span>
+<span class="line" data-line-number="3"><span style="color:#DCDCAA">  --input-tokens</span><span style="color:#B5CEA8"> 32</span></span>
+<span class="line" data-line-number="4"><span style="color:#DCDCAA">  --output-tokens</span><span style="color:#B5CEA8"> 128</span></span>
+<span class="line" data-line-number="5"><span style="color:#DCDCAA">  --batch-size</span><span style="color:#B5CEA8"> 8</span></span></code></pre></figure>
+<p>CI 中使用的基准测试配置位于<code>.buildkite/nightly-benchmarks/tests</code>。</p>
+<p>还有一个自动调优脚本，驱动 serve 基准测试以找到满足目标 SLOs 的参数设置（例如，“在保持 p99 e2e &#x3C; 500 ms 的同时最大化吞吐量”），返回建议的配置。</p>
+<h2 id="尾声">尾声<a href="#尾声" class="heading-anchor" aria-label="Link to 尾声">¶</a></h2>
+<p>我们从基本引擎核心（<code>UniprocExecutor</code>）开始，添加了高级功能如推测解码和前缀缓存，扩展到 <code>MultiProcExecutor</code>（使用 <code>TP/PP > 1</code>），最后扩展出去，将所有内容包装在异步引擎和分布式服务堆栈中——以如何衡量系统性能结束。</p>
+<p>vLLM 还包括我跳过的专门处理。例如：</p>
+<ul>
+<li><strong>多样化硬件后端：</strong> TPUs、AWS Neuron（Trainium/Inferentia）等。</li>
+<li><strong>架构 / 技术：</strong> <code>MLA</code>、<code>MoE</code>、编码器-解码器（例如，Whisper）、池化 / 嵌入模型、<code>EPLB</code>、<code>m-RoPE</code>、<code>LoRA</code>、<code>ALiBi</code>、无注意力变体、滑动窗口注意力、多模态 LMs 和状态空间模型（例如，Mamba/Mamba-2、Jamba）</li>
+<li><strong>TP/PP/SP</strong></li>
+<li><strong>混合 KV 缓存逻辑</strong>（Jenga）、更复杂的采样方法如束采样等</li>
+<li><strong>实验性</strong>：异步调度</li>
+</ul>
+<p>好处是，这些大多数与上述主要流程正交——您几乎可以将它们视为“插件”（实际上有一些耦合，当然）。</p>
+<p>我喜欢理解系统。话虽如此，在这个高度上，分辨率肯定受到了影响。在接下来的帖子中，我将放大特定子系统并深入细节。</p>
+<p>💡联系我：</p>
+<p>如果您发现帖子中有任何错误，请私信我——欢迎在<a href="https://x.com/gordic_aleksa" target="_blank" rel="noopener noreferrer">X</a>或<a href="https://www.linkedin.com/in/aleksagordic/" target="_blank" rel="noopener noreferrer">LinkedIn</a>上给我留言，或通过<a href="https://docs.google.com/forms/d/1z1fEirrN2xtGxAsJvptpM7yV4ByT5SF25S-XiMPrXNA/edit" target="_blank" rel="noopener noreferrer">匿名反馈</a>。</p>
+<h2 id="致谢">致谢<a href="#致谢" class="heading-anchor" aria-label="Link to 致谢">¶</a></h2>
+<p>非常感谢 <a href="https://www.hyperstack.cloud/" target="_blank" rel="noopener noreferrer">Hyperstack</a> 在过去一年为我提供H100进行实验！</p>
+<p>感谢 <a href="https://www.linkedin.com/in/nickhillprofile/" target="_blank" rel="noopener noreferrer">Nick Hill</a>（vLLM 核心贡献者，RedHat）、<a href="https://x.com/marksaroufim" target="_blank" rel="noopener noreferrer">Mark Saroufim</a>（PyTorch）、<a href="https://www.linkedin.com/in/kyle-kranen/" target="_blank" rel="noopener noreferrer">Kyle Krannen</a>（NVIDIA，Dynamo）和 <a href="https://www.linkedin.com/in/ashish-vaswani-99892181/" target="_blank" rel="noopener noreferrer">Ashish Vaswani</a> 阅读此博客文章的预发布版本并提供反馈！</p>
+<h2 id="参考文献">参考文献<a href="#参考文献" class="heading-anchor" aria-label="Link to 参考文献">¶</a></h2>
+<ol>
+<li><span id="ref-1"></span> vLLM <a href="https://github.com/vllm-project/vllm" target="_blank" rel="noopener noreferrer">https://github.com/vllm-project/vllm</a></li>
+<li><span id="ref-2"></span> 《Attention Is All You Need》，<a href="https://arxiv.org/abs/1706.03762" target="_blank" rel="noopener noreferrer">https://arxiv.org/abs/1706.03762</a></li>
+<li><span id="ref-3"></span> 《Efficient Memory Management for Large Language Model Serving with PagedAttention》，<a href="https://arxiv.org/abs/2309.06180" target="_blank" rel="noopener noreferrer">https://arxiv.org/abs/2309.06180</a></li>
+<li><span id="ref-4"></span> 《DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model》，<a href="https://arxiv.org/abs/2405.04434" target="_blank" rel="noopener noreferrer">https://arxiv.org/abs/2405.04434</a></li>
+<li><span id="ref-5"></span> 《Jenga: Effective Memory Management for Serving LLM with Heterogeneity》，<a href="https://arxiv.org/abs/2503.18292" target="_blank" rel="noopener noreferrer">https://arxiv.org/abs/2503.18292</a></li>
+<li><span id="ref-6"></span> 《Orca: A Distributed Serving System for Transformer-Based Generative Models》，<a href="https://www.usenix.org/conference/osdi22/presentation/yu" target="_blank" rel="noopener noreferrer">https://www.usenix.org/conference/osdi22/presentation/yu</a></li>
+<li><span id="ref-7"></span> 《XGrammar: Flexible and Efficient Structured Generation Engine for Large Language Models》，<a href="https://arxiv.org/abs/2411.15100" target="_blank" rel="noopener noreferrer">https://arxiv.org/abs/2411.15100</a></li>
+<li><span id="ref-8"></span> 《Accelerating Large Language Model Decoding with Speculative Sampling》，<a href="https://arxiv.org/abs/2302.01318" target="_blank" rel="noopener noreferrer">https://arxiv.org/abs/2302.01318</a></li>
+<li><span id="ref-9"></span> 《EAGLE: Speculative Sampling Requires Rethinking Feature Uncertainty》，<a href="https://arxiv.org/abs/2401.15077" target="_blank" rel="noopener noreferrer">https://arxiv.org/abs/2401.15077</a></li>
+<li><span id="ref-10"></span> 《Medusa: Simple LLM Inference Acceleration Framework with Multiple Decoding Heads》，<a href="https://arxiv.org/abs/2401.10774" target="_blank" rel="noopener noreferrer">https://arxiv.org/abs/2401.10774</a></li>
+<li><span id="ref-11"></span> LMCache，<a href="https://github.com/LMCache/LMCache" target="_blank" rel="noopener noreferrer">https://github.com/LMCache/LMCache</a></li>
+</ol> <div class="grid md:grid-cols-2 gap-4 mt-10"> <a href="/blog-preview/previews/pr-286/inside-nvidia-gpus-anatomy-of-high-performance-matmul-kernels/" class="block p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-sky-500"> <div class="text-xs uppercase text-zinc-500">Previous</div> <div class="font-semibold">Inside NVIDIA GPUs: Anatomy of high performance matmul kernels</div> </a> <a href="/blog-preview/previews/pr-286/sglang-diffusion-wan2260percent/" class="block p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-sky-500 text-right"> <div class="text-xs uppercase text-zinc-500">Next</div> <div class="font-semibold">通过零开销逐层权重卸载技术将 SGLang Diffusion wan2.2 的推理速度加速 60%</div> </a> </div>  <section id="comments" class="mt-12"> <div class="border-t border-zinc-200 dark:border-zinc-700 pt-8"> <script src="https://giscus.app/client.js" data-repo="yuanlehome/blog" data-repo-id="R_kgDOQu2Jjw" data-category="General" data-category-id="DIC_kwDOQu2Jj84C0QDN" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="bottom" data-theme="preferred_color_scheme" data-lang="zh-CN" crossorigin="anonymous" async></script> </div> </section> <script>
+  (() => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+
+    // Mapping uses `pathname` to keep one discussion per URL path, which is stable for static sites.
+    const themeMap = {
+      light: 'light',
+      dark: 'dark_dimmed',
+    };
+
+    const getResolvedTheme = () =>
+      document.documentElement.dataset.theme === 'dark' ||
+      document.documentElement.classList.contains('dark')
+        ? 'dark'
+        : 'light';
+
+    let activeTheme = getResolvedTheme();
+
+    const setContainerTheme = (theme) => {
+      const container = document.getElementById('comments');
+      if (container) {
+        container.setAttribute('data-giscus-theme', theme);
+      }
+    };
+
+    const postThemeMessage = (resolvedTheme) => {
+      const effective = resolvedTheme ?? activeTheme;
+      const nextTheme = themeMap[effective] ?? 'light';
+      setContainerTheme(nextTheme);
+      const iframe = document.querySelector('iframe.giscus-frame');
+      if (iframe) {
+        iframe.contentWindow?.postMessage(
+          { giscus: { setConfig: { theme: nextTheme } } },
+          'https://giscus.app',
+        );
+      }
+      window.dispatchEvent(
+        new CustomEvent('giscus-theme-applied', {
+          detail: { theme: nextTheme, resolved: effective },
+        }),
+      );
+    };
+
+    const syncTheme = (resolvedOverride) => {
+      const detected = resolvedOverride ?? getResolvedTheme();
+      if (detected !== activeTheme) {
+        activeTheme = detected;
+      }
+      postThemeMessage(detected);
+    };
+
+    const observer = new MutationObserver(() => syncTheme());
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class', 'data-theme'],
+    });
+
+    window.addEventListener('themechange', (event) => {
+      const detail = event?.detail || {};
+      if (detail.resolved) {
+        syncTheme(detail.resolved);
+      } else {
+        syncTheme();
+      }
+    });
+
+    const waitForFrame = () => {
+      const frame = document.querySelector('iframe.giscus-frame');
+      if (!frame) {
+        requestAnimationFrame(waitForFrame);
+        return;
+      }
+
+      const sendWhenReady = () => postThemeMessage();
+      if (frame instanceof HTMLIFrameElement) {
+        if (frame.complete) {
+          sendWhenReady();
+        } else {
+          frame.addEventListener('load', sendWhenReady, { once: true });
+        }
+      }
+      // Ensure we apply the current theme even if the iframe was already ready.
+      postThemeMessage();
+    };
+
+    // Run once after load to sync the initial theme and keep retrying until the iframe is present.
+    waitForFrame();
+    syncTheme();
+  })();
+</script> <div id="page-bottom-anchor" aria-hidden="true" style="height: 1px;"></div> </article> <div class="w-full" data-toc-shell> <aside class="hidden lg:block h-full"> <div class="flex h-full w-full flex-col gap-3 overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50/80 p-4 shadow-md backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-800/50 lg:sticky lg:top-[calc(var(--toc-offset)+1rem)] lg:max-h-[calc(100vh-var(--toc-offset)-1.5rem)] lg:h-[calc(100vh-var(--toc-offset)-1.5rem)]" style="--toc-offset: 96px" data-toc-container> <div class="space-y-1"> <p class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">文章目录</p> <p class="text-xs text-zinc-500 dark:text-zinc-400">快速跳转到你关心的章节</p> </div> <nav aria-label="文章目录" class="flex-1 min-h-0 overflow-y-auto pr-1" data-toc-scroll> <ol class="space-y-3 text-sm"> <li><a href="#llm-引擎与引擎核心" data-toc-link data-mobile-toc-link data-target="llm-引擎与引擎核心" title="LLM 引擎与引擎核心¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>LLM 引擎与引擎核心¶</span></a></li><li><a href="#llm-引擎构造函数" data-toc-link data-mobile-toc-link data-target="llm-引擎构造函数" title="LLM 引擎构造函数¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>LLM 引擎构造函数¶</span></a></li><li><a href="#生成函数" data-toc-link data-mobile-toc-link data-target="生成函数" title="生成函数¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>生成函数¶</span></a></li><li><a href="#调度器" data-toc-link data-mobile-toc-link data-target="调度器" title="调度器¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>调度器¶</span></a></li><li><a href="#运行前向传递" data-toc-link data-mobile-toc-link data-target="运行前向传递" title="运行前向传递¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>运行前向传递¶</span></a></li><li><a href="#高级功能--扩展核心引擎逻辑" data-toc-link data-mobile-toc-link data-target="高级功能--扩展核心引擎逻辑" title="高级功能 — 扩展核心引擎逻辑¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>高级功能 — 扩展核心引擎逻辑¶</span></a></li><li><a href="#分块预填充" data-toc-link data-mobile-toc-link data-target="分块预填充" title="分块预填充¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>分块预填充¶</span></a></li><li><a href="#前缀缓存" data-toc-link data-mobile-toc-link data-target="前缀缓存" title="前缀缓存¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>前缀缓存¶</span></a></li><li><a href="#引导解码fsm" data-toc-link data-mobile-toc-link data-target="引导解码fsm" title="引导解码（FSM）¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>引导解码（FSM）¶</span></a></li><li><a href="#推测解码" data-toc-link data-mobile-toc-link data-target="推测解码" title="推测解码¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>推测解码¶</span></a></li><li><a href="#解耦-pd" data-toc-link data-mobile-toc-link data-target="解耦-pd" title="解耦 P/D¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>解耦 P/D¶</span></a></li><li><a href="#从uniprocexecutor到multiprocexecutor" data-toc-link data-mobile-toc-link data-target="从uniprocexecutor到multiprocexecutor" title="从UniprocExecutor到MultiProcExecutor¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>从UniprocExecutor到MultiProcExecutor¶</span></a></li><li><a href="#分布式系统服务-vllm" data-toc-link data-mobile-toc-link data-target="分布式系统服务-vllm" title="分布式系统服务 vLLM¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>分布式系统服务 vLLM¶</span></a></li><li><a href="#在无头服务器节点上" data-toc-link data-mobile-toc-link data-target="在无头服务器节点上" title="在无头服务器节点上¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>在无头服务器节点上¶</span></a></li><li><a href="#在api服务器节点上" data-toc-link data-mobile-toc-link data-target="在api服务器节点上" title="在API服务器节点上¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>在API服务器节点上¶</span></a></li><li><a href="#基准测试和自动调优---延迟与吞吐量" data-toc-link data-mobile-toc-link data-target="基准测试和自动调优---延迟与吞吐量" title="基准测试和自动调优 - 延迟与吞吐量¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>基准测试和自动调优 - 延迟与吞吐量¶</span></a></li><li><a href="#如何在-vllm-中进行基准测试" data-toc-link data-mobile-toc-link data-target="如何在-vllm-中进行基准测试" title="如何在 vLLM 中进行基准测试¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>如何在 vLLM 中进行基准测试¶</span></a></li><li><a href="#尾声" data-toc-link data-mobile-toc-link data-target="尾声" title="尾声¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>尾声¶</span></a></li><li><a href="#致谢" data-toc-link data-mobile-toc-link data-target="致谢" title="致谢¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>致谢¶</span></a></li><li><a href="#参考文献" data-toc-link data-mobile-toc-link data-target="参考文献" title="参考文献¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>参考文献¶</span></a></li> </ol> </nav> </div> </aside> </div> <script type="module">const u=Array.from(document.querySelectorAll("[data-toc-link]")),e=document.querySelector("[data-toc-container]"),r=document.querySelector("[data-toc-shell]"),d=e&&getComputedStyle(e).getPropertyValue("--toc-offset")||"96px",x=parseFloat(d)||0,a=window.matchMedia("(min-width: 1024px)"),h=u.map(t=>document.getElementById(t.dataset.target||"")).filter(t=>!!t),C=()=>{h.forEach(t=>{t.style.scrollMarginTop=`${x+12}px`})},w=t=>`#${encodeURIComponent(t)}`,v=t=>decodeURIComponent(t.replace(/^#/,"")),f=t=>{u.forEach(o=>{const n=o.dataset.target===t;o.dataset.active=n?"true":"false",o.setAttribute("aria-current",n?"true":"false")})},g=(t,o=!1)=>{const n=document.getElementById(t);if(!n)return;const s=window.scrollY+n.getBoundingClientRect().top-x-12;o?history.replaceState(null,"",w(t)):history.pushState(null,"",w(t)),window.scrollTo({top:s,behavior:"smooth"}),f(t)};u.forEach(t=>t.addEventListener("click",o=>{const n=t.dataset.target;n&&(o.preventDefault(),g(n))}));const p=()=>{e&&(e.dataset.fixed="false",e.style.position="",e.style.left="",e.style.width="",e.style.height="",e.style.maxHeight="",e.style.top="",r&&(r.style.minHeight=""))},E=()=>{if(!e||!r)return;const t=r.getBoundingClientRect(),o=`calc(100vh - ${d} - 1.5rem)`;e.dataset.fixed="true",r.style.minHeight=`${e.offsetHeight}px`,e.style.position="fixed",e.style.top=`calc(${d} + 1rem)`,e.style.left=`${t.left}px`,e.style.width=`${t.width}px`,e.style.height=o,e.style.maxHeight=o},c=()=>{if(!e||e.dataset.fixed==="true"||!a.matches)return;const t=parseFloat(getComputedStyle(e).top||"0"),o=e.offsetTop-t;if(Number.isNaN(t)||window.scrollY<o)return;const n=e.getBoundingClientRect().top;Math.abs(n-t)>2&&E()},R=()=>{if(!a.matches){p();return}e?.dataset.fixed==="true"&&E()};if(h.length>0){C();const t=e&&getComputedStyle(e).getPropertyValue("--toc-offset")||"96px",o=new IntersectionObserver(s=>{const m=s.filter(i=>i.isIntersecting).sort((i,l)=>i.target.getBoundingClientRect().top-l.target.getBoundingClientRect().top);if(m[0]){f(m[0].target.id);return}const y=s.filter(i=>i.boundingClientRect.top<0).sort((i,l)=>l.target.getBoundingClientRect().top-i.target.getBoundingClientRect().top);y[0]&&f(y[0].target.id)},{rootMargin:`-${t.trim()} 0% -55% 0%`,threshold:[0,.25,.5,1]});h.forEach(s=>o.observe(s));const n=v(location.hash||"");n&&requestAnimationFrame(()=>g(n,!0)),window.addEventListener("hashchange",()=>{const s=v(location.hash||"");s&&g(s,!0)})}p();a.matches&&c();a.addEventListener("change",()=>{p(),requestAnimationFrame(()=>{a.matches&&c()})});window.addEventListener("scroll",c,{passive:!0});window.addEventListener("resize",R);window.addEventListener("load",()=>{c(),C()},{once:!0});</script> </div> <div class="fixed inset-0 z-50 pointer-events-none data-[open=true]:pointer-events-auto lg:hidden" data-mobile-toc data-open="false" aria-hidden="true"><div class="absolute inset-0 bg-zinc-900/40 opacity-0 transition duration-200 data-[open=true]:opacity-100 dark:bg-black/50" data-mobile-toc-backdrop></div><div id="mobile-toc-drawer" role="dialog" aria-modal="true" aria-label="文章目录" class="absolute inset-x-0 bottom-0 translate-y-full rounded-t-2xl border border-zinc-200 bg-neutral-50/95 shadow-2xl ring-1 ring-black/5 transition duration-200 data-[open=true]:translate-y-0 dark:border-zinc-800 dark:bg-zinc-900/95 dark:ring-white/10" data-mobile-toc-drawer><div class="flex items-center justify-between gap-3 px-4 pt-4 pb-3"><div><p class="text-sm font-semibold text-zinc-900 dark:text-zinc-50">文章目录</p><p class="text-xs text-zinc-500 dark:text-zinc-400">点击条目可跳转</p></div><button type="button" class="rounded-full border border-zinc-200 bg-neutral-50 px-3 py-1 text-sm font-medium text-zinc-800 shadow-sm transition hover:text-sky-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:text-sky-400 dark:focus-visible:ring-offset-zinc-900" data-mobile-toc-close>
+关闭
+</button></div><div class="max-h-[60vh] overflow-y-auto px-4 pb-5" data-mobile-toc-scroll><ol class="space-y-3 text-sm"><li><a href="#llm-引擎与引擎核心" data-toc-link data-mobile-toc-link data-target="llm-引擎与引擎核心" title="LLM 引擎与引擎核心¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>LLM 引擎与引擎核心¶</span></a></li><li><a href="#llm-引擎构造函数" data-toc-link data-mobile-toc-link data-target="llm-引擎构造函数" title="LLM 引擎构造函数¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>LLM 引擎构造函数¶</span></a></li><li><a href="#生成函数" data-toc-link data-mobile-toc-link data-target="生成函数" title="生成函数¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>生成函数¶</span></a></li><li><a href="#调度器" data-toc-link data-mobile-toc-link data-target="调度器" title="调度器¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>调度器¶</span></a></li><li><a href="#运行前向传递" data-toc-link data-mobile-toc-link data-target="运行前向传递" title="运行前向传递¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>运行前向传递¶</span></a></li><li><a href="#高级功能--扩展核心引擎逻辑" data-toc-link data-mobile-toc-link data-target="高级功能--扩展核心引擎逻辑" title="高级功能 — 扩展核心引擎逻辑¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>高级功能 — 扩展核心引擎逻辑¶</span></a></li><li><a href="#分块预填充" data-toc-link data-mobile-toc-link data-target="分块预填充" title="分块预填充¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>分块预填充¶</span></a></li><li><a href="#前缀缓存" data-toc-link data-mobile-toc-link data-target="前缀缓存" title="前缀缓存¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>前缀缓存¶</span></a></li><li><a href="#引导解码fsm" data-toc-link data-mobile-toc-link data-target="引导解码fsm" title="引导解码（FSM）¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>引导解码（FSM）¶</span></a></li><li><a href="#推测解码" data-toc-link data-mobile-toc-link data-target="推测解码" title="推测解码¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>推测解码¶</span></a></li><li><a href="#解耦-pd" data-toc-link data-mobile-toc-link data-target="解耦-pd" title="解耦 P/D¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>解耦 P/D¶</span></a></li><li><a href="#从uniprocexecutor到multiprocexecutor" data-toc-link data-mobile-toc-link data-target="从uniprocexecutor到multiprocexecutor" title="从UniprocExecutor到MultiProcExecutor¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>从UniprocExecutor到MultiProcExecutor¶</span></a></li><li><a href="#分布式系统服务-vllm" data-toc-link data-mobile-toc-link data-target="分布式系统服务-vllm" title="分布式系统服务 vLLM¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>分布式系统服务 vLLM¶</span></a></li><li><a href="#在无头服务器节点上" data-toc-link data-mobile-toc-link data-target="在无头服务器节点上" title="在无头服务器节点上¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>在无头服务器节点上¶</span></a></li><li><a href="#在api服务器节点上" data-toc-link data-mobile-toc-link data-target="在api服务器节点上" title="在API服务器节点上¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>在API服务器节点上¶</span></a></li><li><a href="#基准测试和自动调优---延迟与吞吐量" data-toc-link data-mobile-toc-link data-target="基准测试和自动调优---延迟与吞吐量" title="基准测试和自动调优 - 延迟与吞吐量¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>基准测试和自动调优 - 延迟与吞吐量¶</span></a></li><li><a href="#如何在-vllm-中进行基准测试" data-toc-link data-mobile-toc-link data-target="如何在-vllm-中进行基准测试" title="如何在 vLLM 中进行基准测试¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>如何在 vLLM 中进行基准测试¶</span></a></li><li><a href="#尾声" data-toc-link data-mobile-toc-link data-target="尾声" title="尾声¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>尾声¶</span></a></li><li><a href="#致谢" data-toc-link data-mobile-toc-link data-target="致谢" title="致谢¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>致谢¶</span></a></li><li><a href="#参考文献" data-toc-link data-mobile-toc-link data-target="参考文献" title="参考文献¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>参考文献¶</span></a></li></ol></div></div></div><script type="module">const c=document.querySelector("[data-mobile-toc]"),s=document.querySelector("[data-mobile-toc-drawer]"),a=document.querySelector("[data-mobile-toc-backdrop]"),p=()=>Array.from(document.querySelectorAll("[data-mobile-toc-open]")),w=document.querySelector("[data-mobile-toc-close]"),f=()=>Array.from((s??c)?.querySelectorAll("[data-mobile-toc-link]")??[]),o=document.body,k=window.matchMedia("(prefers-reduced-motion: reduce)"),E=k.matches,g=96;let i=0;const v=e=>window.dispatchEvent(new CustomEvent("mobile-toc:toggle",{detail:{open:e}})),S=e=>{p().forEach(t=>t.setAttribute("aria-expanded",e?"true":"false"))},l=e=>{e.preventDefault(),r(!0)},y=()=>{p().forEach(e=>{e.removeEventListener("click",l),e.addEventListener("click",l)})},A=()=>{i=window.scrollY,o.style.position="fixed",o.style.width="100%",o.style.top=`-${i}px`},L=()=>{o.style.position="",o.style.width="",o.style.top="",window.scrollTo({top:i})},r=e=>{!c||!s||(c.dataset.open=String(e),s.dataset.open=String(e),a?.setAttribute("data-open",String(e)),c.setAttribute("aria-hidden",e?"false":"true"),S(e),v(e),e?A():L())},B=()=>{f().map(t=>document.getElementById(t.dataset.target||"")).filter(t=>!!t).forEach(t=>{t.style.scrollMarginTop=`${g+12}px`})},d=e=>`#${encodeURIComponent(e)}`,h=(e,t=!1)=>{const n=document.getElementById(e);if(!n)return;const b=window.scrollY+n.getBoundingClientRect().top-g-12;t?history.replaceState(null,"",d(e)):history.pushState(null,"",d(e)),window.scrollTo({top:b,behavior:E?"auto":"smooth"})};y();const T=new MutationObserver(y);T.observe(document.body,{subtree:!0,childList:!0,attributes:!0,attributeFilter:["data-mobile-toc-open"]});w?.addEventListener("click",()=>r(!1));a?.addEventListener("click",e=>{e.target===a&&r(!1)});const u=e=>{const n=e.currentTarget?.dataset.target;n&&(e.preventDefault(),e.stopPropagation(),r(!1),requestAnimationFrame(()=>requestAnimationFrame(()=>h(n))))};f().forEach(e=>{e.removeEventListener("click",u),e.addEventListener("click",u)});window.addEventListener("keydown",e=>{e.key==="Escape"&&r(!1)});B();const m=decodeURIComponent(location.hash.replace(/^#/,""));m&&requestAnimationFrame(()=>h(m,!0));</script> <div class="floating-action-stack fixed z-40 flex flex-col items-end gap-3 lg:hidden pointer-events-auto transition-opacity data-[toc-open=true]:opacity-0 data-[toc-open=true]:pointer-events-none" data-floating-action-stack data-target-selector="[data-article]" style="inset-inline-end: calc(env(safe-area-inset-right, 0px) + 1rem); inset-block-end: calc(env(safe-area-inset-bottom, 0px) + 1rem);"><button type="button" class="floating-action-stack__button h-11 w-11 rounded-full border border-gray-200 bg-white/90 text-gray-900 shadow-lg backdrop-blur-sm ring-offset-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 hover:-translate-y-0.5 hover:border-blue-200 hover:text-blue-600 data-[visible=false]:opacity-0 data-[visible=false]:pointer-events-none data-[visible=true]:opacity-100 data-[visible=true]:pointer-events-auto dark:border-gray-800 dark:bg-gray-900/85 dark:text-gray-100 dark:ring-offset-gray-900 dark:hover:border-blue-500/50 dark:hover:text-blue-300" data-floating-action-button data-action="top" data-visible="false" style="transition-delay: 0ms;" aria-label="返回文章顶部"><span class="sr-only">顶部</span><span aria-hidden="true" class="text-base">⬆️</span></button><button type="button" class="floating-action-stack__button h-11 w-11 rounded-full border border-gray-200 bg-white/90 text-gray-900 shadow-lg backdrop-blur-sm ring-offset-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 hover:-translate-y-0.5 hover:border-blue-200 hover:text-blue-600 data-[visible=false]:opacity-0 data-[visible=false]:pointer-events-none data-[visible=true]:opacity-100 data-[visible=true]:pointer-events-auto dark:border-gray-800 dark:bg-gray-900/85 dark:text-gray-100 dark:ring-offset-gray-900 dark:hover:border-blue-500/50 dark:hover:text-blue-300" data-floating-action-button data-action="toc" data-visible="true" style="transition-delay: 10ms;" aria-label="打开目录抽屉" data-mobile-toc-open="true"><span class="sr-only">目录</span><span aria-hidden="true" class="text-base">📑</span></button><button type="button" class="floating-action-stack__button h-11 w-11 rounded-full border border-gray-200 bg-white/90 text-gray-900 shadow-lg backdrop-blur-sm ring-offset-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 hover:-translate-y-0.5 hover:border-blue-200 hover:text-blue-600 data-[visible=false]:opacity-0 data-[visible=false]:pointer-events-none data-[visible=true]:opacity-100 data-[visible=true]:pointer-events-auto dark:border-gray-800 dark:bg-gray-900/85 dark:text-gray-100 dark:ring-offset-gray-900 dark:hover:border-blue-500/50 dark:hover:text-blue-300" data-floating-action-button data-action="bottom" data-visible="true" style="transition-delay: 20ms;" aria-label="跳转文章底部"><span class="sr-only">底部</span><span aria-hidden="true" class="text-base">⬇️</span></button></div><script type="module">const r=document.querySelector("[data-floating-action-stack]"),B=r?.dataset.targetSelector||"[data-article]",v=r?.querySelector('[data-action="top"]'),E=r?.querySelector('[data-action="bottom"]'),f=r?.querySelector('[data-action="toc"]'),M=window.matchMedia("(prefers-reduced-motion: reduce)"),l=M.matches,i=document.querySelector("[data-mobile-toc]"),c=document.querySelector(B);let s=0,y=0,d=!1;const R=()=>{if(!c)return window;let t=c.parentElement;for(;t;){const o=window.getComputedStyle(t).overflowY;if((o==="auto"||o==="scroll")&&t.scrollHeight>t.clientHeight)return t;t=t.parentElement}return window},n=R(),a=()=>{if(!c)return;s=c.getBoundingClientRect().top+window.scrollY,y=c.scrollHeight},x=(t,e,o)=>Math.min(Math.max(t,e),o),p=(t,e)=>{t&&(t.dataset.visible=e?"true":"false")},u=()=>{if(!c)return;const t=120,e=y>window.innerHeight+40,o=window.scrollY>s+t;p(v,o),p(E,e),d=!1},S=()=>{d||(d=!0,requestAnimationFrame(u))},C=()=>{const t=x(s,0,Number.MAX_SAFE_INTEGER);window.scrollTo({top:t,behavior:l?"auto":"smooth"})},k=()=>{const t=document.getElementById("page-bottom-anchor");if(t){const e=t.getBoundingClientRect(),w=window.scrollY+e.bottom-window.innerHeight;window.scrollTo({top:Math.max(0,w),behavior:l?"auto":"smooth"});let h=0;const T=2,g=()=>{h>=T||(h++,setTimeout(()=>{const b=n instanceof Window?document.documentElement:n,H=n instanceof Window?window.scrollY:n.scrollTop;if(b.scrollHeight-b.clientHeight-H>10){const Y=t.getBoundingClientRect(),q=window.scrollY+Y.bottom-window.innerHeight;window.scrollTo({top:Math.max(0,q),behavior:l?"auto":"smooth"}),g()}},400))};g()}else{const e=n instanceof Window?document.documentElement:n,o=Math.max(e.scrollHeight-e.clientHeight,s);n instanceof Window?window.scrollTo({top:o,behavior:l?"auto":"smooth"}):n.scrollTo({top:o,behavior:l?"auto":"smooth"})}},m=t=>{r&&(r.dataset.tocOpen=t?"true":"false")};m(i?.dataset.open==="true");r&&c&&(a(),u(),window.addEventListener("scroll",S,{passive:!0}),window.addEventListener("resize",()=>{a(),S()}),window.addEventListener("load",()=>{a(),u()},{once:!0}),v?.addEventListener("click",C),E?.addEventListener("click",k));f?.addEventListener("click",()=>{requestAnimationFrame(()=>f?.blur())});window.addEventListener("mobile-toc:toggle",t=>{const e=t.detail;e&&m(e.open)});i&&new MutationObserver(()=>{m(i.dataset.open==="true")}).observe(i,{attributes:!0,attributeFilter:["data-open"]});</script> </main> <footer class="py-8 mt-auto border-t border-zinc-200 dark:border-zinc-800"> <div class="container mx-auto px-4 text-center text-zinc-500 max-w-4xl">
+&copy; 2026 Yuanle Liu. All rights reserved. </div> </footer>  <script type="module">const i=new WeakMap,c=(e,t)=>{e.dataset.state=t,t==="copied"?e.textContent="Copied":t==="error"?e.textContent="Failed":e.textContent="Copy";const o=i.get(e);if(o&&window.clearTimeout(o),t!=="idle"){const r=window.setTimeout(()=>c(e,"idle"),2e3);i.set(e,r)}},n=async e=>{const t=e.closest(".code-block");if(!t)return;const o=t.getAttribute("data-raw-code")??"";try{await navigator.clipboard.writeText(o),c(e,"copied")}catch(r){console.error("Copy failed",r),c(e,"error")}},s=()=>{document.addEventListener("click",e=>{const o=e.target?.closest("button.code-block__copy");o&&(e.preventDefault(),n(o))})},a=()=>{typeof document>"u"||s()};a();</script> </body> </html>
