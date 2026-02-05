@@ -198,9 +198,14 @@
 </span><span class="flex-1 truncate" data-title>信息收集与版本检查¶</span></a></li><li><a href="#安全与性能提示" data-toc-link data-mobile-toc-link data-target="安全与性能提示" title="安全与性能提示¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
 #
 </span><span class="flex-1 truncate" data-title>安全与性能提示¶</span></a></li></ol></li> </ol> </nav> </div> </aside> </div> <script type="module">const p=Array.from(document.querySelectorAll("[data-toc-link]")),e=document.querySelector("[data-toc-container]"),i=document.querySelector("[data-toc-shell]"),l=()=>{const t=getComputedStyle(document.documentElement).getPropertyValue("--site-header-height");return parseFloat(t)||0},r=window.matchMedia("(min-width: 1024px)"),g=p.map(t=>document.getElementById(t.dataset.target||"")).filter(t=>!!t),m=()=>{const t=l();g.forEach(n=>{n.style.scrollMarginTop=`${t+12}px`})},w=t=>`#${encodeURIComponent(t)}`,v=t=>decodeURIComponent(t.replace(/^#/,"")),f=t=>{p.forEach(n=>{const o=n.dataset.target===t;n.dataset.active=o?"true":"false",n.setAttribute("aria-current",o?"true":"false")})},u=(t,n=!1)=>{const o=document.getElementById(t);if(!o)return;const a=l(),c=window.scrollY+o.getBoundingClientRect().top-a-12;n?history.replaceState(null,"",w(t)):history.pushState(null,"",w(t)),window.scrollTo({top:c,behavior:"smooth"}),f(t)};p.forEach(t=>t.addEventListener("click",n=>{const o=t.dataset.target;o&&(n.preventDefault(),u(o))}));const y=()=>{e&&(e.dataset.fixed="false",e.style.position="",e.style.left="",e.style.width="",e.style.height="",e.style.maxHeight="",e.style.top="",i&&(i.style.minHeight=""))},x=()=>{if(!e||!i)return;const t=i.getBoundingClientRect(),n=l(),o=`calc(100vh - ${n}px - 16px)`;e.dataset.fixed="true",i.style.minHeight=`${e.offsetHeight}px`,e.style.position="fixed",e.style.top=`${n}px`,e.style.left=`${t.left}px`,e.style.width=`${t.width}px`,e.style.height=o,e.style.maxHeight=o},d=()=>{if(!e||e.dataset.fixed==="true"||!r.matches)return;const t=parseFloat(getComputedStyle(e).top||"0"),n=e.offsetTop-t;if(Number.isNaN(t)||window.scrollY<n)return;const o=e.getBoundingClientRect().top;Math.abs(o-t)>2&&x()},E=()=>{if(!r.matches){y();return}e?.dataset.fixed==="true"&&x()};if(g.length>0){m();const t=new IntersectionObserver(o=>{const a=o.filter(s=>s.isIntersecting).sort((s,h)=>s.target.getBoundingClientRect().top-h.target.getBoundingClientRect().top);if(a[0]){f(a[0].target.id);return}const c=o.filter(s=>s.boundingClientRect.top<0).sort((s,h)=>h.target.getBoundingClientRect().top-s.target.getBoundingClientRect().top);c[0]&&f(c[0].target.id)},{rootMargin:`-${l()}px 0% -55% 0%`,threshold:[0,.25,.5,1]});g.forEach(o=>t.observe(o));const n=v(location.hash||"");n&&requestAnimationFrame(()=>u(n,!0)),window.addEventListener("hashchange",()=>{const o=v(location.hash||"");o&&u(o,!0)})}y();r.matches&&d();r.addEventListener("change",()=>{y(),requestAnimationFrame(()=>{r.matches&&d()})});window.addEventListener("scroll",d,{passive:!0});window.addEventListener("resize",E);window.addEventListener("load",()=>{d(),m()},{once:!0});window.addEventListener("headerheightchange",()=>{m()});</script> <article class="prose dark:prose-invert max-w-none prose-img:rounded-xl min-w-0" data-article> <header class="mb-8 not-prose"> <div class="flex flex-col gap-6 md:grid md:grid-cols-1"> <div class="flex flex-col gap-4 "> <h1 class="text-3xl md:text-4xl font-bold leading-tight text-left"> NCCL Debug 全栈手段：常用环境变量、日志/拓扑/通信诊断与 Hang/性能/数据异常排查 </h1> <div class="text-zinc-500 text-sm flex items-start justify-start gap-3 flex-wrap "> <time class="flex items-center gap-1" datetime="2026-02-05T00:00:00.000Z" title="发布于 2026-02-05"> <span aria-hidden="true">📅</span> <span>
-发布于 <span class="font-medium">2026-02-05</span> </span> </time>   <div class="flex items-center gap-1"> <span aria-hidden="true">✍️</span> 12120 字
-</div> <div class="flex items-center gap-1" title="12120 words"> <span aria-hidden="true">⏱️</span> 27 min read </div> </div>  </div>   </div> </header> <h1 id="nccl-debug-全栈手段常用环境变量日志拓扑通信诊断与-hang性能数据异常排查">NCCL Debug 全栈手段：常用环境变量、日志/拓扑/通信诊断与 Hang/性能/数据异常排查<a href="#nccl-debug-全栈手段常用环境变量日志拓扑通信诊断与-hang性能数据异常排查" class="heading-anchor" aria-label="Link to NCCL Debug 全栈手段：常用环境变量、日志/拓扑/通信诊断与 Hang/性能/数据异常排查">¶</a></h1>
-<p>本文面向使用 PyTorch DDP / Megatron / DeepSpeed 或自研分布式训练框架的工程师，系统讲解 NCCL 调试的工具箱和环境变量设置方法，覆盖 NCCL hang、NCCL error、性能退化、跨机带宽不足、GDR/IB/NVLink 通信异常等场景的诊断思路和解决方案。</p>
+发布于 <span class="font-medium">2026-02-05</span> </span> </time>   <div class="flex items-center gap-1"> <span aria-hidden="true">✍️</span> 12116 字
+</div> <div class="flex items-center gap-1" title="12116 words"> <span aria-hidden="true">⏱️</span> 27 min read </div> </div> <div class="flex flex-wrap gap-2 items-center" data-testid="post-tags"> <span class="text-zinc-500 text-sm flex items-center gap-1"> <span aria-hidden="true">🏷️</span> <span>标签：</span> </span> <a href="/blog-preview/previews/pr-323/tags/nccl/" class="tag-chip inline-flex items-center gap-1.5 rounded-full border transition-colors duration-200 font-medium cursor-pointer text-xs px-2 py-1 
+    border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 
+    dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 dark:hover:border-sky-700
+    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-tag-slug="nccl" data-testid="tag-nccl"> <span class="tag-name pointer-events-none">NCCL</span>  </a><a href="/blog-preview/previews/pr-323/tags/distributed-parallel/" class="tag-chip inline-flex items-center gap-1.5 rounded-full border transition-colors duration-200 font-medium cursor-pointer text-xs px-2 py-1 
+    border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 
+    dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 dark:hover:border-sky-700
+    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-tag-slug="distributed-parallel" data-testid="tag-distributed-parallel"> <span class="tag-name pointer-events-none">Distributed Parallel</span>  </a> </div> </div>   </div> </header> <p>本文面向使用 PyTorch DDP / Megatron / DeepSpeed 或自研分布式训练框架的工程师，系统讲解 NCCL 调试的工具箱和环境变量设置方法，覆盖 NCCL hang、NCCL error、性能退化、跨机带宽不足、GDR/IB/NVLink 通信异常等场景的诊断思路和解决方案。</p>
 <h2 id="a-nccl-debug-总览可观测可控制可验证的方面">A. NCCL Debug 总览：可观测、可控制、可验证的方面<a href="#a-nccl-debug-总览可观测可控制可验证的方面" class="heading-anchor" aria-label="Link to A. NCCL Debug 总览：可观测、可控制、可验证的方面">¶</a></h2>
 <p>NCCL（NVIDIA Collectives Communications Library）提供了丰富的环境变量和工具，允许我们从多个层面进行调试：</p>
 <ul>
@@ -227,12 +232,14 @@
 </li>
 <li>
 <p><code>NCCL_DEBUG_SUBSYS</code> 日志子系统过滤：当使用 <code>INFO</code>/<code>TRACE</code> 级别时，此变量可选定感兴趣的子系统，以减少无关输出。支持的子系统有 INIT（初始化）、COLL（集合通信算法）、P2P（点对点直连）、SHM（共享内存）、NET（网络传输）、GRAPH（拓扑检测/图搜索）、TUNING（算法/协议调优）、ENV（环境变量设置）、ALLOC（内存分配）、PROXY（Proxy 线程）、NVLS（NVLink SHARP）、BOOTSTRAP（进程间引导连接）、REG（注册内存）、PROFILE（粗粒度性能 profiling）、RAS（可靠性子系统）等，以及 ALL（全部）。默认的子系统列表是 INIT, BOOTSTRAP, ENV。例如：</p>
-</li>
+<ul>
 <li>
 <p><code>NCCL_DEBUG=INFO NCCL_DEBUG_SUBSYS=NET,GRAPH</code> 只看网络连接和拓扑相关日志。</p>
 </li>
 <li>
 <p>使用前缀 <code>^</code> 可排除子模块，如 <code>NCCL_DEBUG_SUBSYS=ALL,^COLL</code> 表示记录全部但不含集合算法细节。</p>
+</li>
+</ul>
 </li>
 <li>
 <p><code>NCCL_DEBUG_FILE</code> 日志重定向：默认日志输出到 stdout/stderr。设置该变量可将日志写入文件。例如：<br>
@@ -270,19 +277,21 @@
 <ul>
 <li>
 <p>拓扑文件与 Dump：NCCL 提供 <code>NCCL_TOPO_FILE</code> 和 <code>NCCL_TOPO_DUMP_FILE</code> 环境变量来加载或导出拓扑信息。</p>
-</li>
+<ul>
 <li>
 <p><code>NCCL_TOPO_FILE=&#x3C;path></code>：指定一个 XML 文件，让 NCCL 在硬件探测前先加载此文件中描述的拓扑（如 PCIe 交换机结构、NVLink 布局等）。这常用于容器或虚拟化场景下，因为这些环境下 <code>/sys</code> 提供的拓扑可能是虚拟的。NCCL 默认会尝试加载 <code>/var/run/nvidia-topologyd/virtualTopology.xml</code>（如果存在），在某些 GPU 分区或 MIG 场景下这个文件由驱动生成，描述了真实拓扑。如果你怀疑 NCCL 读到了错误的拓扑（导致算法选择不佳），可让管理员提供正确拓扑文件并用此变量加载。</p>
 </li>
 <li>
 <p><code>NCCL_TOPO_DUMP_FILE=&#x3C;path></code>：让 NCCL 在探测完拓扑后导出检测结果为 XML。这份文件可以用于进一步分析或者在另一环境重现。当遇到跨节点通信异常时，可收集每台节点的 dump 文件，比对差异。</p>
 </li>
+</ul>
+</li>
 <li>
 <p>查看日志中的拓扑检测：启用 <code>NCCL_DEBUG_SUBSYS=GRAPH</code>，NCCL 初始化时会打印拓扑相关信息，包括每块 GPU 的 CUDA 设备号、所属 PCIe 开关以及网络接口关联等。例如日志可能显示 NVLink 连接对、InfiniBand NIC 和 GPU 的归属关系等。这能帮助确认 NCCL 判断的拓扑是否符合预期。</p>
 </li>
 <li>
 <p>判定通信走哪条通道：根据 NCCL 日志和系统信息，我们能推断实际使用了 NVLink、PCIe、SHM 还是网络：</p>
-</li>
+<ul>
 <li>
 <p>NVLink: 如果两 GPU 同机直连 NVLink，NCCL 通常使用 P2P 通道直接传输。日志 <code>NET/Plugin</code> 部分不会提及 socket 或 IB 连接。可用 CUDA 自带的 <code>p2pBandwidthLatencyTest</code> 工具验证 GPU 对间带宽是否达 NVLink 水平。NVLink 6 (H100) 双向理论带宽可达 50 GB/s+，NVSwitch 情况下 8 卡 AllReduce 总带宽甚至更高。</p>
 </li>
@@ -297,6 +306,8 @@
 </li>
 <li>
 <p>Socket (TCP): 当 IB 不可用或被禁用时，NCCL 会回退到 TCP/socket。日志会出现 <code>NCCL Net: Using Socket</code> 字样。这通常性能较差（几十 Gb/s 级别），但有助于隔离 IB 问题——如 IB 硬件有问题，用 socket 反而不 hang，则进一步指向 IB 配置故障。</p>
+</li>
+</ul>
 </li>
 <li>
 <p>跨网卡/多通道判断：在多 NIC 系统（如每台服务器有 dual-port IB）上，NCCL 默认尝试同一环上的节点用相同编号 NIC 通信（避免 Rail 间干扰）。可以通过设置 <code>NCCL_CROSS_NIC=1</code> 强制允许环在不同 NIC 交叉（适合单交换机扇出网络），或 <code>NCCL_CROSS_NIC=0</code> 固定不交叉（适合双网双 Rail 架构）。若怀疑 NCCL 没有充分利用多 NIC，可调整此值并用日志验证每环使用的接口变化。此外，<code>NCCL_IB_MERGE_NICS</code> 控制是否把双端口 NIC 当作单逻辑设备聚合带宽（默认启用）。如果启用却性能异常波动，尝试设 <code>NCCL_IB_MERGE_NICS=0</code> 拆分使用看看区别。</p>
@@ -319,7 +330,7 @@
 </li>
 <li>
 <p>IB 上的 GPU Direct 开关：早期变量 <code>NCCL_IB_CUDA_SUPPORT</code>（2.4.0 前）用于强制或禁用 GPU Direct RDMA。2.4.0 后改为 <code>NCCL_NET_GDR_LEVEL</code> 等统一控制。当前：</p>
-</li>
+<ul>
 <li>
 <p><code>NCCL_NET_GDR_LEVEL</code> – 控制 NIC 与 GPU 间直连 RDMA 的拓扑距离阈值。可取 <code>LOC/PIX/PXB/PHB/SYS</code>（同 P2P_LEVEL 含义但针对 NIC-GPU）。默认 NCCL 会自动选。例如在 CPU 直连 NIC (PHB) 的系统上，如不想用 GPU 直接读写 NIC 内存，可设 <code>LOC</code> 禁用 GDR。反之强制 GDR 则可设 <code>SYS</code>（始终开）。调试场景：怀疑 GDR DMA-BUF 模式有问题，可暂时降级为 CPU 中转，通过设 <code>NCCL_NET_GDR_LEVEL=LOC</code> 来验证性能/稳定性变化。</p>
 </li>
@@ -328,6 +339,8 @@
 </li>
 <li>
 <p><code>NCCL_NET_GDR_C2C</code> – (since 2.26) 针对 CPU 直连 NIC 且 CPU 经 C2C (比如 UPI) 连接 GPU 的场景，是否仍然启用 GDR。默认 2.27 起 =1 启用。若平台不支持可能需设 0 禁用。</p>
+</li>
+</ul>
 </li>
 <li>
 <p>PCIe Relaxed Ordering (RO)：<code>NCCL_IB_PCI_RELAXED_ORDERING</code> – 控制 IBverb 传输是否启用 PCIe Relaxed Ordering。RO 能显著提高虚拟化环境下 IB 带宽。默认=2（自动检测 RO 支持则用）。如果在 VMware/Hyper-V 等 VM 里性能低，检查是否 RO 生效，可尝试手动设=1 强制开启（需要底层支持，不支持会报错）。另一方面，某些平台 RO 不稳定，可以=0 禁用。</p>
@@ -353,12 +366,14 @@
 </li>
 <li>
 <p>线程与并发：NCCL Socket 传输采用多线程模型，每条连接可用多个线程和 socket 并行传输以提升带宽：</p>
-</li>
+<ul>
 <li>
 <p><code>NCCL_SOCKET_NTHREADS</code> – 每个网络连接使用的 CPU 线程数。默认云环境 AWS=2, GCP gVNIC=4, 其它=1。可调范围 1-16，但需注意 <code>NCCL_SOCKET_NTHREADS * NCCL_NSOCKS_PERTHREAD &#x3C;= 64</code>。在 100Gb 以上网络，可考虑手动设 4 线程以提升利用率。副作用：线程越多 CPU 占用越高，甚至抢占训练线程。</p>
 </li>
 <li>
 <p><code>NCCL_NSOCKS_PERTHREAD</code> – 每线程打开的 TCP 套接字数。AWS 默认 8，其它默认 1。如果单连接速度有限（如单 TCP 流跑不满带宽），可以每线程开多个 socket 并行发送。同样乘积受限 64。</p>
+</li>
+</ul>
 </li>
 </ul>
 <p>这两个参数对多节点大带宽 AllReduce 性能影响明显。例如在单机 4x100 Gb 网络的 DGX A100 上，默认配置可能只能到 ~80 Gb/s，需要增大线程和 sockets 并行度才能接近理论带宽。但要小心调优需在确保通信稳定基础上进行。</p>
@@ -391,9 +406,9 @@
 </li>
 <li>
 <p>通道数：NCCL 使用多条“通道”（channel）并行通信，对应多个 CUDA block：</p>
-</li>
-<li>
-<p><code>NCCL_MIN_NCHANNELS</code> / <code>NCCL_MAX_NCHANNELS</code> – 限制最少/最多通道数。旧版本叫 NRINGS。这影响 GPU 参与通信的 block 数。增加 channels 有助于提升大量小消息的重叠效率，但过多会争夺 GPU 计算资源。NCCL 2.5 起推荐通过更细粒度的 <code>NCCL_MIN_CTAS</code>/<code>NCCL_MAX_CTAS</code> 控制每 SM 并发 CTA 数量。通常除非做性能优化，不建议显式修改这些。</p>
+<ul>
+<li><code>NCCL_MIN_NCHANNELS</code> / <code>NCCL_MAX_NCHANNELS</code> – 限制最少/最多通道数。旧版本叫 NRINGS。这影响 GPU 参与通信的 block 数。增加 channels 有助于提升大量小消息的重叠效率，但过多会争夺 GPU 计算资源。NCCL 2.5 起推荐通过更细粒度的 <code>NCCL_MIN_CTAS</code>/<code>NCCL_MAX_CTAS</code> 控制每 SM 并发 CTA 数量。通常除非做性能优化，不建议显式修改这些。</li>
+</ul>
 </li>
 <li>
 <p>Check 校验：<code>NCCL_CHECKS_DISABLE</code>（已废弃）– 关闭参数合法性检查，可略微降低延迟。2.2.12 后改用 <code>NCCL_CHECK_POINTERS</code> 控制是否检查 CUDA 指针有效性。默认关闭检查以提高性能，除非调试内存问题不需要打开。</p>
@@ -407,11 +422,19 @@
 <p>协议选择 (<code>NCCL_PROTO</code>): 控制允许使用的消息传输协议，包括 Simple（分段复制，适用于大消息高带宽）、LL（Low Latency，适用于小消息低延迟）、LL128（优化长消息的小延迟算法，需要硬件支持）。用法为列出协议或以 <code>^</code> 列出排除协议。默认行为：支持 LL128 的平台开启全部三种，否则 LL128 不用。重要提示：NVIDIA 明确指出，不要随意启用 LL128 在不支持的平台，否则可能导致数据错误。LL128 一般要求 NVLink 拓扑良好的平台（如 DGX），在 PCIe 集群上 NCCL 默认已禁用 LL128。调试中，禁用 LL128 是常用手段：不少 NCCL 已知 Bug（比如 2.8 版本 Collnet 算法配合 LL128 在部分拓扑上出错）可以通过 <code>NCCL_PROTO=^LL128</code> 规避。如果问题消失，可据此怀疑 LL128 实现问题然后查找对应补丁或升级 NCCL 版本。</p>
 </li>
 <li>
-<p>算法选择 (<code>NCCL_ALGO</code>): 控制集合通信算法，如 Ring、Tree、CollNet 等。2.24+版本支持更复杂的配置语法，可按操作类型分别指定算法列表或排除。例如：<br>
-<code>NCCL_ALGO=Ring</code> 强制全部用环形算法；<br>
-<code>NCCL_ALGO=^Tree</code> 禁用树算法（如怀疑 Tree 实现有 Bug，NCCL 会自动 fallback 环算法）；<br>
-<code>NCCL_ALGO="allreduce:tree,ring"</code> 仅 AllReduce 用树或环，其它操作不变。<br>
-默认 NCCL 会根据节点拓扑和消息大小自动混用多种算法，避免盲目固定导致性能下降。然而调试时，当某算法路径怀疑有问题，可以用排除法验证。例如树形算法在跨机时延较大，可以暂禁 Tree 看性能是否提升，从而确认是否需要调整树算法触发阈值（老版本通过 NCCL_TREE_THRESHOLD 控制消息大小阈值）。又如 CollNet 算法（要求特殊网络硬件）在不支持场景下应该自动不用，但如怀疑错误触发，可直接 <code>^CollNet</code>。</p>
+<p>算法选择 (<code>NCCL_ALGO</code>): 控制集合通信算法，如 Ring、Tree、CollNet 等。2.24+版本支持更复杂的配置语法，可按操作类型分别指定算法列表或排除。例如：</p>
+<ul>
+<li>
+<p><code>NCCL_ALGO=Ring</code> 强制全部用环形算法；</p>
+</li>
+<li>
+<p><code>NCCL_ALGO=^Tree</code> 禁用树算法（如怀疑 Tree 实现有 Bug，NCCL 会自动 fallback 环算法）；</p>
+</li>
+<li>
+<p><code>NCCL_ALGO="allreduce:tree,ring"</code> 仅 AllReduce 用树或环，其它操作不变。</p>
+</li>
+</ul>
+<p>默认 NCCL 会根据节点拓扑和消息大小自动混用多种算法，避免盲目固定导致性能下降。然而调试时，当某算法路径怀疑有问题，可以用排除法验证。例如树形算法在跨机时延较大，可以暂禁 Tree 看性能是否提升，从而确认是否需要调整树算法触发阈值（老版本通过 NCCL_TREE_THRESHOLD 控制消息大小阈值）。又如 CollNet 算法（要求特殊网络硬件）在不支持场景下应该自动不用，但如怀疑错误触发，可直接 <code>^CollNet</code>。</p>
 </li>
 <li>
 <p>链路聚合算法 (NVLS/Multi-NIC 等)：新版本 NCCL 针对 NVSwitch 平台引入 NVLS（NVLink SHARP）算法，以及 MNNVL（跨节点 NVLink）支持等。环境变量如 <code>NCCL_NVLS_ENABLE</code> 控制 NVLS 开/关（默认 2=自动），<code>NCCL_MNNVL_ENABLE</code> 控制多节点 NVLink。这些一般 NCCL 默认自动处理。如果遇到 NVLS 资源分配失败引起 hang（2.27 版一度出现 silent fallback hang 问题），可以临时 <code>NCCL_NVLS_ENABLE=0</code> 来禁用 NVLS 验证是否问题消失，然后升级新版修复。</p>
@@ -430,7 +453,7 @@
 </li>
 <li>
 <p>NCCL RAS 子系统：从 NCCL 2.24 起，可以通过 RAS 接口查询 NCCL communicator 的运行状态，实现外部监控。相关变量：</p>
-</li>
+<ul>
 <li>
 <p><code>NCCL_RAS_ENABLE</code> – 开启 RAS 功能（默认 1 启用）。如不需要可设 0 完全关闭。</p>
 </li>
@@ -442,15 +465,17 @@
 </li>
 </ul>
 <p>开启后，可使用 NCCL 提供的 <code>ncclras</code> CLI 工具连接 RAS 端口查询状态（如有哪些 Collective 在进行，是否卡住）。这在 Hang 未超时时特别有价值，可以辅助判断是哪一步停滞。不过 RAS 属新特性，目前主要用于 NVIDIA 内部监控和高级用户。</p>
-<ul>
-<li>Abort 行为：NCCL 默认在检测到无法恢复的错误时会调用 <code>ncclCommAbort</code> 终止 communicator（而不是安静 Hang）。在较新版本，NCCL abort 会打印更详细的上下文信息。用户无须配置此功能，但要确保捕获并处理返回的 ncclResult_t 错误码。</li>
+</li>
+<li>
+<p>Abort 行为：NCCL 默认在检测到无法恢复的错误时会调用 <code>ncclCommAbort</code> 终止 communicator（而不是安静 Hang）。在较新版本，NCCL abort 会打印更详细的上下文信息。用户无须配置此功能，但要确保捕获并处理返回的 ncclResult_t 错误码。</p>
+</li>
 </ul>
 <h3 id="pytorch-processgroupnccl-容错设置">PyTorch ProcessGroupNCCL 容错设置：<a href="#pytorch-processgroupnccl-容错设置" class="heading-anchor" aria-label="Link to PyTorch ProcessGroupNCCL 容错设置：">¶</a></h3>
 <p>PyTorch 自己也提供了环境变量来控制 NCCL 后端的错误处理和超时机制：</p>
 <ul>
 <li>
 <p>Watchdog 线程 &#x26; 阻塞等待：默认情况下，PyTorch 每个进程启动一个 Watchdog 线程监视 NCCL 操作是否卡住。当某 GPU 卡住时，Watchdog 会在一定时间后使所有进程报错退出。可以通过 <code>torch.distributed.init_process_group(timeout=...)</code> 设置超时时间（默认一般 30 min）。以下环境变量可调整此行为：</p>
-</li>
+<ul>
 <li>
 <p><code>TORCH_NCCL_BLOCKING_WAIT</code> – 设为 <code>1</code> 则使得 <code>dist.all_reduce(...).wait()</code> 等待调用变为阻塞模式。即发生超时时，会抛出异常而不是静默等待。建议在调试时开启，以便及时捕获 Hang 而不是无限挂住进程。</p>
 </li>
@@ -462,15 +487,19 @@
 </li>
 <li>
 <p>超时信息收集：前述 <code>TORCH_NCCL_DUMP_ON_TIMEOUT=1</code> 配合 Trace Buffer，可以在 Watchdog 认定超时时，自动收集调试信息。另外还有：</p>
-</li>
+<ul>
 <li>
 <p><code>TORCH_NCCL_HEARTBEAT_TIMEOUT_SEC</code> – Watchdog 心跳检测的周期，默认约 5 s。<code>TORCH_NCCL_ENABLE_MONITORING=1</code> 时，PyTorch 会再启一个监控线程，如果发现 Watchdog 本身卡死（可能因为死锁），则在此时间后强制 kill 进程。一般不需改这个值，除非调试环境下希望更快触发监控。</p>
 </li>
 <li>
 <p><code>TORCH_NCCL_COORD_CHECK_MS</code> / <code>TORCH_NCCL_WAIT_TIMEOUT_DUMP_MS</code> – 这些控制多个 rank 协调 dump 的时序和等待时间。除非深入分析，否则用默认即可（1000 ms 间隔，额外等待同样长收集完 dump）。</p>
 </li>
+</ul>
+</li>
 <li>
 <p>数据检查：<code>TORCH_NCCL_NAN_CHECK=1</code> 可在每次 collective 调用时对张量进行 NaN/Inf 检查。发现 NaN 会报错退出，防止带着坏数据进行 AllReduce。这在怀疑 NCCL 数据腐蚀或上层算子问题时有帮助。但注意性能损耗较大，仅调试暂时开启。</p>
+</li>
+</ul>
 </li>
 </ul>
 <p>通过以上机制，PyTorch 尽量做到某进程出错，整体及时退出，防止集群资源长时间被挂住进程占用。调试过程中，充分利用这些设置能缩短排查周期：与其等待默认 30 分钟超时，不如设置短超时并开启 Dump，快速拿到信息。</p>
@@ -489,8 +518,6 @@
 </li>
 <li>
 <p>排查步骤：</p>
-</li>
-</ul>
 <ol>
 <li>
 <p>基础连通性：确认各节点间彼此能 ping 通，并且没有防火墙阻挡 NCCL 默认使用的端口 (NCCL 默认随机挑选高位端口，可通过 <code>net.ipv4.ip_local_port_range</code> 调整范围)。对使用 IB/RoCE 的，检查 <code>ibstat</code> 状态、子网管理器（Subnet Manager）正常。</p>
@@ -507,10 +534,10 @@
 尝试在两节点上跑简单 AllReduce，看能否 Hang 复现。加上 <code>NCCL_DEBUG=INFO</code> 捕获在哪一步挂。</p>
 </li>
 </ol>
-<ul>
+</li>
 <li>
 <p>建议 env 组合：</p>
-</li>
+<ul>
 <li>
 <p><em>保守调试</em>：<code>NCCL_DEBUG=INFO NCCL_SOCKET_IFNAME=&#x3C;iface></code> 用于观察和纠偏。</p>
 </li>
@@ -519,6 +546,8 @@
 </li>
 <li>
 <p>验证修复：在确认网络配置无误后（如关闭防火墙或正确设置 RoCE PFC 等），重新打开 IB 跑 nccl-tests 验证 AllReduce 成功、带宽正常。</p>
+</li>
+</ul>
 </li>
 </ul>
 <p>场景 2：训练中途某一步挂死（没有显式 error）</p>
@@ -531,8 +560,6 @@
 </li>
 <li>
 <p>排查步骤：</p>
-</li>
-</ul>
 <ol>
 <li>
 <p>判断哪种 Hang：首先区分是所有 rank 都在等（典型集体不同步），还是个别 rank 崩溃导致 others 在等。可以通过 <code>dmesg</code> 查看是否有 GPU 异常日志（如 kernel 打印 Xid 错误表示某 rank GPU 出问题），也可使用 PyTorch 的 <code>TORCH_NCCL_BLOCKING_WAIT=1</code> 让出问题 rank 抛异常而不是静默挂住。</p>
@@ -547,10 +574,10 @@
 <p>外部介入：利用 <code>gdb</code> attach 到挂住的一个进程，打印堆栈。如果看到某 NCCL kernel 卡在 CUDA sync，可能 CUDA 这端有异常（如非法内存访问未报）。这时设置环境 <code>CUDA_LAUNCH_BLOCKING=1</code> 重运行一次，方便让 CUDA 错误暴露。</p>
 </li>
 </ol>
-<ul>
+</li>
 <li>
 <p>建议 env 组合：</p>
-</li>
+<ul>
 <li>
 <p><em>配合监控</em>：<code>TORCH_NCCL_BLOCKING_WAIT=1 TORCH_NCCL_ASYNC_ERROR_HANDLING=1</code> 使任何 rank 出错立刻中止所有进程，防止部分 hang。</p>
 </li>
@@ -559,6 +586,8 @@
 </li>
 <li>
 <p><em>隔离 NCCL 问题</em>：<code>NCCL_PROTO=^LL128</code> 试排除协议因素；<code>NCCL_ALGO=Ring</code> 固定算法验证。</p>
+</li>
+</ul>
 </li>
 <li>
 <p>验证修复：找到根因后采取相应措施。例如如果是应用代码漏调 collective，要修复逻辑。如果是 NCCL bug，则升级到官方修复版本或继续使用工作区（如禁用 LL128 作为 workaround）。最终在修复版本环境下长时间跑验证 Hang 不再发生。</p>
@@ -574,8 +603,6 @@
 </li>
 <li>
 <p>排查步骤：</p>
-</li>
-</ul>
 <ol>
 <li>
 <p>查看 Bus BW vs Alg BW：用 <code>NCCL_DEBUG=INFO</code> 跑 <code>all_reduce_perf -g 8 -n 10</code> 并观察输出。例如 8 卡 NVSwitch 理论一来一回 BusBW=144 GB/s，而 Algbw=120 GB/s 时 BusBW 应达 ~240 GB/s。如果 BusBW 恰好等于当前物理接口峰值，比如 80 GB/s ~ PCIe4 x16 极限，那么说明 NCCL 只用了 PCIe 没有 NVSwitch。</p>
@@ -590,10 +617,10 @@
 <p>并行调优：排除以上因素后，如果仍然低于理论，可以尝试增加并发：调整 <code>NCCL_SOCKET_NTHREADS</code> 和 <code>NCCL_NSOCKS_PERTHREAD</code>。特别在高速以太网上，默认 (1 线程, 1 socket) 很可能跑不满 100Gb。尝试值如 4 和 4（总 16 socket 并行），观察 busbw 是否接近物理线速。注意此调整需在较大 batch 下观察平均性能，并警惕 CPU 占用上升。</p>
 </li>
 </ol>
-<ul>
+</li>
 <li>
 <p>建议 env 组合：</p>
-</li>
+<ul>
 <li>
 <p><em>拓扑修正</em>：容器中建议 <code>--cap-add SYS_NICE</code> 以启用 NUMA 支持，或挂载正确的 /sys。针对 NVSwitch 可用 <code>NCCL_TOPO_DUMP_FILE</code> 确认拓扑识别结果。</p>
 </li>
@@ -602,6 +629,8 @@
 </li>
 <li>
 <p>验证修复：重新运行 nccl-tests 并比较带宽：Algorithm BW 提升且 busBW 接近硬件峰值（例如 12 GB/s 于 100GbE，或 NVSwitch 下达到 120+ GB/s）。还应测试实际训练任务的 step time 是否同步改善，以确保调优有效且无副作用。</p>
+</li>
+</ul>
 </li>
 </ul>
 <p>场景 4：NCCL 报错 “Unhandled system error” 或 “CUDA Driver error”</p>
@@ -614,8 +643,6 @@
 </li>
 <li>
 <p>排查步骤：</p>
-</li>
-</ul>
 <ol>
 <li>
 <p>错误码判断：<code>ncclSystemError</code> 通常表示某个系统 API 返回错误，可以配合前面的 NCCL WARN 日志找上下文。例如若紧随 “unable to allocate shared memory” 则很明确。<code>ncclUnhandledCudaError</code> 则需看是不是之前有 kernel failed 日志。</p>
@@ -630,10 +657,10 @@
 <p>CUDA 异常：NCCL 使用 CUDA 流，如果用户前面发生了 CUDA illegal memory access，可能在 ncclGroupWait 时抛出 unhandled cuda error。此类应回溯定位之前的 CUDA 调用 bug，不是 NCCL 自身问题。可以利用 <code>cuda-memcheck</code> 工具运行程序，早期发现非法访问。</p>
 </li>
 </ol>
-<ul>
+</li>
 <li>
 <p>建议 env 组合：</p>
-</li>
+<ul>
 <li>
 <p>针对 shm/内存问题，<code>NCCL_SHM_DISABLE=0 NCCL_CUMEM_HOST_ENABLE=0</code> 可尝试不用 cuMem host 机制强制用 /dev/shm，以验证是哪种方式问题（2.24+ 默认用 cuMemHost，有时 NUMA 不支持）。</p>
 </li>
@@ -642,6 +669,8 @@
 </li>
 <li>
 <p><code>CUDA_LAUNCH_BLOCKING=1</code> 辅助捕获 CUDA 同步错误。</p>
+</li>
+</ul>
 </li>
 <li>
 <p>验证修复：调整系统配置后，重复运行之前出错的位置。如果不再报错且日志中先前的 WARN 提示消失（如共享内存扩展成功或不再需要扩展），则问题解决。需要的话，在调通后可逐步恢复优化选项（如重新打开 <code>NCCL_CUMEM_HOST_ENABLE</code> 看是否依旧稳定），以兼顾性能和稳定性。</p>
@@ -657,8 +686,6 @@
 </li>
 <li>
 <p>排查步骤：</p>
-</li>
-</ul>
 <ol>
 <li>
 <p>NCCL 日志：观察 NCCL INFO 日志中是否频繁出现 <code>...Disconnecting</code>、<code>...Reconnecting</code>，或 RNR NACK 等 IB 级别消息。这些表明网络不稳导致重试。</p>
@@ -673,18 +700,17 @@
 <p>NCCL 调参：尝试暂时关闭 Adaptive Routing：<code>NCCL_IB_ADAPTIVE_ROUTING=0</code> 看看波动是否减少。如果有效，可能 AR 机制不成熟导致 reorder，可考虑升级 FW 或者先禁用。对 RoCE，可以通过降低 <code>NCCL_IB_TIMEOUT</code>（比如设 18）使超时更敏感，但这治标不治本。</p>
 </li>
 </ol>
-<ul>
+</li>
 <li>
 <p>建议 env 组合：</p>
-</li>
+<ul>
 <li>
 <p><code>NCCL_IB_SL=</code> 设一个高优先级 SL 用于 NCCL，确保交换机 QoS 优待；配合 <code>NCCL_IB_FIFO_TC</code> 把控控制消息 TC。</p>
 </li>
 <li>
 <p><code>NCCL_IB_ADAPTIVE_ROUTING=0</code> 如上，避免路由波动。</p>
 </li>
-<li>
-<p>在应用侧，考虑 <code>torch.backends.cuda.matmul.allow_tf32 = False</code> 等减少通信量或者梯度压缩以减小网络压力。</p>
+</ul>
 </li>
 <li>
 <p>验证修复：调整后长时间跑任务，记录 AllReduce 时间分布，看是否抖动降低。若还存在，则需要进一步比如对每对节点使用 <code>ib_send_bw</code> 工具测试裸带宽，锁定是否某特定链路的问题。最终稳定后，应在生产中保留必要的 NCCL 参数，并将集群网络配置优化（长远方案）。</p>
@@ -700,8 +726,6 @@
 </li>
 <li>
 <p>排查步骤：</p>
-</li>
-</ul>
 <ol>
 <li>
 <p>验证 NaN 来源：使用 <code>TORCH_NCCL_NAN_CHECK=1</code> 提前检测各步输出 NaN。看看是否某 rank 的激活值先成为 NaN，而非 AllReduce 过程注入。</p>
@@ -716,15 +740,17 @@
 <p>Check 通信正确性：用 nccl-tests 自带的验证模式运行几千轮：<code>all_reduce_perf -c 1 -check</code> 开启数据正确性检查。如果都有 Pass，则 NCCL 本身逻辑没问题。</p>
 </li>
 </ol>
-<ul>
+</li>
 <li>
 <p>建议 env 组合：</p>
-</li>
+<ul>
 <li>
 <p>为安全，可将 <code>NCCL_ALGO=Ring NCCL_PROTO=Simple</code> 在要验证精度的实验中使用，确保按最高精度路径汇总。</p>
 </li>
 <li>
 <p>如果多节点间有可能数据不一致，也可利用 <code>TORCH_DISTRIBUTED_DEBUG=INFO</code> PyTorch 在不同步时会有提示。</p>
+</li>
+</ul>
 </li>
 <li>
 <p>验证修复：确认调整后 NaN 问题不再出现。若确定是 NCCL 协议问题，应向 NVIDIA 反馈或查看 release notes 已知问题。否则，多半是训练本身需调整（如降低学习率等）。</p>
@@ -740,8 +766,6 @@
 </li>
 <li>
 <p>排查步骤：</p>
-</li>
-</ul>
 <ol>
 <li>
 <p>日志观察：开启 <code>NCCL_DEBUG=INFO</code>，看每个 rank 在初始化阶段的时间戳。如果卡很久，多半在<code>ncclCommInitRank</code>内部。INFO 日志可能打印 “Trying to bootstrap via x.x.x.x” 之类，可发现如果选错接口。</p>
@@ -753,15 +777,17 @@
 <p>UniqueId 交换：PyTorch 中默认使用 TCP socket 交换 uniqueId，如果机器 DNS 不好或者需翻墙，会拖慢。可以尝试 <code>init_process_group(..., store=...)</code> 用本地文件或 shared memory 作为 store，绕过 DNS。NCCL 2.23+ 还提供 <code>NCCL_OOB_NET_ENABLE=1</code> 可以让引导也走 NCCL 网络插件而不是系统 socket。但这需要配置，不是默认路径。</p>
 </li>
 </ol>
-<ul>
+</li>
 <li>
 <p>建议 env 组合：</p>
-</li>
+<ul>
 <li>
 <p><code>NCCL_SOCKET_IFNAME=eth0 NCCL_IB_DISABLE=1</code>（单机无 IB，也可禁 IB 插件让其别无选择用 socket）。</p>
 </li>
 <li>
 <p><code>NCCL_UID_RUNTIME_BINARY=1</code> (如果适用，理论上可以缩短 uniqueId 生成方式，不过这通常不是瓶颈)。</p>
+</li>
+</ul>
 </li>
 <li>
 <p>验证修复：调整后再次初始化，测量耗时。如果下降到 &#x3C;5 秒，则说明确实接口选择或配置改善了。如仍慢，可以在 profile 中查看是否 Python 端 store 阻塞长，定位问题。</p>
@@ -777,8 +803,6 @@
 </li>
 <li>
 <p>排查步骤：</p>
-</li>
-</ul>
 <ol>
 <li>
 <p>禁用高级特性：<code>NCCL_ALGO=^CollNet</code>，<code>NCCL_NVLS_ENABLE=0</code> 禁用 NVLink SHARP，<code>NCCL_PXN_DISABLE=1</code> 禁用 PXN。基本回退到经典 Ring/Tree。</p>
@@ -790,7 +814,7 @@
 <p>版本回退：有时新特性 Bug，可以尝试 NCCL 降级或升级到最新补丁看是否解决。</p>
 </li>
 </ol>
-<ul>
+</li>
 <li>
 <p>建议 env 组合：保守期间对非典型架构统一加上述禁用的变量，确保 NCCL 仅用最稳妥路径（虽然可能性能不最高）。</p>
 </li>
@@ -994,7 +1018,22 @@
 </li>
 </ul>
 <hr>
-<p>通过以上方法和技巧，我们可以逐步掌握 NCCL Debug 的“全栈手段”，从环境变量调优到日志诊断、从协议算法选择到实际案例排查，在遇到 NCCL hang、性能瓶颈或数据异常时做到心中有数、手中有方。现代大规模分布式训练系统复杂多变，但相信凭借扎实的官方资料和工程实践经验，我们能够将 NCCL 的行为透明化、问题可解化，为训练任务保驾护航。</p> <div class="grid md:grid-cols-2 gap-4 mt-10"> <div></div> <a href="/blog-preview/previews/pr-323/gptq-and-smoothquant-and-awq/" class="block p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-sky-500 text-right"> <div class="text-xs uppercase text-zinc-500">Next</div> <div class="font-semibold">GPTQ &amp; SmoothQuant &amp; AWQ 代码解析</div> </a> </div>  <section id="comments" class="mt-12" data-comments> <div class="rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 p-6 md:p-8"> <script src="https://giscus.app/client.js" data-repo="yuanlehome/blog" data-repo-id="R_kgDOQu2Jjw" data-category="General" data-category-id="DIC_kwDOQu2Jj84C0QDN" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="bottom" data-theme="light" data-lang="zh-CN" crossorigin="anonymous" async></script> </div> </section> <script>(() => {
+<p>通过以上方法和技巧，我们可以逐步掌握 NCCL Debug 的“全栈手段”，从环境变量调优到日志诊断、从协议算法选择到实际案例排查，在遇到 NCCL hang、性能瓶颈或数据异常时做到心中有数、手中有方。现代大规模分布式训练系统复杂多变，但相信凭借扎实的官方资料和工程实践经验，我们能够将 NCCL 的行为透明化、问题可解化，为训练任务保驾护航。</p>
+<p>参考资料：</p>
+<ul>
+<li>
+<p>NVIDIA NCCL 官方文档 – <em>Environment Variables</em>、<em>Troubleshooting</em>等章节</p>
+</li>
+<li>
+<p>PyTorch Distributed 官方文档 – <em>ProcessGroupNCCL Environment Variables</em></p>
+</li>
+<li>
+<p>NVIDIA/nccl-tests 项目文档 – <em>PERFORMANCE.md</em>（算法带宽与总线带宽解释）</p>
+</li>
+<li>
+<p>NVIDIA Developer Forums – NCCL 性能与错误相关讨论</p>
+</li>
+</ul> <div class="grid md:grid-cols-2 gap-4 mt-10"> <div></div> <a href="/blog-preview/previews/pr-323/gptq-and-smoothquant-and-awq/" class="block p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-sky-500 text-right"> <div class="text-xs uppercase text-zinc-500">Next</div> <div class="font-semibold">GPTQ &amp; SmoothQuant &amp; AWQ 代码解析</div> </a> </div> <div class="mt-10 border-t border-zinc-200 dark:border-zinc-800 pt-6"><h3 class="text-lg font-semibold mb-4">Related posts</h3><div class="grid md:grid-cols-2 gap-4"><a href="/blog-preview/previews/pr-323/context-parallel/" class="block p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-sky-500 hover:-translate-y-0.5 transition"><div class="text-xs text-zinc-500 mb-1">1/27/2026</div><div class="font-semibold">Context Parallel 技术解析</div></a><a href="/blog-preview/previews/pr-323/tp-sp-ep/" class="block p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-sky-500 hover:-translate-y-0.5 transition"><div class="text-xs text-zinc-500 mb-1">1/4/2026</div><div class="font-semibold">一种 TP-SP-EP 混合并行策略</div></a></div></div> <section id="comments" class="mt-12" data-comments> <div class="rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 p-6 md:p-8"> <script src="https://giscus.app/client.js" data-repo="yuanlehome/blog" data-repo-id="R_kgDOQu2Jjw" data-category="General" data-category-id="DIC_kwDOQu2Jj84C0QDN" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="bottom" data-theme="light" data-lang="zh-CN" crossorigin="anonymous" async></script> </div> </section> <script>(() => {
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
 
   // Theme mapping for Giscus from config
