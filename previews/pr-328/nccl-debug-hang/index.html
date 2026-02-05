@@ -181,9 +181,25 @@
 #
 </span><span class="flex-1 truncate" data-title>NCCL 异常处理与 RAS：¶</span></a></li><li><a href="#pytorch-processgroupnccl-容错设置" data-toc-link data-mobile-toc-link data-target="pytorch-processgroupnccl-容错设置" title="PyTorch ProcessGroupNCCL 容错设置：¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
 #
-</span><span class="flex-1 truncate" data-title>PyTorch ProcessGroupNCCL 容错设置：¶</span></a></li></ol></li><li><a href="#g-常见故障场景手册10案例" data-toc-link data-mobile-toc-link data-target="g-常见故障场景手册10案例" title="G. 常见故障场景手册（10+案例）¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+</span><span class="flex-1 truncate" data-title>PyTorch ProcessGroupNCCL 容错设置：¶</span></a></li></ol></li><li><a href="#g-常见故障场景手册" data-toc-link data-mobile-toc-link data-target="g-常见故障场景手册" title="G. 常见故障场景手册¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
 #
-</span><span class="flex-1 truncate" data-title>G. 常见故障场景手册（10+案例）¶</span></a></li><li><a href="#h-一页式-nccl-调优与排障-cheat-sheet" data-toc-link data-mobile-toc-link data-target="h-一页式-nccl-调优与排障-cheat-sheet" title="H. 一页式 NCCL 调优与排障 Cheat Sheet¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+</span><span class="flex-1 truncate" data-title>G. 常见故障场景手册¶</span></a><ol class="mt-1 space-y-1"><li><a href="#场景-1训练开始时-nccl-初始化-hang" data-toc-link data-mobile-toc-link data-target="场景-1训练开始时-nccl-初始化-hang" title="场景 1：训练开始时 NCCL 初始化 Hang¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>场景 1：训练开始时 NCCL 初始化 Hang¶</span></a></li><li><a href="#场景-2训练中途某一步挂死没有显式-error" data-toc-link data-mobile-toc-link data-target="场景-2训练中途某一步挂死没有显式-error" title="场景 2：训练中途某一步挂死（没有显式 error）¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>场景 2：训练中途某一步挂死（没有显式 error）¶</span></a></li><li><a href="#场景-3allreduce-性能严重低于理论带宽" data-toc-link data-mobile-toc-link data-target="场景-3allreduce-性能严重低于理论带宽" title="场景 3：AllReduce 性能严重低于理论带宽¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>场景 3：AllReduce 性能严重低于理论带宽¶</span></a></li><li><a href="#场景-4nccl-报错-unhandled-system-error-或-cuda-driver-error" data-toc-link data-mobile-toc-link data-target="场景-4nccl-报错-unhandled-system-error-或-cuda-driver-error" title="场景 4：NCCL 报错 “Unhandled system error” 或 “CUDA Driver error”¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>场景 4：NCCL 报错 “Unhandled system error” 或 “CUDA Driver error”¶</span></a></li><li><a href="#场景-5多机通信经常性波动性能时高时低" data-toc-link data-mobile-toc-link data-target="场景-5多机通信经常性波动性能时高时低" title="场景 5：多机通信经常性波动，性能时高时低¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>场景 5：多机通信经常性波动，性能时高时低¶</span></a></li><li><a href="#场景-6开启混合精度后偶发-naninf怀疑通信精度" data-toc-link data-mobile-toc-link data-target="场景-6开启混合精度后偶发-naninf怀疑通信精度" title="场景 6：开启混合精度后偶发 NaN/Inf，怀疑通信精度¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>场景 6：开启混合精度后偶发 NaN/Inf，怀疑通信精度¶</span></a></li><li><a href="#场景-7单机多进程模式下-nccl-初始化缓慢" data-toc-link data-mobile-toc-link data-target="场景-7单机多进程模式下-nccl-初始化缓慢" title="场景 7：单机多进程模式下 NCCL 初始化缓慢¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>场景 7：单机多进程模式下 NCCL 初始化缓慢¶</span></a></li><li><a href="#场景-8xlatpu-等非常规场景下-nccl-报错不支持" data-toc-link data-mobile-toc-link data-target="场景-8xlatpu-等非常规场景下-nccl-报错不支持" title="场景 8：XLA/TPU 等非常规场景下 NCCL 报错不支持¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>场景 8：XLA/TPU 等非常规场景下 NCCL 报错不支持¶</span></a></li></ol></li><li><a href="#h-一页式-nccl-调优与排障-cheat-sheet" data-toc-link data-mobile-toc-link data-target="h-一页式-nccl-调优与排障-cheat-sheet" title="H. 一页式 NCCL 调优与排障 Cheat Sheet¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
 #
 </span><span class="flex-1 truncate" data-title>H. 一页式 NCCL 调优与排障 Cheat Sheet¶</span></a><ol class="mt-1 space-y-1"><li><a href="#日志与诊断开关" data-toc-link data-mobile-toc-link data-target="日志与诊断开关" title="日志与诊断开关¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
 #
@@ -197,9 +213,11 @@
 #
 </span><span class="flex-1 truncate" data-title>信息收集与版本检查¶</span></a></li><li><a href="#安全与性能提示" data-toc-link data-mobile-toc-link data-target="安全与性能提示" title="安全与性能提示¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
 #
-</span><span class="flex-1 truncate" data-title>安全与性能提示¶</span></a></li></ol></li> </ol> </nav> </div> </aside> </div> <script type="module">const p=Array.from(document.querySelectorAll("[data-toc-link]")),e=document.querySelector("[data-toc-container]"),i=document.querySelector("[data-toc-shell]"),l=()=>{const t=getComputedStyle(document.documentElement).getPropertyValue("--site-header-height");return parseFloat(t)||0},r=window.matchMedia("(min-width: 1024px)"),g=p.map(t=>document.getElementById(t.dataset.target||"")).filter(t=>!!t),m=()=>{const t=l();g.forEach(n=>{n.style.scrollMarginTop=`${t+12}px`})},w=t=>`#${encodeURIComponent(t)}`,v=t=>decodeURIComponent(t.replace(/^#/,"")),f=t=>{p.forEach(n=>{const o=n.dataset.target===t;n.dataset.active=o?"true":"false",n.setAttribute("aria-current",o?"true":"false")})},u=(t,n=!1)=>{const o=document.getElementById(t);if(!o)return;const a=l(),c=window.scrollY+o.getBoundingClientRect().top-a-12;n?history.replaceState(null,"",w(t)):history.pushState(null,"",w(t)),window.scrollTo({top:c,behavior:"smooth"}),f(t)};p.forEach(t=>t.addEventListener("click",n=>{const o=t.dataset.target;o&&(n.preventDefault(),u(o))}));const y=()=>{e&&(e.dataset.fixed="false",e.style.position="",e.style.left="",e.style.width="",e.style.height="",e.style.maxHeight="",e.style.top="",i&&(i.style.minHeight=""))},x=()=>{if(!e||!i)return;const t=i.getBoundingClientRect(),n=l(),o=`calc(100vh - ${n}px - 16px)`;e.dataset.fixed="true",i.style.minHeight=`${e.offsetHeight}px`,e.style.position="fixed",e.style.top=`${n}px`,e.style.left=`${t.left}px`,e.style.width=`${t.width}px`,e.style.height=o,e.style.maxHeight=o},d=()=>{if(!e||e.dataset.fixed==="true"||!r.matches)return;const t=parseFloat(getComputedStyle(e).top||"0"),n=e.offsetTop-t;if(Number.isNaN(t)||window.scrollY<n)return;const o=e.getBoundingClientRect().top;Math.abs(o-t)>2&&x()},E=()=>{if(!r.matches){y();return}e?.dataset.fixed==="true"&&x()};if(g.length>0){m();const t=new IntersectionObserver(o=>{const a=o.filter(s=>s.isIntersecting).sort((s,h)=>s.target.getBoundingClientRect().top-h.target.getBoundingClientRect().top);if(a[0]){f(a[0].target.id);return}const c=o.filter(s=>s.boundingClientRect.top<0).sort((s,h)=>h.target.getBoundingClientRect().top-s.target.getBoundingClientRect().top);c[0]&&f(c[0].target.id)},{rootMargin:`-${l()}px 0% -55% 0%`,threshold:[0,.25,.5,1]});g.forEach(o=>t.observe(o));const n=v(location.hash||"");n&&requestAnimationFrame(()=>u(n,!0)),window.addEventListener("hashchange",()=>{const o=v(location.hash||"");o&&u(o,!0)})}y();r.matches&&d();r.addEventListener("change",()=>{y(),requestAnimationFrame(()=>{r.matches&&d()})});window.addEventListener("scroll",d,{passive:!0});window.addEventListener("resize",E);window.addEventListener("load",()=>{d(),m()},{once:!0});window.addEventListener("headerheightchange",()=>{m()});</script> <article class="prose dark:prose-invert max-w-none prose-img:rounded-xl min-w-0" data-article> <header class="mb-8 not-prose"> <div class="flex flex-col gap-6 md:grid md:grid-cols-1"> <div class="flex flex-col gap-4 "> <h1 class="text-3xl md:text-4xl font-bold leading-tight text-left"> NCCL Debug 全栈手段：常用环境变量、日志/拓扑/通信诊断与 Hang/性能/数据异常排查 </h1> <div class="text-zinc-500 text-sm flex items-start justify-start gap-3 flex-wrap "> <time class="flex items-center gap-1" datetime="2026-02-05T00:00:00.000Z" title="发布于 2026-02-05"> <span aria-hidden="true">📅</span> <span>
-发布于 <span class="font-medium">2026-02-05</span> </span> </time>   <div class="flex items-center gap-1"> <span aria-hidden="true">✍️</span> 12116 字
-</div> <div class="flex items-center gap-1" title="12116 words"> <span aria-hidden="true">⏱️</span> 27 min read </div> </div> <div class="flex flex-wrap gap-2 items-center" data-testid="post-tags"> <span class="text-zinc-500 text-sm flex items-center gap-1"> <span aria-hidden="true">🏷️</span> <span>标签：</span> </span> <a href="/blog-preview/previews/pr-328/tags/nccl/" class="tag-chip inline-flex items-center gap-1.5 rounded-full border transition-colors duration-200 font-medium cursor-pointer text-xs px-2 py-1 
+</span><span class="flex-1 truncate" data-title>安全与性能提示¶</span></a></li></ol></li><li><a href="#参考资料" data-toc-link data-mobile-toc-link data-target="参考资料" title="参考资料¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>参考资料¶</span></a></li> </ol> </nav> </div> </aside> </div> <script type="module">const p=Array.from(document.querySelectorAll("[data-toc-link]")),e=document.querySelector("[data-toc-container]"),i=document.querySelector("[data-toc-shell]"),l=()=>{const t=getComputedStyle(document.documentElement).getPropertyValue("--site-header-height");return parseFloat(t)||0},r=window.matchMedia("(min-width: 1024px)"),g=p.map(t=>document.getElementById(t.dataset.target||"")).filter(t=>!!t),m=()=>{const t=l();g.forEach(n=>{n.style.scrollMarginTop=`${t+12}px`})},w=t=>`#${encodeURIComponent(t)}`,v=t=>decodeURIComponent(t.replace(/^#/,"")),f=t=>{p.forEach(n=>{const o=n.dataset.target===t;n.dataset.active=o?"true":"false",n.setAttribute("aria-current",o?"true":"false")})},u=(t,n=!1)=>{const o=document.getElementById(t);if(!o)return;const a=l(),c=window.scrollY+o.getBoundingClientRect().top-a-12;n?history.replaceState(null,"",w(t)):history.pushState(null,"",w(t)),window.scrollTo({top:c,behavior:"smooth"}),f(t)};p.forEach(t=>t.addEventListener("click",n=>{const o=t.dataset.target;o&&(n.preventDefault(),u(o))}));const y=()=>{e&&(e.dataset.fixed="false",e.style.position="",e.style.left="",e.style.width="",e.style.height="",e.style.maxHeight="",e.style.top="",i&&(i.style.minHeight=""))},x=()=>{if(!e||!i)return;const t=i.getBoundingClientRect(),n=l(),o=`calc(100vh - ${n}px - 16px)`;e.dataset.fixed="true",i.style.minHeight=`${e.offsetHeight}px`,e.style.position="fixed",e.style.top=`${n}px`,e.style.left=`${t.left}px`,e.style.width=`${t.width}px`,e.style.height=o,e.style.maxHeight=o},d=()=>{if(!e||e.dataset.fixed==="true"||!r.matches)return;const t=parseFloat(getComputedStyle(e).top||"0"),n=e.offsetTop-t;if(Number.isNaN(t)||window.scrollY<n)return;const o=e.getBoundingClientRect().top;Math.abs(o-t)>2&&x()},E=()=>{if(!r.matches){y();return}e?.dataset.fixed==="true"&&x()};if(g.length>0){m();const t=new IntersectionObserver(o=>{const a=o.filter(s=>s.isIntersecting).sort((s,h)=>s.target.getBoundingClientRect().top-h.target.getBoundingClientRect().top);if(a[0]){f(a[0].target.id);return}const c=o.filter(s=>s.boundingClientRect.top<0).sort((s,h)=>h.target.getBoundingClientRect().top-s.target.getBoundingClientRect().top);c[0]&&f(c[0].target.id)},{rootMargin:`-${l()}px 0% -55% 0%`,threshold:[0,.25,.5,1]});g.forEach(o=>t.observe(o));const n=v(location.hash||"");n&&requestAnimationFrame(()=>u(n,!0)),window.addEventListener("hashchange",()=>{const o=v(location.hash||"");o&&u(o,!0)})}y();r.matches&&d();r.addEventListener("change",()=>{y(),requestAnimationFrame(()=>{r.matches&&d()})});window.addEventListener("scroll",d,{passive:!0});window.addEventListener("resize",E);window.addEventListener("load",()=>{d(),m()},{once:!0});window.addEventListener("headerheightchange",()=>{m()});</script> <article class="prose dark:prose-invert max-w-none prose-img:rounded-xl min-w-0" data-article> <header class="mb-8 not-prose"> <div class="flex flex-col gap-6 md:grid md:grid-cols-1"> <div class="flex flex-col gap-4 "> <h1 class="text-3xl md:text-4xl font-bold leading-tight text-left"> NCCL Debug 全栈手段：常用环境变量、日志/拓扑/通信诊断与 Hang/性能/数据异常排查 </h1> <div class="text-zinc-500 text-sm flex items-start justify-start gap-3 flex-wrap "> <time class="flex items-center gap-1" datetime="2026-02-05T00:00:00.000Z" title="发布于 2026-02-05"> <span aria-hidden="true">📅</span> <span>
+发布于 <span class="font-medium">2026-02-05</span> </span> </time>   <div class="flex items-center gap-1"> <span aria-hidden="true">✍️</span> 12113 字
+</div> <div class="flex items-center gap-1" title="12113 words"> <span aria-hidden="true">⏱️</span> 27 min read </div> </div> <div class="flex flex-wrap gap-2 items-center" data-testid="post-tags"> <span class="text-zinc-500 text-sm flex items-center gap-1"> <span aria-hidden="true">🏷️</span> <span>标签：</span> </span> <a href="/blog-preview/previews/pr-328/tags/nccl/" class="tag-chip inline-flex items-center gap-1.5 rounded-full border transition-colors duration-200 font-medium cursor-pointer text-xs px-2 py-1 
     border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 
     dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 dark:hover:border-sky-700
     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-tag-slug="nccl" data-testid="tag-nccl"> <span class="tag-name pointer-events-none">NCCL</span>  </a><a href="/blog-preview/previews/pr-328/tags/distributed-parallel/" class="tag-chip inline-flex items-center gap-1.5 rounded-full border transition-colors duration-200 font-medium cursor-pointer text-xs px-2 py-1 
@@ -505,17 +523,11 @@
 <p>经验：排查 NCCL hang，应尽量在出错时刻就收集信息，而非等作业被迫杀死后再分析。Watchdog+Dump 提供了这样的契机。但另一方面，要防止误触发，比如调优时可能 AllReduce 本身就需要较长时间，此时可暂时调大 <code>timeout</code> 以免误判。</p>
 <hr>
 <p>以上介绍了 NCCL Debug 的各项“武器”。接下来我们将它们应用到具体的故障场景中。</p>
-<h2 id="g-常见故障场景手册10案例">G. 常见故障场景手册（10+案例）<a href="#g-常见故障场景手册10案例" class="heading-anchor" aria-label="Link to G. 常见故障场景手册（10+案例）">¶</a></h2>
+<h2 id="g-常见故障场景手册">G. 常见故障场景手册<a href="#g-常见故障场景手册" class="heading-anchor" aria-label="Link to G. 常见故障场景手册">¶</a></h2>
 <p>本节按典型现象列举多种 NCCL 故障场景，分析可能原因并给出优先级渐进的排查步骤、建议的环境变量设置组合，以及如何用 nccl-tests 等工具复现验证。</p>
-<p>场景 1：训练开始时 NCCL 初始化 Hang</p>
-<ul>
-<li>
+<h3 id="场景-1训练开始时-nccl-初始化-hang">场景 1：训练开始时 NCCL 初始化 Hang<a href="#场景-1训练开始时-nccl-初始化-hang" class="heading-anchor" aria-label="Link to 场景 1：训练开始时 NCCL 初始化 Hang">¶</a></h3>
 <p>现象：分布式作业启动后打印 NCCL 版本号，但一直卡在 communicator 初始化，既无 error 也无进展。可能所有进程都挂在 <code>ncclCommInitRank</code>。</p>
-</li>
-<li>
 <p>可能原因：跨节点通信握手不通。常见包括：防火墙未关闭导致 TCP/IB 端口无法建立；节点间网络配置不一致（如一台走 IB 一台却无 IB）；<code>init_process_group</code> 参数 world_size 等不匹配；或 IB 的 GID 配置导致握手包丢弃。</p>
-</li>
-<li>
 <p>排查步骤：</p>
 <ol>
 <li>
@@ -533,8 +545,6 @@
 尝试在两节点上跑简单 AllReduce，看能否 Hang 复现。加上 <code>NCCL_DEBUG=INFO</code> 捕获在哪一步挂。</p>
 </li>
 </ol>
-</li>
-<li>
 <p>建议 env 组合：</p>
 <ul>
 <li>
@@ -547,17 +557,9 @@
 <p>验证修复：在确认网络配置无误后（如关闭防火墙或正确设置 RoCE PFC 等），重新打开 IB 跑 nccl-tests 验证 AllReduce 成功、带宽正常。</p>
 </li>
 </ul>
-</li>
-</ul>
-<p>场景 2：训练中途某一步挂死（没有显式 error）</p>
-<ul>
-<li>
+<h3 id="场景-2训练中途某一步挂死没有显式-error">场景 2：训练中途某一步挂死（没有显式 error）<a href="#场景-2训练中途某一步挂死没有显式-error" class="heading-anchor" aria-label="Link to 场景 2：训练中途某一步挂死（没有显式 error）">¶</a></h3>
 <p>现象：训练运行一段时间后，所有 GPU 利用率掉为 0，进程无响应但未退出。可能日志停在某次 collective 操作前后，没有错误提示。</p>
-</li>
-<li>
 <p>可能原因：这通常是 Collective 调用失去同步（Desynchronization）造成的死锁。可能一个 rank 跳过或提前退出导致其余 rank 卡在对应的 AllReduce/AllGather。也可能某 rank 上发生了 CUDA 错误被吞掉，导致 NCCL 等待永远不返回。NCCL 本身 Bug（比如 2.7.x 曾有 LL128 算法在特定拓扑卡死的问题）也可能导致所有 rank hang。</p>
-</li>
-<li>
 <p>排查步骤：</p>
 <ol>
 <li>
@@ -573,8 +575,6 @@
 <p>外部介入：利用 <code>gdb</code> attach 到挂住的一个进程，打印堆栈。如果看到某 NCCL kernel 卡在 CUDA sync，可能 CUDA 这端有异常（如非法内存访问未报）。这时设置环境 <code>CUDA_LAUNCH_BLOCKING=1</code> 重运行一次，方便让 CUDA 错误暴露。</p>
 </li>
 </ol>
-</li>
-<li>
 <p>建议 env 组合：</p>
 <ul>
 <li>
@@ -587,20 +587,10 @@
 <p><em>隔离 NCCL 问题</em>：<code>NCCL_PROTO=^LL128</code> 试排除协议因素；<code>NCCL_ALGO=Ring</code> 固定算法验证。</p>
 </li>
 </ul>
-</li>
-<li>
 <p>验证修复：找到根因后采取相应措施。例如如果是应用代码漏调 collective，要修复逻辑。如果是 NCCL bug，则升级到官方修复版本或继续使用工作区（如禁用 LL128 作为 workaround）。最终在修复版本环境下长时间跑验证 Hang 不再发生。</p>
-</li>
-</ul>
-<p>场景 3：AllReduce 性能严重低于理论带宽</p>
-<ul>
-<li>
+<h3 id="场景-3allreduce-性能严重低于理论带宽">场景 3：AllReduce 性能严重低于理论带宽<a href="#场景-3allreduce-性能严重低于理论带宽" class="heading-anchor" aria-label="Link to 场景 3：AllReduce 性能严重低于理论带宽">¶</a></h3>
 <p>现象：8 卡单机 A100，预期 NVSwitch 可达 240 GB/s，但实际 all_reduce_perf 只得到 80 GB/s 算术带宽 (algbw)，busbw 约 80 GB/s。或多机时总带宽远低于网络物理速率。例如双 40GbE 机器 AllReduce 总吞吐只有 2 GB/s (16 Gb/s)。</p>
-</li>
-<li>
 <p>可能原因：数据路径未充分利用带宽。单机情况可能 NCCL 未用 NVSwitch 而退化为 PCIe4（约 64–80 GB/s，符合观测）。原因如拓扑探测问题、NVSwitch 驱动问题等。多机情况，则可能只用了单端口而非 Bond、或 GPU Direct RDMA 未启用导致受 CPU 内存复制瓶颈（典型 CPU copy 速率 ~10-20 GB/s），或者线程并行度不够未填满带宽。</p>
-</li>
-<li>
 <p>排查步骤：</p>
 <ol>
 <li>
@@ -616,8 +606,6 @@
 <p>并行调优：排除以上因素后，如果仍然低于理论，可以尝试增加并发：调整 <code>NCCL_SOCKET_NTHREADS</code> 和 <code>NCCL_NSOCKS_PERTHREAD</code>。特别在高速以太网上，默认 (1 线程, 1 socket) 很可能跑不满 100Gb。尝试值如 4 和 4（总 16 socket 并行），观察 busbw 是否接近物理线速。注意此调整需在较大 batch 下观察平均性能，并警惕 CPU 占用上升。</p>
 </li>
 </ol>
-</li>
-<li>
 <p>建议 env 组合：</p>
 <ul>
 <li>
@@ -630,17 +618,9 @@
 <p>验证修复：重新运行 nccl-tests 并比较带宽：Algorithm BW 提升且 busBW 接近硬件峰值（例如 12 GB/s 于 100GbE，或 NVSwitch 下达到 120+ GB/s）。还应测试实际训练任务的 step time 是否同步改善，以确保调优有效且无副作用。</p>
 </li>
 </ul>
-</li>
-</ul>
-<p>场景 4：NCCL 报错 “Unhandled system error” 或 “CUDA Driver error”</p>
-<ul>
-<li>
+<h3 id="场景-4nccl-报错-unhandled-system-error-或-cuda-driver-error">场景 4：NCCL 报错 “Unhandled system error” 或 “CUDA Driver error”<a href="#场景-4nccl-报错-unhandled-system-error-或-cuda-driver-error" class="heading-anchor" aria-label="Link to 场景 4：NCCL 报错 “Unhandled system error” 或 “CUDA Driver error”">¶</a></h3>
 <p>现象：训练中突然终止，并打印 <code>ncclSystemError: System call (socket, malloc, etc) failed</code> 或 <code>ncclUnhandledCudaError</code> 等。可能还有 IBverbs 层错误信息如 “failed to register memory” 或 “RDMA creation failed”。</p>
-</li>
-<li>
 <p>可能原因：系统资源或调用失败。典型如：/dev/shm 空间不足导致共享内存 segment 扩展失败；无限制内存锁定不允许导致 GDR mapping 失败；或 CUDA Driver 内部错误比如显存访问非法。</p>
-</li>
-<li>
 <p>排查步骤：</p>
 <ol>
 <li>
@@ -656,8 +636,6 @@
 <p>CUDA 异常：NCCL 使用 CUDA 流，如果用户前面发生了 CUDA illegal memory access，可能在 ncclGroupWait 时抛出 unhandled cuda error。此类应回溯定位之前的 CUDA 调用 bug，不是 NCCL 自身问题。可以利用 <code>cuda-memcheck</code> 工具运行程序，早期发现非法访问。</p>
 </li>
 </ol>
-</li>
-<li>
 <p>建议 env 组合：</p>
 <ul>
 <li>
@@ -670,20 +648,10 @@
 <p><code>CUDA_LAUNCH_BLOCKING=1</code> 辅助捕获 CUDA 同步错误。</p>
 </li>
 </ul>
-</li>
-<li>
 <p>验证修复：调整系统配置后，重复运行之前出错的位置。如果不再报错且日志中先前的 WARN 提示消失（如共享内存扩展成功或不再需要扩展），则问题解决。需要的话，在调通后可逐步恢复优化选项（如重新打开 <code>NCCL_CUMEM_HOST_ENABLE</code> 看是否依旧稳定），以兼顾性能和稳定性。</p>
-</li>
-</ul>
-<p>场景 5：多机通信经常性波动，性能时高时低</p>
-<ul>
-<li>
+<h3 id="场景-5多机通信经常性波动性能时高时低">场景 5：多机通信经常性波动，性能时高时低<a href="#场景-5多机通信经常性波动性能时高时低" class="heading-anchor" aria-label="Link to 场景 5：多机通信经常性波动，性能时高时低">¶</a></h3>
 <p>现象：同一任务，不同 step 的 AllReduce 耗时抖动很大。例如 100Gb 网络下正常 allreduce 5 ms，但偶尔跳到 50 ms，然后恢复。甚至伴随 NCCL WARN：<code>NET/IB: Async event: local QP operation err</code> 之类。</p>
-</li>
-<li>
 <p>可能原因：网络拥塞或丢包导致。InfiniBand 网络中，当流量大时可能触发拥塞管理或 QOS，Adaptive Routing 的切换也会导致波动。RoCE 如果 PFC 配置不完善，可能出现丢包超时重试，使性能断崖式下降。NCCL 检测到 IB 异步错误时（比如链路波动）默认会 Warn 然后重连。</p>
-</li>
-<li>
 <p>排查步骤：</p>
 <ol>
 <li>
@@ -699,8 +667,6 @@
 <p>NCCL 调参：尝试暂时关闭 Adaptive Routing：<code>NCCL_IB_ADAPTIVE_ROUTING=0</code> 看看波动是否减少。如果有效，可能 AR 机制不成熟导致 reorder，可考虑升级 FW 或者先禁用。对 RoCE，可以通过降低 <code>NCCL_IB_TIMEOUT</code>（比如设 18）使超时更敏感，但这治标不治本。</p>
 </li>
 </ol>
-</li>
-<li>
 <p>建议 env 组合：</p>
 <ul>
 <li>
@@ -710,20 +676,10 @@
 <p><code>NCCL_IB_ADAPTIVE_ROUTING=0</code> 如上，避免路由波动。</p>
 </li>
 </ul>
-</li>
-<li>
 <p>验证修复：调整后长时间跑任务，记录 AllReduce 时间分布，看是否抖动降低。若还存在，则需要进一步比如对每对节点使用 <code>ib_send_bw</code> 工具测试裸带宽，锁定是否某特定链路的问题。最终稳定后，应在生产中保留必要的 NCCL 参数，并将集群网络配置优化（长远方案）。</p>
-</li>
-</ul>
-<p>场景 6：开启混合精度后偶发 NaN/Inf，怀疑通信精度</p>
-<ul>
-<li>
+<h3 id="场景-6开启混合精度后偶发-naninf怀疑通信精度">场景 6：开启混合精度后偶发 NaN/Inf，怀疑通信精度<a href="#场景-6开启混合精度后偶发-naninf怀疑通信精度" class="heading-anchor" aria-label="Link to 场景 6：开启混合精度后偶发 NaN/Inf，怀疑通信精度">¶</a></h3>
 <p>现象：训练中偶尔出现梯度为 NaN 或损失暴涨，定位怀疑发生在 AllReduce 后。怀疑 NCCL 的 sum 精度或 LL128 压缩算法导致精度损失。</p>
-</li>
-<li>
 <p>可能原因：NCCL 的 float16 AllReduce 默认分两阶段（First reduce in FP16, then finalize in FP32）。精度一般足够。但在极端大规模下，累加顺序可能引入些许不确定。另外 LL128 协议会对数据分块应用低精度 accumulate，存在微小误差。这通常不会导致 NaN，NaN 更多由于网络错误或算子本身。</p>
-</li>
-<li>
 <p>排查步骤：</p>
 <ol>
 <li>
@@ -739,8 +695,6 @@
 <p>Check 通信正确性：用 nccl-tests 自带的验证模式运行几千轮：<code>all_reduce_perf -c 1 -check</code> 开启数据正确性检查。如果都有 Pass，则 NCCL 本身逻辑没问题。</p>
 </li>
 </ol>
-</li>
-<li>
 <p>建议 env 组合：</p>
 <ul>
 <li>
@@ -750,20 +704,10 @@
 <p>如果多节点间有可能数据不一致，也可利用 <code>TORCH_DISTRIBUTED_DEBUG=INFO</code> PyTorch 在不同步时会有提示。</p>
 </li>
 </ul>
-</li>
-<li>
 <p>验证修复：确认调整后 NaN 问题不再出现。若确定是 NCCL 协议问题，应向 NVIDIA 反馈或查看 release notes 已知问题。否则，多半是训练本身需调整（如降低学习率等）。</p>
-</li>
-</ul>
-<p>场景 7：单机多进程模式下 NCCL 初始化缓慢</p>
-<ul>
-<li>
+<h3 id="场景-7单机多进程模式下-nccl-初始化缓慢">场景 7：单机多进程模式下 NCCL 初始化缓慢<a href="#场景-7单机多进程模式下-nccl-初始化缓慢" class="heading-anchor" aria-label="Link to 场景 7：单机多进程模式下 NCCL 初始化缓慢">¶</a></h3>
 <p>现象：例如 PyTorch DDP 模式，8 卡单机，调用 <code>init_process_group</code> 非常慢（> 30 秒），但最终能成功开始训练。</p>
-</li>
-<li>
 <p>可能原因：在单机多进程场景，NCCL 需要通过 socket 进行 out-of-band 引导（交换 ncclUniqueId 等）。如果本机开启了很多 docker 虚接口或 loopback 优先而其他线程还没起来，可能 NCCL 在尝试接口时超时重试。NCCL 默认排除 lo 和 docker* 除非没其他接口。另一个原因是生成 UniqueId 采用全员通信，MPI 或文件系统差导致慢。</p>
-</li>
-<li>
 <p>排查步骤：</p>
 <ol>
 <li>
@@ -776,8 +720,6 @@
 <p>UniqueId 交换：PyTorch 中默认使用 TCP socket 交换 uniqueId，如果机器 DNS 不好或者需翻墙，会拖慢。可以尝试 <code>init_process_group(..., store=...)</code> 用本地文件或 shared memory 作为 store，绕过 DNS。NCCL 2.23+ 还提供 <code>NCCL_OOB_NET_ENABLE=1</code> 可以让引导也走 NCCL 网络插件而不是系统 socket。但这需要配置，不是默认路径。</p>
 </li>
 </ol>
-</li>
-<li>
 <p>建议 env 组合：</p>
 <ul>
 <li>
@@ -787,20 +729,10 @@
 <p><code>NCCL_UID_RUNTIME_BINARY=1</code> (如果适用，理论上可以缩短 uniqueId 生成方式，不过这通常不是瓶颈)。</p>
 </li>
 </ul>
-</li>
-<li>
 <p>验证修复：调整后再次初始化，测量耗时。如果下降到 &#x3C;5 秒，则说明确实接口选择或配置改善了。如仍慢，可以在 profile 中查看是否 Python 端 store 阻塞长，定位问题。</p>
-</li>
-</ul>
-<p>场景 8：XLA/TPU 等非常规场景下 NCCL 报错不支持</p>
-<ul>
-<li>
+<h3 id="场景-8xlatpu-等非常规场景下-nccl-报错不支持">场景 8：XLA/TPU 等非常规场景下 NCCL 报错不支持<a href="#场景-8xlatpu-等非常规场景下-nccl-报错不支持" class="heading-anchor" aria-label="Link to 场景 8：XLA/TPU 等非常规场景下 NCCL 报错不支持">¶</a></h3>
 <p>现象：使用 PyTorch XLA (GPU+TPU 混合) 或 HPC 上 NVLink+IB 混合拓扑时，NCCL 报一些不支持 CollNet/NVLS 之类的错误，或者 Hang。</p>
-</li>
-<li>
 <p>可能原因：NCCL 某算法在当前硬件不适用但被错误启用。如 CollNet 需要服务器有独立网络分层，但混合场景无此条件，如果 NCCL 版本判断有误可能导致 hang。</p>
-</li>
-<li>
 <p>排查步骤：</p>
 <ol>
 <li>
@@ -813,14 +745,8 @@
 <p>版本回退：有时新特性 Bug，可以尝试 NCCL 降级或升级到最新补丁看是否解决。</p>
 </li>
 </ol>
-</li>
-<li>
 <p>建议 env 组合：保守期间对非典型架构统一加上述禁用的变量，确保 NCCL 仅用最稳妥路径（虽然可能性能不最高）。</p>
-</li>
-<li>
 <p>验证修复：让通信能跑通、结果正确，然后再逐一开放看性能提升与稳定性，找到平衡点。</p>
-</li>
-</ul>
 <blockquote>
 <p>注：以上场景远非穷尽。实际排障中，要结合具体软硬件环境，对症下药。关键是遵循先易后难、由广到细的思路：先确保外围配置正确，然后利用 NCCL 提供的调试开关缩小可疑范围，并借助 nccl-tests 做对比实验验证猜想。每个变量改动都应记录效果，最终选择对性能和稳定性最佳的方案。</p>
 </blockquote>
@@ -1017,7 +943,7 @@
 </li>
 </ul>
 <p>通过以上方法和技巧，我们可以逐步掌握 NCCL Debug 的“全栈手段”，从环境变量调优到日志诊断、从协议算法选择到实际案例排查，在遇到 NCCL hang、性能瓶颈或数据异常时做到心中有数、手中有方。现代大规模分布式训练系统复杂多变，但相信凭借扎实的官方资料和工程实践经验，我们能够将 NCCL 的行为透明化、问题可解化，为训练任务保驾护航。</p>
-<p>参考资料：</p>
+<h2 id="参考资料">参考资料<a href="#参考资料" class="heading-anchor" aria-label="Link to 参考资料">¶</a></h2>
 <ul>
 <li>
 <p>NVIDIA NCCL 官方文档 – <em>Environment Variables</em>、<em>Troubleshooting</em>等章节</p>
@@ -1198,9 +1124,25 @@
 #
 </span><span class="flex-1 truncate" data-title>NCCL 异常处理与 RAS：¶</span></a></li><li><a href="#pytorch-processgroupnccl-容错设置" data-toc-link data-mobile-toc-link data-target="pytorch-processgroupnccl-容错设置" title="PyTorch ProcessGroupNCCL 容错设置：¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
 #
-</span><span class="flex-1 truncate" data-title>PyTorch ProcessGroupNCCL 容错设置：¶</span></a></li></ol></li><li><a href="#g-常见故障场景手册10案例" data-toc-link data-mobile-toc-link data-target="g-常见故障场景手册10案例" title="G. 常见故障场景手册（10+案例）¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+</span><span class="flex-1 truncate" data-title>PyTorch ProcessGroupNCCL 容错设置：¶</span></a></li></ol></li><li><a href="#g-常见故障场景手册" data-toc-link data-mobile-toc-link data-target="g-常见故障场景手册" title="G. 常见故障场景手册¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
 #
-</span><span class="flex-1 truncate" data-title>G. 常见故障场景手册（10+案例）¶</span></a></li><li><a href="#h-一页式-nccl-调优与排障-cheat-sheet" data-toc-link data-mobile-toc-link data-target="h-一页式-nccl-调优与排障-cheat-sheet" title="H. 一页式 NCCL 调优与排障 Cheat Sheet¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+</span><span class="flex-1 truncate" data-title>G. 常见故障场景手册¶</span></a><ol class="mt-1 space-y-1"><li><a href="#场景-1训练开始时-nccl-初始化-hang" data-toc-link data-mobile-toc-link data-target="场景-1训练开始时-nccl-初始化-hang" title="场景 1：训练开始时 NCCL 初始化 Hang¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>场景 1：训练开始时 NCCL 初始化 Hang¶</span></a></li><li><a href="#场景-2训练中途某一步挂死没有显式-error" data-toc-link data-mobile-toc-link data-target="场景-2训练中途某一步挂死没有显式-error" title="场景 2：训练中途某一步挂死（没有显式 error）¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>场景 2：训练中途某一步挂死（没有显式 error）¶</span></a></li><li><a href="#场景-3allreduce-性能严重低于理论带宽" data-toc-link data-mobile-toc-link data-target="场景-3allreduce-性能严重低于理论带宽" title="场景 3：AllReduce 性能严重低于理论带宽¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>场景 3：AllReduce 性能严重低于理论带宽¶</span></a></li><li><a href="#场景-4nccl-报错-unhandled-system-error-或-cuda-driver-error" data-toc-link data-mobile-toc-link data-target="场景-4nccl-报错-unhandled-system-error-或-cuda-driver-error" title="场景 4：NCCL 报错 “Unhandled system error” 或 “CUDA Driver error”¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>场景 4：NCCL 报错 “Unhandled system error” 或 “CUDA Driver error”¶</span></a></li><li><a href="#场景-5多机通信经常性波动性能时高时低" data-toc-link data-mobile-toc-link data-target="场景-5多机通信经常性波动性能时高时低" title="场景 5：多机通信经常性波动，性能时高时低¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>场景 5：多机通信经常性波动，性能时高时低¶</span></a></li><li><a href="#场景-6开启混合精度后偶发-naninf怀疑通信精度" data-toc-link data-mobile-toc-link data-target="场景-6开启混合精度后偶发-naninf怀疑通信精度" title="场景 6：开启混合精度后偶发 NaN/Inf，怀疑通信精度¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>场景 6：开启混合精度后偶发 NaN/Inf，怀疑通信精度¶</span></a></li><li><a href="#场景-7单机多进程模式下-nccl-初始化缓慢" data-toc-link data-mobile-toc-link data-target="场景-7单机多进程模式下-nccl-初始化缓慢" title="场景 7：单机多进程模式下 NCCL 初始化缓慢¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>场景 7：单机多进程模式下 NCCL 初始化缓慢¶</span></a></li><li><a href="#场景-8xlatpu-等非常规场景下-nccl-报错不支持" data-toc-link data-mobile-toc-link data-target="场景-8xlatpu-等非常规场景下-nccl-报错不支持" title="场景 8：XLA/TPU 等非常规场景下 NCCL 报错不支持¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>场景 8：XLA/TPU 等非常规场景下 NCCL 报错不支持¶</span></a></li></ol></li><li><a href="#h-一页式-nccl-调优与排障-cheat-sheet" data-toc-link data-mobile-toc-link data-target="h-一页式-nccl-调优与排障-cheat-sheet" title="H. 一页式 NCCL 调优与排障 Cheat Sheet¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
 #
 </span><span class="flex-1 truncate" data-title>H. 一页式 NCCL 调优与排障 Cheat Sheet¶</span></a><ol class="mt-1 space-y-1"><li><a href="#日志与诊断开关" data-toc-link data-mobile-toc-link data-target="日志与诊断开关" title="日志与诊断开关¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
 #
@@ -1214,5 +1156,7 @@
 #
 </span><span class="flex-1 truncate" data-title>信息收集与版本检查¶</span></a></li><li><a href="#安全与性能提示" data-toc-link data-mobile-toc-link data-target="安全与性能提示" title="安全与性能提示¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
 #
-</span><span class="flex-1 truncate" data-title>安全与性能提示¶</span></a></li></ol></li></ol></div></div></div><script type="module">const c=document.querySelector("[data-mobile-toc]"),s=document.querySelector("[data-mobile-toc-drawer]"),a=document.querySelector("[data-mobile-toc-backdrop]"),p=()=>Array.from(document.querySelectorAll("[data-mobile-toc-open]")),w=document.querySelector("[data-mobile-toc-close]"),f=()=>Array.from((s??c)?.querySelectorAll("[data-mobile-toc-link]")??[]),o=document.body,k=window.matchMedia("(prefers-reduced-motion: reduce)"),E=k.matches,g=96;let i=0;const v=e=>window.dispatchEvent(new CustomEvent("mobile-toc:toggle",{detail:{open:e}})),S=e=>{p().forEach(t=>t.setAttribute("aria-expanded",e?"true":"false"))},l=e=>{e.preventDefault(),r(!0)},y=()=>{p().forEach(e=>{e.removeEventListener("click",l),e.addEventListener("click",l)})},A=()=>{i=window.scrollY,o.style.position="fixed",o.style.width="100%",o.style.top=`-${i}px`},L=()=>{o.style.position="",o.style.width="",o.style.top="",window.scrollTo({top:i})},r=e=>{!c||!s||(c.dataset.open=String(e),s.dataset.open=String(e),a?.setAttribute("data-open",String(e)),c.setAttribute("aria-hidden",e?"false":"true"),S(e),v(e),e?A():L())},B=()=>{f().map(t=>document.getElementById(t.dataset.target||"")).filter(t=>!!t).forEach(t=>{t.style.scrollMarginTop=`${g+12}px`})},d=e=>`#${encodeURIComponent(e)}`,h=(e,t=!1)=>{const n=document.getElementById(e);if(!n)return;const b=window.scrollY+n.getBoundingClientRect().top-g-12;t?history.replaceState(null,"",d(e)):history.pushState(null,"",d(e)),window.scrollTo({top:b,behavior:E?"auto":"smooth"})};y();const T=new MutationObserver(y);T.observe(document.body,{subtree:!0,childList:!0,attributes:!0,attributeFilter:["data-mobile-toc-open"]});w?.addEventListener("click",()=>r(!1));a?.addEventListener("click",e=>{e.target===a&&r(!1)});const u=e=>{const n=e.currentTarget?.dataset.target;n&&(e.preventDefault(),e.stopPropagation(),r(!1),requestAnimationFrame(()=>requestAnimationFrame(()=>h(n))))};f().forEach(e=>{e.removeEventListener("click",u),e.addEventListener("click",u)});window.addEventListener("keydown",e=>{e.key==="Escape"&&r(!1)});B();const m=decodeURIComponent(location.hash.replace(/^#/,""));m&&requestAnimationFrame(()=>h(m,!0));</script> <div class="floating-action-stack fixed z-40 flex flex-col items-end gap-3 lg:hidden pointer-events-auto transition-opacity data-[toc-open=true]:opacity-0 data-[toc-open=true]:pointer-events-none" data-floating-action-stack data-target-selector="[data-article]" style="inset-inline-end: calc(env(safe-area-inset-right, 0px) + 1rem); inset-block-end: calc(env(safe-area-inset-bottom, 0px) + 1rem);"><button type="button" class="floating-action-stack__button h-11 w-11 rounded-full border border-gray-200 bg-white/90 text-gray-900 shadow-lg backdrop-blur-sm ring-offset-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 hover:-translate-y-0.5 hover:border-blue-200 hover:text-blue-600 data-[visible=false]:opacity-0 data-[visible=false]:pointer-events-none data-[visible=true]:opacity-100 data-[visible=true]:pointer-events-auto dark:border-gray-800 dark:bg-gray-900/85 dark:text-gray-100 dark:ring-offset-gray-900 dark:hover:border-blue-500/50 dark:hover:text-blue-300" data-floating-action-button data-action="top" data-visible="false" style="transition-delay: 0ms;" aria-label="返回文章顶部"><span class="sr-only">顶部</span><span aria-hidden="true" class="text-base">⬆️</span></button><button type="button" class="floating-action-stack__button h-11 w-11 rounded-full border border-gray-200 bg-white/90 text-gray-900 shadow-lg backdrop-blur-sm ring-offset-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 hover:-translate-y-0.5 hover:border-blue-200 hover:text-blue-600 data-[visible=false]:opacity-0 data-[visible=false]:pointer-events-none data-[visible=true]:opacity-100 data-[visible=true]:pointer-events-auto dark:border-gray-800 dark:bg-gray-900/85 dark:text-gray-100 dark:ring-offset-gray-900 dark:hover:border-blue-500/50 dark:hover:text-blue-300" data-floating-action-button data-action="toc" data-visible="true" style="transition-delay: 10ms;" aria-label="打开目录抽屉" data-mobile-toc-open="true"><span class="sr-only">目录</span><span aria-hidden="true" class="text-base">📑</span></button><button type="button" class="floating-action-stack__button h-11 w-11 rounded-full border border-gray-200 bg-white/90 text-gray-900 shadow-lg backdrop-blur-sm ring-offset-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 hover:-translate-y-0.5 hover:border-blue-200 hover:text-blue-600 data-[visible=false]:opacity-0 data-[visible=false]:pointer-events-none data-[visible=true]:opacity-100 data-[visible=true]:pointer-events-auto dark:border-gray-800 dark:bg-gray-900/85 dark:text-gray-100 dark:ring-offset-gray-900 dark:hover:border-blue-500/50 dark:hover:text-blue-300" data-floating-action-button data-action="bottom" data-visible="true" style="transition-delay: 20ms;" aria-label="跳转文章底部"><span class="sr-only">底部</span><span aria-hidden="true" class="text-base">⬇️</span></button></div><script type="module">const r=document.querySelector("[data-floating-action-stack]"),B=r?.dataset.targetSelector||"[data-article]",v=r?.querySelector('[data-action="top"]'),E=r?.querySelector('[data-action="bottom"]'),f=r?.querySelector('[data-action="toc"]'),M=window.matchMedia("(prefers-reduced-motion: reduce)"),l=M.matches,i=document.querySelector("[data-mobile-toc]"),c=document.querySelector(B);let s=0,y=0,d=!1;const R=()=>{if(!c)return window;let t=c.parentElement;for(;t;){const o=window.getComputedStyle(t).overflowY;if((o==="auto"||o==="scroll")&&t.scrollHeight>t.clientHeight)return t;t=t.parentElement}return window},n=R(),a=()=>{if(!c)return;s=c.getBoundingClientRect().top+window.scrollY,y=c.scrollHeight},x=(t,e,o)=>Math.min(Math.max(t,e),o),p=(t,e)=>{t&&(t.dataset.visible=e?"true":"false")},u=()=>{if(!c)return;const t=120,e=y>window.innerHeight+40,o=window.scrollY>s+t;p(v,o),p(E,e),d=!1},S=()=>{d||(d=!0,requestAnimationFrame(u))},C=()=>{const t=x(s,0,Number.MAX_SAFE_INTEGER);window.scrollTo({top:t,behavior:l?"auto":"smooth"})},k=()=>{const t=document.getElementById("page-bottom-anchor");if(t){const e=t.getBoundingClientRect(),w=window.scrollY+e.bottom-window.innerHeight;window.scrollTo({top:Math.max(0,w),behavior:l?"auto":"smooth"});let h=0;const T=2,g=()=>{h>=T||(h++,setTimeout(()=>{const b=n instanceof Window?document.documentElement:n,H=n instanceof Window?window.scrollY:n.scrollTop;if(b.scrollHeight-b.clientHeight-H>10){const Y=t.getBoundingClientRect(),q=window.scrollY+Y.bottom-window.innerHeight;window.scrollTo({top:Math.max(0,q),behavior:l?"auto":"smooth"}),g()}},400))};g()}else{const e=n instanceof Window?document.documentElement:n,o=Math.max(e.scrollHeight-e.clientHeight,s);n instanceof Window?window.scrollTo({top:o,behavior:l?"auto":"smooth"}):n.scrollTo({top:o,behavior:l?"auto":"smooth"})}},m=t=>{r&&(r.dataset.tocOpen=t?"true":"false")};m(i?.dataset.open==="true");r&&c&&(a(),u(),window.addEventListener("scroll",S,{passive:!0}),window.addEventListener("resize",()=>{a(),S()}),window.addEventListener("load",()=>{a(),u()},{once:!0}),v?.addEventListener("click",C),E?.addEventListener("click",k));f?.addEventListener("click",()=>{requestAnimationFrame(()=>f?.blur())});window.addEventListener("mobile-toc:toggle",t=>{const e=t.detail;e&&m(e.open)});i&&new MutationObserver(()=>{m(i.dataset.open==="true")}).observe(i,{attributes:!0,attributeFilter:["data-open"]});</script> </main> <footer class="py-8 mt-auto border-t border-zinc-200 dark:border-zinc-800"> <div class="container mx-auto px-4 text-center text-zinc-500 max-w-4xl">
+</span><span class="flex-1 truncate" data-title>安全与性能提示¶</span></a></li></ol></li><li><a href="#参考资料" data-toc-link data-mobile-toc-link data-target="参考资料" title="参考资料¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>参考资料¶</span></a></li></ol></div></div></div><script type="module">const c=document.querySelector("[data-mobile-toc]"),s=document.querySelector("[data-mobile-toc-drawer]"),a=document.querySelector("[data-mobile-toc-backdrop]"),p=()=>Array.from(document.querySelectorAll("[data-mobile-toc-open]")),w=document.querySelector("[data-mobile-toc-close]"),f=()=>Array.from((s??c)?.querySelectorAll("[data-mobile-toc-link]")??[]),o=document.body,k=window.matchMedia("(prefers-reduced-motion: reduce)"),E=k.matches,g=96;let i=0;const v=e=>window.dispatchEvent(new CustomEvent("mobile-toc:toggle",{detail:{open:e}})),S=e=>{p().forEach(t=>t.setAttribute("aria-expanded",e?"true":"false"))},l=e=>{e.preventDefault(),r(!0)},y=()=>{p().forEach(e=>{e.removeEventListener("click",l),e.addEventListener("click",l)})},A=()=>{i=window.scrollY,o.style.position="fixed",o.style.width="100%",o.style.top=`-${i}px`},L=()=>{o.style.position="",o.style.width="",o.style.top="",window.scrollTo({top:i})},r=e=>{!c||!s||(c.dataset.open=String(e),s.dataset.open=String(e),a?.setAttribute("data-open",String(e)),c.setAttribute("aria-hidden",e?"false":"true"),S(e),v(e),e?A():L())},B=()=>{f().map(t=>document.getElementById(t.dataset.target||"")).filter(t=>!!t).forEach(t=>{t.style.scrollMarginTop=`${g+12}px`})},d=e=>`#${encodeURIComponent(e)}`,h=(e,t=!1)=>{const n=document.getElementById(e);if(!n)return;const b=window.scrollY+n.getBoundingClientRect().top-g-12;t?history.replaceState(null,"",d(e)):history.pushState(null,"",d(e)),window.scrollTo({top:b,behavior:E?"auto":"smooth"})};y();const T=new MutationObserver(y);T.observe(document.body,{subtree:!0,childList:!0,attributes:!0,attributeFilter:["data-mobile-toc-open"]});w?.addEventListener("click",()=>r(!1));a?.addEventListener("click",e=>{e.target===a&&r(!1)});const u=e=>{const n=e.currentTarget?.dataset.target;n&&(e.preventDefault(),e.stopPropagation(),r(!1),requestAnimationFrame(()=>requestAnimationFrame(()=>h(n))))};f().forEach(e=>{e.removeEventListener("click",u),e.addEventListener("click",u)});window.addEventListener("keydown",e=>{e.key==="Escape"&&r(!1)});B();const m=decodeURIComponent(location.hash.replace(/^#/,""));m&&requestAnimationFrame(()=>h(m,!0));</script> <div class="floating-action-stack fixed z-40 flex flex-col items-end gap-3 lg:hidden pointer-events-auto transition-opacity data-[toc-open=true]:opacity-0 data-[toc-open=true]:pointer-events-none" data-floating-action-stack data-target-selector="[data-article]" style="inset-inline-end: calc(env(safe-area-inset-right, 0px) + 1rem); inset-block-end: calc(env(safe-area-inset-bottom, 0px) + 1rem);"><button type="button" class="floating-action-stack__button h-11 w-11 rounded-full border border-gray-200 bg-white/90 text-gray-900 shadow-lg backdrop-blur-sm ring-offset-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 hover:-translate-y-0.5 hover:border-blue-200 hover:text-blue-600 data-[visible=false]:opacity-0 data-[visible=false]:pointer-events-none data-[visible=true]:opacity-100 data-[visible=true]:pointer-events-auto dark:border-gray-800 dark:bg-gray-900/85 dark:text-gray-100 dark:ring-offset-gray-900 dark:hover:border-blue-500/50 dark:hover:text-blue-300" data-floating-action-button data-action="top" data-visible="false" style="transition-delay: 0ms;" aria-label="返回文章顶部"><span class="sr-only">顶部</span><span aria-hidden="true" class="text-base">⬆️</span></button><button type="button" class="floating-action-stack__button h-11 w-11 rounded-full border border-gray-200 bg-white/90 text-gray-900 shadow-lg backdrop-blur-sm ring-offset-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 hover:-translate-y-0.5 hover:border-blue-200 hover:text-blue-600 data-[visible=false]:opacity-0 data-[visible=false]:pointer-events-none data-[visible=true]:opacity-100 data-[visible=true]:pointer-events-auto dark:border-gray-800 dark:bg-gray-900/85 dark:text-gray-100 dark:ring-offset-gray-900 dark:hover:border-blue-500/50 dark:hover:text-blue-300" data-floating-action-button data-action="toc" data-visible="true" style="transition-delay: 10ms;" aria-label="打开目录抽屉" data-mobile-toc-open="true"><span class="sr-only">目录</span><span aria-hidden="true" class="text-base">📑</span></button><button type="button" class="floating-action-stack__button h-11 w-11 rounded-full border border-gray-200 bg-white/90 text-gray-900 shadow-lg backdrop-blur-sm ring-offset-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 hover:-translate-y-0.5 hover:border-blue-200 hover:text-blue-600 data-[visible=false]:opacity-0 data-[visible=false]:pointer-events-none data-[visible=true]:opacity-100 data-[visible=true]:pointer-events-auto dark:border-gray-800 dark:bg-gray-900/85 dark:text-gray-100 dark:ring-offset-gray-900 dark:hover:border-blue-500/50 dark:hover:text-blue-300" data-floating-action-button data-action="bottom" data-visible="true" style="transition-delay: 20ms;" aria-label="跳转文章底部"><span class="sr-only">底部</span><span aria-hidden="true" class="text-base">⬇️</span></button></div><script type="module">const r=document.querySelector("[data-floating-action-stack]"),B=r?.dataset.targetSelector||"[data-article]",v=r?.querySelector('[data-action="top"]'),E=r?.querySelector('[data-action="bottom"]'),f=r?.querySelector('[data-action="toc"]'),M=window.matchMedia("(prefers-reduced-motion: reduce)"),l=M.matches,i=document.querySelector("[data-mobile-toc]"),c=document.querySelector(B);let s=0,y=0,d=!1;const R=()=>{if(!c)return window;let t=c.parentElement;for(;t;){const o=window.getComputedStyle(t).overflowY;if((o==="auto"||o==="scroll")&&t.scrollHeight>t.clientHeight)return t;t=t.parentElement}return window},n=R(),a=()=>{if(!c)return;s=c.getBoundingClientRect().top+window.scrollY,y=c.scrollHeight},x=(t,e,o)=>Math.min(Math.max(t,e),o),p=(t,e)=>{t&&(t.dataset.visible=e?"true":"false")},u=()=>{if(!c)return;const t=120,e=y>window.innerHeight+40,o=window.scrollY>s+t;p(v,o),p(E,e),d=!1},S=()=>{d||(d=!0,requestAnimationFrame(u))},C=()=>{const t=x(s,0,Number.MAX_SAFE_INTEGER);window.scrollTo({top:t,behavior:l?"auto":"smooth"})},k=()=>{const t=document.getElementById("page-bottom-anchor");if(t){const e=t.getBoundingClientRect(),w=window.scrollY+e.bottom-window.innerHeight;window.scrollTo({top:Math.max(0,w),behavior:l?"auto":"smooth"});let h=0;const T=2,g=()=>{h>=T||(h++,setTimeout(()=>{const b=n instanceof Window?document.documentElement:n,H=n instanceof Window?window.scrollY:n.scrollTop;if(b.scrollHeight-b.clientHeight-H>10){const Y=t.getBoundingClientRect(),q=window.scrollY+Y.bottom-window.innerHeight;window.scrollTo({top:Math.max(0,q),behavior:l?"auto":"smooth"}),g()}},400))};g()}else{const e=n instanceof Window?document.documentElement:n,o=Math.max(e.scrollHeight-e.clientHeight,s);n instanceof Window?window.scrollTo({top:o,behavior:l?"auto":"smooth"}):n.scrollTo({top:o,behavior:l?"auto":"smooth"})}},m=t=>{r&&(r.dataset.tocOpen=t?"true":"false")};m(i?.dataset.open==="true");r&&c&&(a(),u(),window.addEventListener("scroll",S,{passive:!0}),window.addEventListener("resize",()=>{a(),S()}),window.addEventListener("load",()=>{a(),u()},{once:!0}),v?.addEventListener("click",C),E?.addEventListener("click",k));f?.addEventListener("click",()=>{requestAnimationFrame(()=>f?.blur())});window.addEventListener("mobile-toc:toggle",t=>{const e=t.detail;e&&m(e.open)});i&&new MutationObserver(()=>{m(i.dataset.open==="true")}).observe(i,{attributes:!0,attributeFilter:["data-open"]});</script> </main> <footer class="py-8 mt-auto border-t border-zinc-200 dark:border-zinc-800"> <div class="container mx-auto px-4 text-center text-zinc-500 max-w-4xl">
 &copy; 2026 Yuanle Liu. All rights reserved. </div> </footer>  <script type="module">const i=new WeakMap,c=(e,t)=>{e.dataset.state=t,t==="copied"?e.textContent="Copied":t==="error"?e.textContent="Failed":e.textContent="Copy";const o=i.get(e);if(o&&window.clearTimeout(o),t!=="idle"){const r=window.setTimeout(()=>c(e,"idle"),2e3);i.set(e,r)}},n=async e=>{const t=e.closest(".code-block");if(!t)return;const o=t.getAttribute("data-raw-code")??"";try{await navigator.clipboard.writeText(o),c(e,"copied")}catch(r){console.error("Copy failed",r),c(e,"error")}},s=()=>{document.addEventListener("click",e=>{const o=e.target?.closest("button.code-block__copy");o&&(e.preventDefault(),n(o))})},a=()=>{typeof document>"u"||s()};a();</script> <script type="module">function d(){const n=document.querySelector("[data-site-header]");if(!n){document.documentElement.style.setProperty("--site-header-height","0px");return}let i=0;const t=()=>{const e=n.getBoundingClientRect().height;Math.abs(e-i)>.5&&(i=e,document.documentElement.style.setProperty("--site-header-height",`${e}px`),window.dispatchEvent(new CustomEvent("headerheightchange",{detail:{height:e}})))};t(),"ResizeObserver"in window&&new ResizeObserver(()=>{t()}).observe(n),window.addEventListener("resize",t,{passive:!0}),window.addEventListener("load",t,{once:!0})}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",d):d();</script> </body> </html>
