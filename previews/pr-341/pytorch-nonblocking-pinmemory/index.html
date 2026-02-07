@@ -1,0 +1,686 @@
+<!DOCTYPE html><html lang="en" data-astro-cid-sckkx6r4> <head><script>(() => {
+  const storageKey = 'theme';
+  const className = 'dark';
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  const validThemes = ['light', 'dark'];
+  let currentPreference = (() => {
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored && validThemes.includes(stored)) return stored;
+    } catch (error) {
+      console.warn('Unable to access localStorage for theme:', error);
+    }
+    return mediaQuery.matches ? 'dark' : 'light';
+  })();
+
+  const resolveTheme = (preference) => (preference === 'dark' ? 'dark' : 'light');
+
+  const applyTheme = (preference) => {
+    const effectiveTheme = resolveTheme(preference);
+    document.documentElement.classList.toggle(className, effectiveTheme === 'dark');
+    document.documentElement.dataset.theme = effectiveTheme;
+    return effectiveTheme;
+  };
+
+  const dispatchChange = (preference) => {
+    const resolved = document.documentElement.classList.contains(className) ? 'dark' : 'light';
+    window.dispatchEvent(
+      new CustomEvent('themechange', {
+        detail: { theme: preference, resolved },
+      }),
+    );
+  };
+
+  applyTheme(currentPreference);
+
+  window.__setTheme = (next) => {
+    const preference = validThemes.includes(String(next)) ? String(next) : resolveTheme(currentPreference);
+    currentPreference = preference;
+    try {
+      localStorage.setItem(storageKey, preference);
+    } catch (error) {
+      console.warn('Unable to persist theme selection:', error);
+    }
+    applyTheme(preference);
+    dispatchChange(preference);
+  };
+})();</script><meta charset="UTF-8"><meta name="description" content="A minimal Astro blog"><meta name="viewport" content="width=device-width"><link rel="icon" type="image/x-icon" href="/blog-preview/previews/pr-341/favicon.ico"><link rel="icon" type="image/png" sizes="32x32" href="/blog-preview/previews/pr-341/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/blog-preview/previews/pr-341/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/blog-preview/previews/pr-341/apple-touch-icon.png"><meta name="generator" content="Astro v5.16.6"><link rel="canonical" href="https://yuanlehome.github.io/blog-preview/previews/pr-341/pytorch-nonblocking-pinmemory/"><meta property="og:title" content="在 PyTorch 中正确使用 non_blocking 和 pin_memory()"><meta property="og:description" content="A minimal Astro blog"><meta property="og:image" content="/blog-preview/previews/pr-341/images/notion/pytorch-nonblocking-pinmemory/30022dca-4210-8190-8ff7-d3d77aadbd24.png"><meta property="og:type" content="article"><meta property="og:url" content="https://yuanlehome.github.io/blog-preview/previews/pr-341/pytorch-nonblocking-pinmemory/"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="在 PyTorch 中正确使用 non_blocking 和 pin_memory()"><meta name="twitter:description" content="A minimal Astro blog"><meta name="twitter:image" content="/blog-preview/previews/pr-341/images/notion/pytorch-nonblocking-pinmemory/30022dca-4210-8190-8ff7-d3d77aadbd24.png"><title>在 PyTorch 中正确使用 non_blocking 和 pin_memory()</title><style>:root {
+  /* Typography */
+  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial, Noto Sans SC, PingFang SC, Microsoft YaHei, sans-serif;
+  --font-serif: ui-serif, Georgia, Cambria, Times New Roman, Times, serif;
+  --font-mono: JetBrains Mono, Fira Code, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  --font-size-4xl: 2.25rem;
+  --line-height-body: 1.75;
+  --line-height-heading: 1.3;
+  --line-height-code: 1.65;
+  --line-height-tight: 1.25;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Components */
+  --radius-sm: 0.35rem;
+  --radius-md: 0.65rem;
+  --radius-lg: 0.9rem;
+  --radius-xl: 0.75rem;
+  --shadow-card: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-code-block: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-header: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --border-style: solid;
+  --border-width: 1px;
+  --motion-duration: 160ms;
+  --motion-easing: ease;
+  --spacing-multiplier: 1;
+
+  /* Light Mode Colors */
+  --color-brand: #0284c7;
+  --color-accent: #0284c7;
+  --color-background: #fafafa;
+  --color-foreground: #18181b;
+  --color-muted: #71717a;
+  --color-border: #e4e4e7;
+  --color-card: #f4f4f5;
+  --color-code-background: #f4f4f5;
+  --color-code-foreground: #18181b;
+  --color-code-border: #e4e4e7;
+  --color-code-keyword: #0284c7;
+  --color-code-string: #059669;
+  --color-code-comment: #a1a1aa;
+  --color-code-function: #0284c7;
+
+  /* Code block specific (legacy support) */
+  --code-font: var(--font-mono);
+  --code-radius: 0.9rem;
+  --code-border: 1px solid var(--color-code-border);
+  --code-bg: var(--color-code-background);
+  --code-fg: var(--color-code-foreground);
+  --code-scrollbar: rgb(203 213 225 / 0.75);
+  --code-highlight-bg: rgb(59 130 246 / 0.12);
+  --code-highlight-accent: rgb(59 130 246);
+
+  /* Header specific (legacy support) */
+  --header-bg: rgb(248 250 252 / 0.92);
+  --header-bg-scrolled: rgb(248 250 252 / 0.98);
+  --header-border: rgb(226 232 240 / 0.9);
+  --header-shadow: var(--shadow-header);
+  --header-shadow-strong: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+.dark {
+  /* Dark Mode Colors */
+  --color-brand: #38bdf8;
+  --color-accent: #38bdf8;
+  --color-background: #18181b;
+  --color-foreground: #fafafa;
+  --color-muted: #a1a1aa;
+  --color-border: #3f3f46;
+  --color-card: #27272a;
+  --color-code-background: #1f1f23;
+  --color-code-foreground: #e4e4e7;
+  --color-code-border: #3f3f46;
+  --color-code-keyword: #38bdf8;
+  --color-code-string: #34d399;
+  --color-code-comment: #71717a;
+  --color-code-function: #38bdf8;
+
+  /* Dark mode shadows */
+  --shadow-card: 0 10px 30px rgb(0 0 0 / 0.28);
+  --shadow-code-block: 0 10px 30px rgb(0 0 0 / 0.28);
+  --shadow-header: 0 10px 30px rgb(0 0 0 / 0.28);
+
+  /* Code block specific (legacy support) */
+  --code-border: 1px solid var(--color-code-border);
+  --code-bg: var(--color-code-background);
+  --code-fg: var(--color-code-foreground);
+  --code-scrollbar: rgb(71 85 105 / 0.8);
+  --code-highlight-bg: rgb(59 130 246 / 0.2);
+  --code-highlight-accent: rgb(96 165 250);
+
+  /* Header specific (legacy support) */
+  --header-bg: rgb(15 23 42 / 0.72);
+  --header-bg-scrolled: rgb(15 23 42 / 0.8400000000000001);
+  --header-border: rgb(71 85 105 / 0.8);
+  --header-shadow: var(--shadow-header);
+  --header-shadow-strong: 0 20px 40px rgb(0 0 0 / 0.35);
+}
+</style><link rel="stylesheet" href="/blog-preview/previews/pr-341/_astro/_slug_.D28HdzQd.css">
+<style>.reading-progress[data-astro-cid-mu6cnre2]{position:fixed;inset:0 0 auto;height:3px;width:100%;background:transparent;z-index:50;pointer-events:none}.reading-progress__bar[data-astro-cid-mu6cnre2]{display:block;height:100%;width:100%;transform:scaleX(var(--progress-value, 0));transform-origin:left center;background:linear-gradient(90deg,var(--progress-color-start),var(--progress-color-end));transition:transform .1s linear}:root{--progress-color-start: #2563eb;--progress-color-end: #22d3ee}:root.dark{--progress-color-start: #38bdf8;--progress-color-end: #a855f7}@media(prefers-reduced-motion:reduce){.reading-progress__bar[data-astro-cid-mu6cnre2]{transition:none}}.reading-progress__controls[data-astro-cid-mu6cnre2]{position:fixed;inset:auto 1rem 1.5rem auto;display:flex;flex-direction:column;gap:.5rem;z-index:60;pointer-events:none}.reading-progress__control[data-astro-cid-mu6cnre2]{pointer-events:auto;border:1px solid var(--progress-control-border);background:var(--progress-control-bg);color:var(--progress-control-text);border-radius:9999px;padding:.5rem .75rem;font-size:.875rem;line-height:1.25rem;box-shadow:0 4px 12px #0000001f;transition:transform .15s ease,box-shadow .15s ease,background-color .15s ease}.reading-progress__control[data-astro-cid-mu6cnre2]:hover,.reading-progress__control[data-astro-cid-mu6cnre2]:focus-visible{transform:translateY(-2px);box-shadow:0 8px 20px #0000002e;outline:none}:root{--progress-control-bg: #ffffff;--progress-control-border: rgba(0, 0, 0, .08);--progress-control-text: #0f172a}:root.dark{--progress-control-bg: #0f172a;--progress-control-border: rgba(255, 255, 255, .08);--progress-control-text: #e2e8f0}@media(max-width:640px){.reading-progress__controls[data-astro-cid-mu6cnre2]{inset:auto .75rem 1rem auto}.reading-progress__control[data-astro-cid-mu6cnre2]{padding:.45rem .65rem;font-size:.8125rem}}@media(max-width:1023px){.reading-progress__controls[data-astro-cid-mu6cnre2]{display:none}}
+</style></head> <body class="bg-neutral-50 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 transition-colors duration-300 min-h-screen flex flex-col" data-astro-cid-sckkx6r4>  <div class="reading-progress" data-reading-progress data-target-selector="[data-article]" data-astro-cid-mu6cnre2> <span class="reading-progress__bar" data-reading-progress-bar data-astro-cid-mu6cnre2></span> </div> <div class="reading-progress__controls" data-reading-progress-controls hidden data-astro-cid-mu6cnre2> <button type="button" class="reading-progress__control" data-scroll-top aria-label="返回文章顶部" data-astro-cid-mu6cnre2>
+⬆️ 顶部
+</button> <button type="button" class="reading-progress__control" data-scroll-bottom aria-label="跳转文章底部" data-astro-cid-mu6cnre2>
+⬇️ 底部
+</button> </div>  <script type="module">const a=document.querySelector("[data-reading-progress]"),p=a?.dataset?.targetSelector||"[data-article]",w=a?.querySelector("[data-reading-progress-bar]"),l=document.querySelector(p),r=document.querySelector("[data-reading-progress-controls]"),h=r?.querySelector("[data-scroll-top]"),v=r?.querySelector("[data-scroll-bottom]");if(a&&w&&l){let e=0,s=0,n=!1;const m=(t,o,c)=>Math.min(Math.max(t,o),c),i=()=>{e=l.getBoundingClientRect().top+window.scrollY,s=l.scrollHeight},d=()=>{const t=Math.max(s-window.innerHeight,1),o=m((window.scrollY-e)/t,0,1);w.style.setProperty("--progress-value",o.toString()),n=!1},u=()=>{n||(n=!0,requestAnimationFrame(d))},g=()=>{i(),u()};if(i(),d(),window.addEventListener("scroll",u,{passive:!0}),window.addEventListener("resize",g),window.addEventListener("load",g,{once:!0}),r){r.hidden=!1;const t=()=>{window.scrollTo({top:e,behavior:"smooth"})},o=()=>{const c=Math.max(e+s-window.innerHeight,e);window.scrollTo({top:c,behavior:"smooth"})};h?.addEventListener("click",t),v?.addEventListener("click",o)}}</script> <header class="site-header header-variant-frosted" data-header data-site-header> <div class="container mx-auto px-5 py-3 sm:py-4 flex justify-between items-start max-w-5xl"> <a href="/blog-preview/previews/pr-341/" class="text-xl font-bold hover:text-sky-600 dark:hover:text-sky-400 flex items-center gap-2"> <img src="/blog-preview/previews/pr-341/placeholder-social.jpg" alt="Yuanle Liu" width="32" height="32" class="h-8 w-8 rounded"> <span class="hidden sm:inline">Yuanle Liu</span> </a> <nav class="flex items-start gap-3 items-center"> <a href="/blog-preview/previews/pr-341/" class="hover:underline inline-flex items-center "> Home </a><a href="/blog-preview/previews/pr-341/archive/" class="hover:underline inline-flex items-center "> Archive </a><a href="/blog-preview/previews/pr-341/tags/" class="hover:underline inline-flex items-center "> Tags </a><a href="/blog-preview/previews/pr-341/about/" class="hover:underline inline-flex items-center "> About </a> <button id="theme-toggle" class="inline-flex items-center gap-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 px-1" aria-label="Toggle theme"> 🖥️ ☀️ </button> </nav> </div> </header> <script type="module">const i="theme",c=["light","dark"],d=()=>{try{const e=localStorage.getItem(i);if(e==="light"||e==="dark")return e}catch(e){console.warn("Unable to read theme preference:",e)}return window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"},g=()=>document.documentElement.classList.contains("dark")?"dark":"light",u=e=>e==="dark"?"🌙":"☀️",w=e=>e==="dark"?"Dark":"Light",a=(e,t)=>{const n=document.getElementById("theme-toggle");if(!n)return;const o=t??g(),h=u(o),l=w(o);n.dataset.theme=e,n.textContent="";const r=document.createElement("span");r.className="inline-flex items-center justify-center",r.style.lineHeight="1",r.textContent=h,n.appendChild(r),n.appendChild(document.createTextNode(" "+l)),n.setAttribute("aria-label",`Toggle theme (current: ${l})`)},k=e=>{if(typeof window.__setTheme=="function"){window.__setTheme?.(e);return}const t=e==="dark"?"dark":"light";document.documentElement.classList.toggle("dark",t==="dark");try{localStorage.setItem(i,e)}catch(n){console.warn("Unable to persist theme preference:",n)}window.dispatchEvent(new CustomEvent("themechange",{detail:{theme:e,resolved:t}}))},p=()=>{const e=d(),t=c[(c.indexOf(e)+1)%c.length];k(t),a(t)},s=document.querySelector("[data-header]"),f=window.matchMedia("(prefers-reduced-motion: reduce)").matches,m=()=>{if(!s)return;const e=window.scrollY>6;s.classList.toggle("is-scrolled",e)};document.getElementById("theme-toggle")?.addEventListener("click",p);a(d());window.addEventListener("themechange",e=>{const t=e.detail,n=t?.theme??d(),o=t?.resolved;a(n,o)});m();const v=()=>m();window.addEventListener("scroll",v,{passive:!0});f&&s?.classList.add("reduce-motion");</script> <main class="container mx-auto px-4 py-8 max-w-6xl"> <div class="flex flex-col gap-6 lg:grid lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start lg:gap-12" data-post-layout> <div class="w-full" data-toc-shell> <aside class="hidden lg:block h-full"> <div class="flex h-full w-full flex-col gap-3 overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50/80 p-4 shadow-md backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-800/50 lg:sticky lg:top-[var(--site-header-height)] lg:max-h-[calc(100vh-var(--site-header-height)-16px)] lg:h-[calc(100vh-var(--site-header-height)-16px)]" data-toc-container> <div class="space-y-1"> <p class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">文章目录</p> <p class="text-xs text-zinc-500 dark:text-zinc-400">快速跳转到你关心的章节</p> </div> <nav aria-label="文章目录" class="flex-1 min-h-0 overflow-y-auto pr-1" data-toc-scroll> <ol class="space-y-3 text-sm"> <li><a href="#引言" data-toc-link data-mobile-toc-link data-target="引言" title="引言¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>引言¶</span></a><ol class="mt-1 space-y-1"><li><a href="#你将学到什么" data-toc-link data-mobile-toc-link data-target="你将学到什么" title="你将学到什么¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>你将学到什么¶</span></a></li><li><a href="#前言" data-toc-link data-mobile-toc-link data-target="前言" title="前言¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>前言¶</span></a></li></ol></li><li><a href="#背景" data-toc-link data-mobile-toc-link data-target="背景" title="背景¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>背景¶</span></a><ol class="mt-1 space-y-1"><li><a href="#内存管理基础" data-toc-link data-mobile-toc-link data-target="内存管理基础" title="内存管理基础¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>内存管理基础¶</span></a></li><li><a href="#cuda-与不可分页内存" data-toc-link data-mobile-toc-link data-target="cuda-与不可分页内存" title="CUDA 与（不可）分页内存¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>CUDA 与（不可）分页内存¶</span></a></li><li><a href="#带--non_blockingtrue--时的异步与同步操作cuda--cudamemcpyasync-" data-toc-link data-mobile-toc-link data-target="带--non_blockingtrue--时的异步与同步操作cuda--cudamemcpyasync-" title="带 non_blocking=True 时的异步与同步操作（CUDA cudaMemcpyAsync）¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>带 non_blocking=True 时的异步与同步操作（CUDA cudaMemcpyAsync）¶</span></a></li></ol></li><li><a href="#pytorch-视角" data-toc-link data-mobile-toc-link data-target="pytorch-视角" title="PyTorch 视角¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>PyTorch 视角¶</span></a><ol class="mt-1 space-y-1"><li><a href="#pin_memory" data-toc-link data-mobile-toc-link data-target="pin_memory" title="pin_memory()¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>pin_memory()¶</span></a></li><li><a href="#non_blockingtrue" data-toc-link data-mobile-toc-link data-target="non_blockingtrue" title="non_blocking=True¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>non_blocking=True¶</span></a></li><li><a href="#综合使用" data-toc-link data-mobile-toc-link data-target="综合使用" title="综合使用¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>综合使用¶</span></a></li><li><a href="#其他传输方向gpu--cpucpu--mps" data-toc-link data-mobile-toc-link data-target="其他传输方向gpu--cpucpu--mps" title="其他传输方向（GPU → CPU、CPU → MPS）¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>其他传输方向（GPU → CPU、CPU → MPS）¶</span></a></li></ol></li><li><a href="#实践建议" data-toc-link data-mobile-toc-link data-target="实践建议" title="实践建议¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>实践建议¶</span></a></li><li><a href="#附加考虑" data-toc-link data-mobile-toc-link data-target="附加考虑" title="附加考虑¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>附加考虑¶</span></a></li><li><a href="#结论" data-toc-link data-mobile-toc-link data-target="结论" title="结论¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>结论¶</span></a></li> </ol> </nav> </div> </aside> </div> <script type="module">const p=Array.from(document.querySelectorAll("[data-toc-link]")),e=document.querySelector("[data-toc-container]"),i=document.querySelector("[data-toc-shell]"),l=()=>{const t=getComputedStyle(document.documentElement).getPropertyValue("--site-header-height");return parseFloat(t)||0},r=window.matchMedia("(min-width: 1024px)"),g=p.map(t=>document.getElementById(t.dataset.target||"")).filter(t=>!!t),m=()=>{const t=l();g.forEach(n=>{n.style.scrollMarginTop=`${t+12}px`})},w=t=>`#${encodeURIComponent(t)}`,v=t=>decodeURIComponent(t.replace(/^#/,"")),f=t=>{p.forEach(n=>{const o=n.dataset.target===t;n.dataset.active=o?"true":"false",n.setAttribute("aria-current",o?"true":"false")})},u=(t,n=!1)=>{const o=document.getElementById(t);if(!o)return;const a=l(),c=window.scrollY+o.getBoundingClientRect().top-a-12;n?history.replaceState(null,"",w(t)):history.pushState(null,"",w(t)),window.scrollTo({top:c,behavior:"smooth"}),f(t)};p.forEach(t=>t.addEventListener("click",n=>{const o=t.dataset.target;o&&(n.preventDefault(),u(o))}));const y=()=>{e&&(e.dataset.fixed="false",e.style.position="",e.style.left="",e.style.width="",e.style.height="",e.style.maxHeight="",e.style.top="",i&&(i.style.minHeight=""))},x=()=>{if(!e||!i)return;const t=i.getBoundingClientRect(),n=l(),o=`calc(100vh - ${n}px - 16px)`;e.dataset.fixed="true",i.style.minHeight=`${e.offsetHeight}px`,e.style.position="fixed",e.style.top=`${n}px`,e.style.left=`${t.left}px`,e.style.width=`${t.width}px`,e.style.height=o,e.style.maxHeight=o},d=()=>{if(!e||e.dataset.fixed==="true"||!r.matches)return;const t=parseFloat(getComputedStyle(e).top||"0"),n=e.offsetTop-t;if(Number.isNaN(t)||window.scrollY<n)return;const o=e.getBoundingClientRect().top;Math.abs(o-t)>2&&x()},E=()=>{if(!r.matches){y();return}e?.dataset.fixed==="true"&&x()};if(g.length>0){m();const t=new IntersectionObserver(o=>{const a=o.filter(s=>s.isIntersecting).sort((s,h)=>s.target.getBoundingClientRect().top-h.target.getBoundingClientRect().top);if(a[0]){f(a[0].target.id);return}const c=o.filter(s=>s.boundingClientRect.top<0).sort((s,h)=>h.target.getBoundingClientRect().top-s.target.getBoundingClientRect().top);c[0]&&f(c[0].target.id)},{rootMargin:`-${l()}px 0% -55% 0%`,threshold:[0,.25,.5,1]});g.forEach(o=>t.observe(o));const n=v(location.hash||"");n&&requestAnimationFrame(()=>u(n,!0)),window.addEventListener("hashchange",()=>{const o=v(location.hash||"");o&&u(o,!0)})}y();r.matches&&d();r.addEventListener("change",()=>{y(),requestAnimationFrame(()=>{r.matches&&d()})});window.addEventListener("scroll",d,{passive:!0});window.addEventListener("resize",E);window.addEventListener("load",()=>{d(),m()},{once:!0});window.addEventListener("headerheightchange",()=>{m()});</script> <article class="prose dark:prose-invert max-w-none prose-img:rounded-xl min-w-0" data-article> <header class="mb-8 not-prose"> <div class="flex flex-col gap-6 md:grid md:grid-cols-[minmax(0,1fr)_220px] md:items-start md:gap-8"> <div class="flex flex-col gap-4 md:h-full"> <h1 class="text-3xl md:text-4xl font-bold leading-tight text-left"> 在 PyTorch 中正确使用 non_blocking 和 pin_memory() </h1> <div class="text-zinc-500 text-sm flex items-start justify-start gap-3 flex-wrap md:mt-auto"> <time class="flex items-center gap-1" datetime="2026-02-07T00:00:00.000Z" title="发布于 2026-02-07"> <span aria-hidden="true">📅</span> <span>
+发布于 <span class="font-medium">2026-02-07</span> </span> </time>   <div class="flex items-center gap-1"> <span aria-hidden="true">✍️</span> 3930 字
+</div> <div class="flex items-center gap-1" title="3930 words"> <span aria-hidden="true">⏱️</span> 9 min read </div> </div>  </div> <figure class="hidden md:block md:justify-self-end overflow-hidden rounded-xl border border-zinc-200/80 shadow-md dark:border-zinc-800/80 w-full max-w-[320px] md:max-w-[220px] md:min-w-[160px]" data-post-cover> <img src="/blog-preview/previews/pr-341/images/notion/pytorch-nonblocking-pinmemory/30022dca-4210-8190-8ff7-d3d77aadbd24.png" alt="在 PyTorch 中正确使用 non_blocking 和 pin_memory()" class="aspect-[4/3] w-full object-cover transition duration-200" loading="eager" decoding="async"> </figure>  </div> </header> <p>翻译自：<a href="https://docs.pytorch.org/tutorials/intermediate/pinmem_nonblock.html" target="_blank" rel="noopener noreferrer">A guide on good usage of non_blocking and pin_memory() in PyTorch — PyTorch Tutorials 2.10.0+cu128 documentation</a></p>
+<hr>
+<h2 id="引言">引言<a href="#引言" class="heading-anchor" aria-label="Link to 引言">¶</a></h2>
+<p>在许多 PyTorch 应用中，将数据从 CPU 传输到 GPU 是基础操作。了解在设备之间移动数据最有效的工具和选项至关重要。本教程考察了 PyTorch 中用于设备间数据传输的两个关键方法：<code>pin_memory()</code> 和带有 <code>non_blocking=True</code> 选项的 <code>to()</code>。</p>
+<h3 id="你将学到什么">你将学到什么<a href="#你将学到什么" class="heading-anchor" aria-label="Link to 你将学到什么">¶</a></h3>
+<p>优化从 CPU 到 GPU 的张量传输可以通过异步传输和固定内存实现，但需要注意几点：</p>
+<ul>
+<li>使用 <code>tensor.pin_memory().to(device, non_blocking=True)</code> 的速度可能比直接 <code>tensor.to(device)</code> 慢一倍。</li>
+<li>通常来说，<code>tensor.to(device, non_blocking=True)</code> 能有效提升传输速度。</li>
+<li>对 CPU 张量执行 <code>cpu_tensor.to("cuda", non_blocking=True).mean()</code> 可以正确运行，但尝试在 GPU 张量上调用 <code>cuda_tensor.to("cpu", non_blocking=True).mean()</code> 会得到错误的输出。</li>
+</ul>
+<h3 id="前言">前言<a href="#前言" class="heading-anchor" aria-label="Link to 前言">¶</a></h3>
+<p>本教程中报告的性能依赖于构建教程所用的系统。虽然结论在不同系统中都适用，但具体观察可能会因硬件差异而有所不同，尤其是旧硬件。本教程的主要目标是提供一个理解 CPU 至 GPU 数据传输的理论框架。然而任何设计决策应根据具体情况、基准吞吐量测量以及任务需求来决定。</p>
+<figure class="code-block not-prose" data-language="python" data-raw-code="import torch
+
+assert torch.cuda.is_available(), &#x22;需要一块 CUDA 设备才能运行本教程&#x22;" data-line-numbers="true"><div class="code-block__header"><div class="code-block__title">python</div><button type="button" class="code-block__copy" aria-label="复制代码">Copy</button></div><pre class="code-block__pre" tabindex="0" data-theme="light" data-language="python"><code data-language="python"><span class="line" data-line-number="1"><span style="color:#D73A49">import</span><span style="color:#24292E"> torch</span></span>
+<span class="line" data-line-number="2"> </span>
+<span class="line" data-line-number="3"><span style="color:#D73A49">assert</span><span style="color:#24292E"> torch.cuda.is_available(), </span><span style="color:#032F62">"需要一块 CUDA 设备才能运行本教程"</span></span></code></pre><pre class="code-block__pre" tabindex="0" data-theme="dark" data-language="python"><code data-language="python"><span class="line" data-line-number="1"><span style="color:#C586C0">import</span><span style="color:#D4D4D4"> torch</span></span>
+<span class="line" data-line-number="2"> </span>
+<span class="line" data-line-number="3"><span style="color:#C586C0">assert</span><span style="color:#D4D4D4"> torch.cuda.is_available(), </span><span style="color:#CE9178">"需要一块 CUDA 设备才能运行本教程"</span></span></code></pre></figure>
+<p>本教程需要安装 tensordict。如果你的环境中还没有 tensordict，可以通过以下命令安装：</p>
+<figure class="code-block not-prose" data-language="bash" data-raw-code="# 安装 tensordict
+!pip3 install tensordict" data-line-numbers="true"><div class="code-block__header"><div class="code-block__title">bash</div><button type="button" class="code-block__copy" aria-label="复制代码">Copy</button></div><pre class="code-block__pre" tabindex="0" data-theme="light" data-language="bash"><code data-language="bash"><span class="line" data-line-number="1"><span style="color:#6A737D"># 安装 tensordict</span></span>
+<span class="line" data-line-number="2"><span style="color:#D73A49">!</span><span style="color:#6F42C1">pip3</span><span style="color:#032F62"> install</span><span style="color:#032F62"> tensordict</span></span></code></pre><pre class="code-block__pre" tabindex="0" data-theme="dark" data-language="bash"><code data-language="bash"><span class="line" data-line-number="1"><span style="color:#6A9955"># 安装 tensordict</span></span>
+<span class="line" data-line-number="2"><span style="color:#D4D4D4">!</span><span style="color:#DCDCAA">pip3</span><span style="color:#CE9178"> install</span><span style="color:#CE9178"> tensordict</span></span></code></pre></figure>
+<p>我们首先梳理这些概念背后的理论，然后再给出功能的实际测试示例。</p>
+<h2 id="背景">背景<a href="#背景" class="heading-anchor" aria-label="Link to 背景">¶</a></h2>
+<h3 id="内存管理基础">内存管理基础<a href="#内存管理基础" class="heading-anchor" aria-label="Link to 内存管理基础">¶</a></h3>
+<p>在 PyTorch 中创建 CPU 张量时，其内容需要存放在内存中。这里所说的内存是一个值得仔细理解的复杂概念。我们将由内存管理单元管理的两类内存区分开来：简化而言的 RAM，以及磁盘上的交换空间。磁盘空间与物理内存合起来构成虚拟内存，它抽象出可用资源的总和，使得可用空间看起来比单独的主存更大，从而营造出主存更大的假象。</p>
+<p>在正常情况下，普通的 CPU 张量是可分页的，这意味着它被划分为称为“页面”的块，这些页面可以存在于虚拟内存的任何位置（无论是 RAM 还是磁盘）。如前所述，这让可用内存看起来比实际的主存更大。</p>
+<p>当程序访问不在 RAM 中的页面时，会发生“缺页”异常，操作系统会将该页面调回 RAM（交换入）；相应地，操作系统可能需要将另一页交换出去以为新页面腾出空间。</p>
+<p>与可分页内存不同，固定（或锁页、不可分页）内存是一种不能被换出到磁盘的内存类型，它提供更快、更可预测的访问时间，但代价是容量比可分页内存（即主存）更有限。</p>
+<p><img src="/blog-preview/previews/pr-341/images/notion/pytorch-nonblocking-pinmemory/30022dca-4210-8190-8ff7-d3d77aadbd24.png" alt=""></p>
+<p>固定内存与分页内存示意图</p>
+<h3 id="cuda-与不可分页内存">CUDA 与（不可）分页内存<a href="#cuda-与不可分页内存" class="heading-anchor" aria-label="Link to CUDA 与（不可）分页内存">¶</a></h3>
+<p>要理解 CUDA 如何将张量从 CPU 复制到 CUDA，我们考虑上述两种情况：</p>
+<ul>
+<li>若内存被锁页，设备可以直接访问主存中的这块内存。内存地址清晰可用，需要读取这些数据的函数可以明显加速。</li>
+<li>若内存可分页，则在发送到 GPU 之前，所有页面都必须调入主存。这个操作可能耗时，而且相比锁页内存不够可预测。</li>
+</ul>
+<p>更具体地说，当 CUDA 从 CPU 向 GPU 发送可分页数据时，它必须先创建该数据的一个锁页副本，然后才能进行传输。</p>
+<h3 id="带--non_blockingtrue--时的异步与同步操作cuda--cudamemcpyasync-">带 <code>non_blocking=True</code> 时的异步与同步操作（CUDA <code>cudaMemcpyAsync</code>）<a href="#带--non_blockingtrue--时的异步与同步操作cuda--cudamemcpyasync-" class="heading-anchor" aria-label="Link to 带  non_blocking=True  时的异步与同步操作（CUDA  cudaMemcpyAsync ）">¶</a></h3>
+<p>当从主机（如 CPU）到设备（如 GPU）执行复制时，CUDA 工具包提供了同步或异步的模式。</p>
+<p>在实践中，调用 <code>to()</code> 时 PyTorch 总是会使用 <code>cudaMemcpyAsync</code>。如果 <code>non_blocking=False</code>（默认值），在每次 <code>cudaMemcpyAsync</code> 调用后都会调用 <code>cudaStreamSynchronize</code>，这使得对 <code>to()</code> 的调用在主线程上是阻塞的。如果 <code>non_blocking=True</code>，则不会触发同步，主机侧的主线程不会被阻塞。因此从主机的角度看，可以同时将多个张量发送到设备，因为线程无需等待一个传输完成再发起下一个。</p>
+<blockquote>
+<p>一般而言，传输在设备端仍然是阻塞的（即使在主机端不是）：当设备正在执行其他操作时，复制无法进行。不过在某些高级场景中，可以在 GPU 端同时执行复制与内核运算。如下示例将展示，要启用这种重叠需要满足以下三个条件：</p>
+<ol>
+<li>设备必须至少有一个空闲的 DMA（直接内存访问）引擎。现代 GPU 架构例如 Volterra、Tesla 或 H100 等都拥有多个 DMA 引擎。</li>
+<li>传输必须在一个非默认的 CUDA 流上完成。在 PyTorch 中，可以使用 <code>Stream</code> 来操作 CUDA 流。</li>
+<li>源数据必须位于固定内存中。</li>
+</ol>
+</blockquote>
+<p>随后教程运行了一个脚本来用 profiler 展示上述情况的时间线，这里不再赘述详细代码，重点是只有当源数据在固定内存且在单独的流上执行复制时，复制过程才能与主流上的 CUDA 运算重叠。</p>
+<h2 id="pytorch-视角">PyTorch 视角<a href="#pytorch-视角" class="heading-anchor" aria-label="Link to PyTorch 视角">¶</a></h2>
+<h3 id="pin_memory"><code>pin_memory()</code><a href="#pin_memory" class="heading-anchor" aria-label="Link to pin_memory()">¶</a></h3>
+<p>PyTorch 提供了通过 <code>pin_memory()</code> 方法或构造函数参数将张量放入锁页内存的功能。在初始化了 CUDA 的机器上，可以通过 <code>pin_memory()</code> 方法将 CPU 张量转换为锁页内存。需要注意的是，<code>pin_memory()</code> 会在主线程上阻塞：它会等待张量被复制到锁页内存之后才执行下一步操作。通过 <code>zeros()</code>、<code>ones()</code> 等构造函数可以直接在锁页内存中创建新张量。</p>
+<p>我们可以查看将内存锁页或发送张量到 CUDA 的速度：</p>
+<figure class="code-block not-prose" data-language="python" data-raw-code="import torch
+import gc
+from torch.utils.benchmark import Timer
+import matplotlib.pyplot as plt
+
+def timer(cmd):
+    median = (
+        Timer(cmd, globals=globals())
+        .adaptive_autorange(min_run_time=1.0, max_run_time=20.0)
+        .median
+        * 1000
+    )
+    print(f&#x22;{cmd}:{median: 4.4f} ms&#x22;)
+    return median
+
+# 可分页内存中的张量
+pageable_tensor = torch.randn(1_000_000)
+
+# 锁页内存中的张量
+pinned_tensor = torch.randn(1_000_000, pin_memory=True)
+
+# 运行时间：
+pageable_to_device = timer(&#x22;pageable_tensor.to(&#x27;cuda:0&#x27;)&#x22;)
+pinned_to_device   = timer(&#x22;pinned_tensor.to(&#x27;cuda:0&#x27;)&#x22;)
+pin_mem            = timer(&#x22;pageable_tensor.pin_memory()&#x22;)
+pin_mem_to_device  = timer(&#x22;pageable_tensor.pin_memory().to(&#x27;cuda:0&#x27;)&#x22;)
+
+# 比例：
+r1 = pinned_to_device / pageable_to_device
+r2 = pin_mem_to_device / pageable_to_device" data-line-numbers="true"><div class="code-block__header"><div class="code-block__title">python</div><button type="button" class="code-block__copy" aria-label="复制代码">Copy</button></div><pre class="code-block__pre" tabindex="0" data-theme="light" data-language="python"><code data-language="python"><span class="line" data-line-number="1"><span style="color:#D73A49">import</span><span style="color:#24292E"> torch</span></span>
+<span class="line" data-line-number="2"><span style="color:#D73A49">import</span><span style="color:#24292E"> gc</span></span>
+<span class="line" data-line-number="3"><span style="color:#D73A49">from</span><span style="color:#24292E"> torch.utils.benchmark </span><span style="color:#D73A49">import</span><span style="color:#24292E"> Timer</span></span>
+<span class="line" data-line-number="4"><span style="color:#D73A49">import</span><span style="color:#24292E"> matplotlib.pyplot </span><span style="color:#D73A49">as</span><span style="color:#24292E"> plt</span></span>
+<span class="line" data-line-number="5"> </span>
+<span class="line" data-line-number="6"><span style="color:#D73A49">def</span><span style="color:#6F42C1"> timer</span><span style="color:#24292E">(cmd):</span></span>
+<span class="line" data-line-number="7"><span style="color:#24292E">    median </span><span style="color:#D73A49">=</span><span style="color:#24292E"> (</span></span>
+<span class="line" data-line-number="8"><span style="color:#24292E">        Timer(cmd, </span><span style="color:#E36209">globals</span><span style="color:#D73A49">=</span><span style="color:#005CC5">globals</span><span style="color:#24292E">())</span></span>
+<span class="line" data-line-number="9"><span style="color:#24292E">        .adaptive_autorange(</span><span style="color:#E36209">min_run_time</span><span style="color:#D73A49">=</span><span style="color:#005CC5">1.0</span><span style="color:#24292E">, </span><span style="color:#E36209">max_run_time</span><span style="color:#D73A49">=</span><span style="color:#005CC5">20.0</span><span style="color:#24292E">)</span></span>
+<span class="line" data-line-number="10"><span style="color:#24292E">        .median</span></span>
+<span class="line" data-line-number="11"><span style="color:#D73A49">        *</span><span style="color:#005CC5"> 1000</span></span>
+<span class="line" data-line-number="12"><span style="color:#24292E">    )</span></span>
+<span class="line" data-line-number="13"><span style="color:#005CC5">    print</span><span style="color:#24292E">(</span><span style="color:#D73A49">f</span><span style="color:#032F62">"</span><span style="color:#005CC5">{</span><span style="color:#24292E">cmd</span><span style="color:#005CC5">}</span><span style="color:#032F62">:</span><span style="color:#005CC5">{</span><span style="color:#24292E">median</span><span style="color:#D73A49">: 4.4f</span><span style="color:#005CC5">}</span><span style="color:#032F62"> ms"</span><span style="color:#24292E">)</span></span>
+<span class="line" data-line-number="14"><span style="color:#D73A49">    return</span><span style="color:#24292E"> median</span></span>
+<span class="line" data-line-number="15"> </span>
+<span class="line" data-line-number="16"><span style="color:#6A737D"># 可分页内存中的张量</span></span>
+<span class="line" data-line-number="17"><span style="color:#24292E">pageable_tensor </span><span style="color:#D73A49">=</span><span style="color:#24292E"> torch.randn(</span><span style="color:#005CC5">1_000_000</span><span style="color:#24292E">)</span></span>
+<span class="line" data-line-number="18"> </span>
+<span class="line" data-line-number="19"><span style="color:#6A737D"># 锁页内存中的张量</span></span>
+<span class="line" data-line-number="20"><span style="color:#24292E">pinned_tensor </span><span style="color:#D73A49">=</span><span style="color:#24292E"> torch.randn(</span><span style="color:#005CC5">1_000_000</span><span style="color:#24292E">, </span><span style="color:#E36209">pin_memory</span><span style="color:#D73A49">=</span><span style="color:#005CC5">True</span><span style="color:#24292E">)</span></span>
+<span class="line" data-line-number="21"> </span>
+<span class="line" data-line-number="22"><span style="color:#6A737D"># 运行时间：</span></span>
+<span class="line" data-line-number="23"><span style="color:#24292E">pageable_to_device </span><span style="color:#D73A49">=</span><span style="color:#24292E"> timer(</span><span style="color:#032F62">"pageable_tensor.to('cuda:0')"</span><span style="color:#24292E">)</span></span>
+<span class="line" data-line-number="24"><span style="color:#24292E">pinned_to_device   </span><span style="color:#D73A49">=</span><span style="color:#24292E"> timer(</span><span style="color:#032F62">"pinned_tensor.to('cuda:0')"</span><span style="color:#24292E">)</span></span>
+<span class="line" data-line-number="25"><span style="color:#24292E">pin_mem            </span><span style="color:#D73A49">=</span><span style="color:#24292E"> timer(</span><span style="color:#032F62">"pageable_tensor.pin_memory()"</span><span style="color:#24292E">)</span></span>
+<span class="line" data-line-number="26"><span style="color:#24292E">pin_mem_to_device  </span><span style="color:#D73A49">=</span><span style="color:#24292E"> timer(</span><span style="color:#032F62">"pageable_tensor.pin_memory().to('cuda:0')"</span><span style="color:#24292E">)</span></span>
+<span class="line" data-line-number="27"> </span>
+<span class="line" data-line-number="28"><span style="color:#6A737D"># 比例：</span></span>
+<span class="line" data-line-number="29"><span style="color:#24292E">r1 </span><span style="color:#D73A49">=</span><span style="color:#24292E"> pinned_to_device </span><span style="color:#D73A49">/</span><span style="color:#24292E"> pageable_to_device</span></span>
+<span class="line" data-line-number="30"><span style="color:#24292E">r2 </span><span style="color:#D73A49">=</span><span style="color:#24292E"> pin_mem_to_device </span><span style="color:#D73A49">/</span><span style="color:#24292E"> pageable_to_device</span></span></code></pre><pre class="code-block__pre" tabindex="0" data-theme="dark" data-language="python"><code data-language="python"><span class="line" data-line-number="1"><span style="color:#C586C0">import</span><span style="color:#D4D4D4"> torch</span></span>
+<span class="line" data-line-number="2"><span style="color:#C586C0">import</span><span style="color:#D4D4D4"> gc</span></span>
+<span class="line" data-line-number="3"><span style="color:#C586C0">from</span><span style="color:#D4D4D4"> torch.utils.benchmark </span><span style="color:#C586C0">import</span><span style="color:#D4D4D4"> Timer</span></span>
+<span class="line" data-line-number="4"><span style="color:#C586C0">import</span><span style="color:#D4D4D4"> matplotlib.pyplot </span><span style="color:#C586C0">as</span><span style="color:#D4D4D4"> plt</span></span>
+<span class="line" data-line-number="5"> </span>
+<span class="line" data-line-number="6"><span style="color:#569CD6">def</span><span style="color:#DCDCAA"> timer</span><span style="color:#D4D4D4">(</span><span style="color:#9CDCFE">cmd</span><span style="color:#D4D4D4">):</span></span>
+<span class="line" data-line-number="7"><span style="color:#D4D4D4">    median = (</span></span>
+<span class="line" data-line-number="8"><span style="color:#D4D4D4">        Timer(cmd, </span><span style="color:#9CDCFE">globals</span><span style="color:#D4D4D4">=</span><span style="color:#DCDCAA">globals</span><span style="color:#D4D4D4">())</span></span>
+<span class="line" data-line-number="9"><span style="color:#D4D4D4">        .adaptive_autorange(</span><span style="color:#9CDCFE">min_run_time</span><span style="color:#D4D4D4">=</span><span style="color:#B5CEA8">1.0</span><span style="color:#D4D4D4">, </span><span style="color:#9CDCFE">max_run_time</span><span style="color:#D4D4D4">=</span><span style="color:#B5CEA8">20.0</span><span style="color:#D4D4D4">)</span></span>
+<span class="line" data-line-number="10"><span style="color:#D4D4D4">        .median</span></span>
+<span class="line" data-line-number="11"><span style="color:#D4D4D4">        * </span><span style="color:#B5CEA8">1000</span></span>
+<span class="line" data-line-number="12"><span style="color:#D4D4D4">    )</span></span>
+<span class="line" data-line-number="13"><span style="color:#DCDCAA">    print</span><span style="color:#D4D4D4">(</span><span style="color:#569CD6">f</span><span style="color:#CE9178">"</span><span style="color:#569CD6">{</span><span style="color:#D4D4D4">cmd</span><span style="color:#569CD6">}</span><span style="color:#CE9178">:</span><span style="color:#569CD6">{</span><span style="color:#D4D4D4">median</span><span style="color:#569CD6">: 4.4f}</span><span style="color:#CE9178"> ms"</span><span style="color:#D4D4D4">)</span></span>
+<span class="line" data-line-number="14"><span style="color:#C586C0">    return</span><span style="color:#D4D4D4"> median</span></span>
+<span class="line" data-line-number="15"> </span>
+<span class="line" data-line-number="16"><span style="color:#6A9955"># 可分页内存中的张量</span></span>
+<span class="line" data-line-number="17"><span style="color:#D4D4D4">pageable_tensor = torch.randn(</span><span style="color:#B5CEA8">1_000_000</span><span style="color:#D4D4D4">)</span></span>
+<span class="line" data-line-number="18"> </span>
+<span class="line" data-line-number="19"><span style="color:#6A9955"># 锁页内存中的张量</span></span>
+<span class="line" data-line-number="20"><span style="color:#D4D4D4">pinned_tensor = torch.randn(</span><span style="color:#B5CEA8">1_000_000</span><span style="color:#D4D4D4">, </span><span style="color:#9CDCFE">pin_memory</span><span style="color:#D4D4D4">=</span><span style="color:#569CD6">True</span><span style="color:#D4D4D4">)</span></span>
+<span class="line" data-line-number="21"> </span>
+<span class="line" data-line-number="22"><span style="color:#6A9955"># 运行时间：</span></span>
+<span class="line" data-line-number="23"><span style="color:#D4D4D4">pageable_to_device = timer(</span><span style="color:#CE9178">"pageable_tensor.to('cuda:0')"</span><span style="color:#D4D4D4">)</span></span>
+<span class="line" data-line-number="24"><span style="color:#D4D4D4">pinned_to_device   = timer(</span><span style="color:#CE9178">"pinned_tensor.to('cuda:0')"</span><span style="color:#D4D4D4">)</span></span>
+<span class="line" data-line-number="25"><span style="color:#D4D4D4">pin_mem            = timer(</span><span style="color:#CE9178">"pageable_tensor.pin_memory()"</span><span style="color:#D4D4D4">)</span></span>
+<span class="line" data-line-number="26"><span style="color:#D4D4D4">pin_mem_to_device  = timer(</span><span style="color:#CE9178">"pageable_tensor.pin_memory().to('cuda:0')"</span><span style="color:#D4D4D4">)</span></span>
+<span class="line" data-line-number="27"> </span>
+<span class="line" data-line-number="28"><span style="color:#6A9955"># 比例：</span></span>
+<span class="line" data-line-number="29"><span style="color:#D4D4D4">r1 = pinned_to_device / pageable_to_device</span></span>
+<span class="line" data-line-number="30"><span style="color:#D4D4D4">r2 = pin_mem_to_device / pageable_to_device</span></span></code></pre></figure>
+<p>这段代码展示了从可分页与锁页内存将张量传输到 GPU 的耗时。可以观察到，直接将锁页内存中的张量转移到 GPU 确实比可分页张量更快，因为在底层可分页张量必须先被复制到锁页内存才能传输。</p>
+<p>然而，与一些普遍的看法相反，在可分页张量上先调用 <code>pin_memory()</code> 再 cast 到 GPU 通常不会带来显著加速，反而往往比直接传输更慢。这是合乎逻辑的，因为我们实际上是在要求 Python 执行一个 CUDA 在将数据从主机复制到设备之前无论如何都会执行的操作。</p>
+<p><img src="/blog-preview/previews/pr-341/images/notion/pytorch-nonblocking-pinmemory/30022dca-4210-816b-bcdb-d138a057e0de.png" alt=""></p>
+<p>设备转换运行时间（pin-memory）</p>
+<blockquote>
+<p>注：PyTorch 中 <code>pin_memory</code> 的实现依赖于通过 <code>cudaHostAlloc</code> 在锁页内存中创建一个全新的存储，这在某些极端情况下可能比 <code>cudaMemcpy</code> 分块移动数据更快。这里的观察也可能因硬件、张量大小或可用内存等因素而异。</p>
+</blockquote>
+<h3 id="non_blockingtrue"><code>non_blocking=True</code><a href="#non_blockingtrue" class="heading-anchor" aria-label="Link to non_blocking=True">¶</a></h3>
+<p>如前所述，许多 PyTorch 操作都可以通过 <code>non_blocking</code> 参数相对于主机异步执行。</p>
+<p>为了更准确地评估使用 <code>non_blocking</code> 的收益，我们设计了稍微复杂一些的实验，比较在使用与不使用 <code>non_blocking</code> 时一次发送多个张量到 GPU 的速度：</p>
+<figure class="code-block not-prose" data-language="python" data-raw-code="# 简单循环，将所有张量复制到 cuda
+def copy_to_device(*tensors):
+    result = []
+    for tensor in tensors:
+        result.append(tensor.to(&#x22;cuda:0&#x22;))
+    return result
+
+# 异步复制所有张量到 cuda
+def copy_to_device_nonblocking(*tensors):
+    result = []
+    for tensor in tensors:
+        result.append(tensor.to(&#x22;cuda:0&#x22;, non_blocking=True))
+    # 需要同步
+    torch.cuda.synchronize()
+    return result
+
+# 创建一组张量
+tensors = [torch.randn(1000) for _ in range(1000)]" data-line-numbers="true"><div class="code-block__header"><div class="code-block__title">python</div><button type="button" class="code-block__copy" aria-label="复制代码">Copy</button></div><pre class="code-block__pre" tabindex="0" data-theme="light" data-language="python"><code data-language="python"><span class="line" data-line-number="1"><span style="color:#6A737D"># 简单循环，将所有张量复制到 cuda</span></span>
+<span class="line" data-line-number="2"><span style="color:#D73A49">def</span><span style="color:#6F42C1"> copy_to_device</span><span style="color:#24292E">(</span><span style="color:#D73A49">*</span><span style="color:#24292E">tensors):</span></span>
+<span class="line" data-line-number="3"><span style="color:#24292E">    result </span><span style="color:#D73A49">=</span><span style="color:#24292E"> []</span></span>
+<span class="line" data-line-number="4"><span style="color:#D73A49">    for</span><span style="color:#24292E"> tensor </span><span style="color:#D73A49">in</span><span style="color:#24292E"> tensors:</span></span>
+<span class="line" data-line-number="5"><span style="color:#24292E">        result.append(tensor.to(</span><span style="color:#032F62">"cuda:0"</span><span style="color:#24292E">))</span></span>
+<span class="line" data-line-number="6"><span style="color:#D73A49">    return</span><span style="color:#24292E"> result</span></span>
+<span class="line" data-line-number="7"> </span>
+<span class="line" data-line-number="8"><span style="color:#6A737D"># 异步复制所有张量到 cuda</span></span>
+<span class="line" data-line-number="9"><span style="color:#D73A49">def</span><span style="color:#6F42C1"> copy_to_device_nonblocking</span><span style="color:#24292E">(</span><span style="color:#D73A49">*</span><span style="color:#24292E">tensors):</span></span>
+<span class="line" data-line-number="10"><span style="color:#24292E">    result </span><span style="color:#D73A49">=</span><span style="color:#24292E"> []</span></span>
+<span class="line" data-line-number="11"><span style="color:#D73A49">    for</span><span style="color:#24292E"> tensor </span><span style="color:#D73A49">in</span><span style="color:#24292E"> tensors:</span></span>
+<span class="line" data-line-number="12"><span style="color:#24292E">        result.append(tensor.to(</span><span style="color:#032F62">"cuda:0"</span><span style="color:#24292E">, </span><span style="color:#E36209">non_blocking</span><span style="color:#D73A49">=</span><span style="color:#005CC5">True</span><span style="color:#24292E">))</span></span>
+<span class="line" data-line-number="13"><span style="color:#6A737D">    # 需要同步</span></span>
+<span class="line" data-line-number="14"><span style="color:#24292E">    torch.cuda.synchronize()</span></span>
+<span class="line" data-line-number="15"><span style="color:#D73A49">    return</span><span style="color:#24292E"> result</span></span>
+<span class="line" data-line-number="16"> </span>
+<span class="line" data-line-number="17"><span style="color:#6A737D"># 创建一组张量</span></span>
+<span class="line" data-line-number="18"><span style="color:#24292E">tensors </span><span style="color:#D73A49">=</span><span style="color:#24292E"> [torch.randn(</span><span style="color:#005CC5">1000</span><span style="color:#24292E">) </span><span style="color:#D73A49">for</span><span style="color:#24292E"> _ </span><span style="color:#D73A49">in</span><span style="color:#005CC5"> range</span><span style="color:#24292E">(</span><span style="color:#005CC5">1000</span><span style="color:#24292E">)]</span></span></code></pre><pre class="code-block__pre" tabindex="0" data-theme="dark" data-language="python"><code data-language="python"><span class="line" data-line-number="1"><span style="color:#6A9955"># 简单循环，将所有张量复制到 cuda</span></span>
+<span class="line" data-line-number="2"><span style="color:#569CD6">def</span><span style="color:#DCDCAA"> copy_to_device</span><span style="color:#D4D4D4">(*</span><span style="color:#9CDCFE">tensors</span><span style="color:#D4D4D4">):</span></span>
+<span class="line" data-line-number="3"><span style="color:#D4D4D4">    result = []</span></span>
+<span class="line" data-line-number="4"><span style="color:#C586C0">    for</span><span style="color:#D4D4D4"> tensor </span><span style="color:#C586C0">in</span><span style="color:#D4D4D4"> tensors:</span></span>
+<span class="line" data-line-number="5"><span style="color:#D4D4D4">        result.append(tensor.to(</span><span style="color:#CE9178">"cuda:0"</span><span style="color:#D4D4D4">))</span></span>
+<span class="line" data-line-number="6"><span style="color:#C586C0">    return</span><span style="color:#D4D4D4"> result</span></span>
+<span class="line" data-line-number="7"> </span>
+<span class="line" data-line-number="8"><span style="color:#6A9955"># 异步复制所有张量到 cuda</span></span>
+<span class="line" data-line-number="9"><span style="color:#569CD6">def</span><span style="color:#DCDCAA"> copy_to_device_nonblocking</span><span style="color:#D4D4D4">(*</span><span style="color:#9CDCFE">tensors</span><span style="color:#D4D4D4">):</span></span>
+<span class="line" data-line-number="10"><span style="color:#D4D4D4">    result = []</span></span>
+<span class="line" data-line-number="11"><span style="color:#C586C0">    for</span><span style="color:#D4D4D4"> tensor </span><span style="color:#C586C0">in</span><span style="color:#D4D4D4"> tensors:</span></span>
+<span class="line" data-line-number="12"><span style="color:#D4D4D4">        result.append(tensor.to(</span><span style="color:#CE9178">"cuda:0"</span><span style="color:#D4D4D4">, </span><span style="color:#9CDCFE">non_blocking</span><span style="color:#D4D4D4">=</span><span style="color:#569CD6">True</span><span style="color:#D4D4D4">))</span></span>
+<span class="line" data-line-number="13"><span style="color:#6A9955">    # 需要同步</span></span>
+<span class="line" data-line-number="14"><span style="color:#D4D4D4">    torch.cuda.synchronize()</span></span>
+<span class="line" data-line-number="15"><span style="color:#C586C0">    return</span><span style="color:#D4D4D4"> result</span></span>
+<span class="line" data-line-number="16"> </span>
+<span class="line" data-line-number="17"><span style="color:#6A9955"># 创建一组张量</span></span>
+<span class="line" data-line-number="18"><span style="color:#D4D4D4">tensors = [torch.randn(</span><span style="color:#B5CEA8">1000</span><span style="color:#D4D4D4">) </span><span style="color:#C586C0">for</span><span style="color:#D4D4D4"> _ </span><span style="color:#C586C0">in</span><span style="color:#DCDCAA"> range</span><span style="color:#D4D4D4">(</span><span style="color:#B5CEA8">1000</span><span style="color:#D4D4D4">)]</span></span></code></pre></figure>
+<p>实验结果表明，使用 <code>non_blocking=True</code> 明显更快，因为主机端可以一次性启动所有传输，只需在最后同步一次。收益程度取决于张量数量、大小以及硬件。</p>
+<p><img src="/blog-preview/previews/pr-341/images/notion/pytorch-nonblocking-pinmemory/30022dca-4210-814b-963b-fc2e9572e29d.png" alt=""></p>
+<p>设备转换运行时间（非阻塞）</p>
+<p>有趣的是，阻塞式 <code>to("cuda")</code> 实际上执行的也是同一个异步传输操作（<code>cudaMemcpyAsync</code>），只是每次复制后立即同步。</p>
+<h3 id="综合使用">综合使用<a href="#综合使用" class="heading-anchor" aria-label="Link to 综合使用">¶</a></h3>
+<p>现在我们知道，对于已经在锁页内存中的张量，数据传输到 GPU 会比从可分页内存更快；也知道异步传输比同步传输快。接下来我们基于这两种方法的组合进行基准测试。</p>
+<p>首先定义一些新的函数，在每个张量上调用 <code>pin_memory()</code> 与 <code>to(device)</code>：</p>
+<figure class="code-block not-prose" data-language="python" data-raw-code="def pin_copy_to_device(*tensors):
+    result = []
+    for tensor in tensors:
+        result.append(tensor.pin_memory().to(&#x22;cuda:0&#x22;))
+    return result
+
+def pin_copy_to_device_nonblocking(*tensors):
+    result = []
+    for tensor in tensors:
+        result.append(tensor.pin_memory().to(&#x22;cuda:0&#x22;, non_blocking=True))
+    torch.cuda.synchronize()
+    return result" data-line-numbers="true"><div class="code-block__header"><div class="code-block__title">python</div><button type="button" class="code-block__copy" aria-label="复制代码">Copy</button></div><pre class="code-block__pre" tabindex="0" data-theme="light" data-language="python"><code data-language="python"><span class="line" data-line-number="1"><span style="color:#D73A49">def</span><span style="color:#6F42C1"> pin_copy_to_device</span><span style="color:#24292E">(</span><span style="color:#D73A49">*</span><span style="color:#24292E">tensors):</span></span>
+<span class="line" data-line-number="2"><span style="color:#24292E">    result </span><span style="color:#D73A49">=</span><span style="color:#24292E"> []</span></span>
+<span class="line" data-line-number="3"><span style="color:#D73A49">    for</span><span style="color:#24292E"> tensor </span><span style="color:#D73A49">in</span><span style="color:#24292E"> tensors:</span></span>
+<span class="line" data-line-number="4"><span style="color:#24292E">        result.append(tensor.pin_memory().to(</span><span style="color:#032F62">"cuda:0"</span><span style="color:#24292E">))</span></span>
+<span class="line" data-line-number="5"><span style="color:#D73A49">    return</span><span style="color:#24292E"> result</span></span>
+<span class="line" data-line-number="6"> </span>
+<span class="line" data-line-number="7"><span style="color:#D73A49">def</span><span style="color:#6F42C1"> pin_copy_to_device_nonblocking</span><span style="color:#24292E">(</span><span style="color:#D73A49">*</span><span style="color:#24292E">tensors):</span></span>
+<span class="line" data-line-number="8"><span style="color:#24292E">    result </span><span style="color:#D73A49">=</span><span style="color:#24292E"> []</span></span>
+<span class="line" data-line-number="9"><span style="color:#D73A49">    for</span><span style="color:#24292E"> tensor </span><span style="color:#D73A49">in</span><span style="color:#24292E"> tensors:</span></span>
+<span class="line" data-line-number="10"><span style="color:#24292E">        result.append(tensor.pin_memory().to(</span><span style="color:#032F62">"cuda:0"</span><span style="color:#24292E">, </span><span style="color:#E36209">non_blocking</span><span style="color:#D73A49">=</span><span style="color:#005CC5">True</span><span style="color:#24292E">))</span></span>
+<span class="line" data-line-number="11"><span style="color:#24292E">    torch.cuda.synchronize()</span></span>
+<span class="line" data-line-number="12"><span style="color:#D73A49">    return</span><span style="color:#24292E"> result</span></span></code></pre><pre class="code-block__pre" tabindex="0" data-theme="dark" data-language="python"><code data-language="python"><span class="line" data-line-number="1"><span style="color:#569CD6">def</span><span style="color:#DCDCAA"> pin_copy_to_device</span><span style="color:#D4D4D4">(*</span><span style="color:#9CDCFE">tensors</span><span style="color:#D4D4D4">):</span></span>
+<span class="line" data-line-number="2"><span style="color:#D4D4D4">    result = []</span></span>
+<span class="line" data-line-number="3"><span style="color:#C586C0">    for</span><span style="color:#D4D4D4"> tensor </span><span style="color:#C586C0">in</span><span style="color:#D4D4D4"> tensors:</span></span>
+<span class="line" data-line-number="4"><span style="color:#D4D4D4">        result.append(tensor.pin_memory().to(</span><span style="color:#CE9178">"cuda:0"</span><span style="color:#D4D4D4">))</span></span>
+<span class="line" data-line-number="5"><span style="color:#C586C0">    return</span><span style="color:#D4D4D4"> result</span></span>
+<span class="line" data-line-number="6"> </span>
+<span class="line" data-line-number="7"><span style="color:#569CD6">def</span><span style="color:#DCDCAA"> pin_copy_to_device_nonblocking</span><span style="color:#D4D4D4">(*</span><span style="color:#9CDCFE">tensors</span><span style="color:#D4D4D4">):</span></span>
+<span class="line" data-line-number="8"><span style="color:#D4D4D4">    result = []</span></span>
+<span class="line" data-line-number="9"><span style="color:#C586C0">    for</span><span style="color:#D4D4D4"> tensor </span><span style="color:#C586C0">in</span><span style="color:#D4D4D4"> tensors:</span></span>
+<span class="line" data-line-number="10"><span style="color:#D4D4D4">        result.append(tensor.pin_memory().to(</span><span style="color:#CE9178">"cuda:0"</span><span style="color:#D4D4D4">, </span><span style="color:#9CDCFE">non_blocking</span><span style="color:#D4D4D4">=</span><span style="color:#569CD6">True</span><span style="color:#D4D4D4">))</span></span>
+<span class="line" data-line-number="11"><span style="color:#D4D4D4">    torch.cuda.synchronize()</span></span>
+<span class="line" data-line-number="12"><span style="color:#C586C0">    return</span><span style="color:#D4D4D4"> result</span></span></code></pre></figure>
+<p>对于一批较大的大张量来说，使用 <code>pin_memory</code> 的优势更加明显。下图展示了不同策略（仅从可分页内存传输、仅从锁页内存传输、先锁页再传输）在阻塞与非阻塞情况下的运行时间比较：</p>
+<p><img src="/blog-preview/previews/pr-341/images/notion/pytorch-nonblocking-pinmemory/30022dca-4210-81c6-ad2f-fbaec4e8c020.png" alt=""></p>
+<p>运行时间（pin-mem 与 non-blocking）</p>
+<p>可以看到，锁页内存配合非阻塞传输通常最快；但如果在 Python 主线程中手动调用 <code>pin_memory()</code> 会引入额外的阻塞，因此会抵消使用 <code>non_blocking=True</code> 的优势。</p>
+<h3 id="其他传输方向gpu--cpucpu--mps">其他传输方向（GPU → CPU、CPU → MPS）<a href="#其他传输方向gpu--cpucpu--mps" class="heading-anchor" aria-label="Link to 其他传输方向（GPU → CPU、CPU → MPS）">¶</a></h3>
+<p>前文假设从 CPU 到 GPU 的异步复制是安全的。这在源张量位于可分页内存时通常成立，因为 CUDA 会自动同步以确保读取的数据有效。</p>
+<p>然而，在其他情况下不能做同样的假设：当张量位于锁页内存且在调用主机到设备传输后修改了原始副本时，GPU 上收到的数据可能会被破坏。同样，从 GPU 到 CPU，或者从 CPU/GPU 到 MPS 等非 CUDA 设备进行传输时，没有保证在不显式同步的情况下数据是完整的。</p>
+<p>下面的例子演示，如果在传输后立即修改原始锁页张量，在 GPU 上读到的数据会被破坏：</p>
+<figure class="code-block not-prose" data-language="python" data-raw-code="DELAY = 100000000
+i = -1
+for i in range(100):
+    # 创建锁页张量
+    cpu_tensor = torch.ones(1024, 1024, pin_memory=True)
+    torch.cuda.synchronize()
+    # 发送张量到 CUDA
+    cuda_tensor = cpu_tensor.to(&#x22;cuda&#x22;, non_blocking=True)
+    torch.cuda._sleep(DELAY)
+    # 修改原始张量
+    cpu_tensor.zero_()
+    assert (cuda_tensor == 1).all()" data-line-numbers="true"><div class="code-block__header"><div class="code-block__title">python</div><button type="button" class="code-block__copy" aria-label="复制代码">Copy</button></div><pre class="code-block__pre" tabindex="0" data-theme="light" data-language="python"><code data-language="python"><span class="line" data-line-number="1"><span style="color:#005CC5">DELAY</span><span style="color:#D73A49"> =</span><span style="color:#005CC5"> 100000000</span></span>
+<span class="line" data-line-number="2"><span style="color:#24292E">i </span><span style="color:#D73A49">=</span><span style="color:#D73A49"> -</span><span style="color:#005CC5">1</span></span>
+<span class="line" data-line-number="3"><span style="color:#D73A49">for</span><span style="color:#24292E"> i </span><span style="color:#D73A49">in</span><span style="color:#005CC5"> range</span><span style="color:#24292E">(</span><span style="color:#005CC5">100</span><span style="color:#24292E">):</span></span>
+<span class="line" data-line-number="4"><span style="color:#6A737D">    # 创建锁页张量</span></span>
+<span class="line" data-line-number="5"><span style="color:#24292E">    cpu_tensor </span><span style="color:#D73A49">=</span><span style="color:#24292E"> torch.ones(</span><span style="color:#005CC5">1024</span><span style="color:#24292E">, </span><span style="color:#005CC5">1024</span><span style="color:#24292E">, </span><span style="color:#E36209">pin_memory</span><span style="color:#D73A49">=</span><span style="color:#005CC5">True</span><span style="color:#24292E">)</span></span>
+<span class="line" data-line-number="6"><span style="color:#24292E">    torch.cuda.synchronize()</span></span>
+<span class="line" data-line-number="7"><span style="color:#6A737D">    # 发送张量到 CUDA</span></span>
+<span class="line" data-line-number="8"><span style="color:#24292E">    cuda_tensor </span><span style="color:#D73A49">=</span><span style="color:#24292E"> cpu_tensor.to(</span><span style="color:#032F62">"cuda"</span><span style="color:#24292E">, </span><span style="color:#E36209">non_blocking</span><span style="color:#D73A49">=</span><span style="color:#005CC5">True</span><span style="color:#24292E">)</span></span>
+<span class="line" data-line-number="9"><span style="color:#24292E">    torch.cuda._sleep(</span><span style="color:#005CC5">DELAY</span><span style="color:#24292E">)</span></span>
+<span class="line" data-line-number="10"><span style="color:#6A737D">    # 修改原始张量</span></span>
+<span class="line" data-line-number="11"><span style="color:#24292E">    cpu_tensor.zero_()</span></span>
+<span class="line" data-line-number="12"><span style="color:#D73A49">    assert</span><span style="color:#24292E"> (cuda_tensor </span><span style="color:#D73A49">==</span><span style="color:#005CC5"> 1</span><span style="color:#24292E">).all()</span></span></code></pre><pre class="code-block__pre" tabindex="0" data-theme="dark" data-language="python"><code data-language="python"><span class="line" data-line-number="1"><span style="color:#D4D4D4">DELAY = </span><span style="color:#B5CEA8">100000000</span></span>
+<span class="line" data-line-number="2"><span style="color:#D4D4D4">i = -</span><span style="color:#B5CEA8">1</span></span>
+<span class="line" data-line-number="3"><span style="color:#C586C0">for</span><span style="color:#D4D4D4"> i </span><span style="color:#C586C0">in</span><span style="color:#DCDCAA"> range</span><span style="color:#D4D4D4">(</span><span style="color:#B5CEA8">100</span><span style="color:#D4D4D4">):</span></span>
+<span class="line" data-line-number="4"><span style="color:#6A9955">    # 创建锁页张量</span></span>
+<span class="line" data-line-number="5"><span style="color:#D4D4D4">    cpu_tensor = torch.ones(</span><span style="color:#B5CEA8">1024</span><span style="color:#D4D4D4">, </span><span style="color:#B5CEA8">1024</span><span style="color:#D4D4D4">, </span><span style="color:#9CDCFE">pin_memory</span><span style="color:#D4D4D4">=</span><span style="color:#569CD6">True</span><span style="color:#D4D4D4">)</span></span>
+<span class="line" data-line-number="6"><span style="color:#D4D4D4">    torch.cuda.synchronize()</span></span>
+<span class="line" data-line-number="7"><span style="color:#6A9955">    # 发送张量到 CUDA</span></span>
+<span class="line" data-line-number="8"><span style="color:#D4D4D4">    cuda_tensor = cpu_tensor.to(</span><span style="color:#CE9178">"cuda"</span><span style="color:#D4D4D4">, </span><span style="color:#9CDCFE">non_blocking</span><span style="color:#D4D4D4">=</span><span style="color:#569CD6">True</span><span style="color:#D4D4D4">)</span></span>
+<span class="line" data-line-number="9"><span style="color:#D4D4D4">    torch.cuda._sleep(DELAY)</span></span>
+<span class="line" data-line-number="10"><span style="color:#6A9955">    # 修改原始张量</span></span>
+<span class="line" data-line-number="11"><span style="color:#D4D4D4">    cpu_tensor.zero_()</span></span>
+<span class="line" data-line-number="12"><span style="color:#C586C0">    assert</span><span style="color:#D4D4D4"> (cuda_tensor == </span><span style="color:#B5CEA8">1</span><span style="color:#D4D4D4">).all()</span></span></code></pre></figure>
+<p>使用可分页内存总是安全的，因为 CUDA 会在后台复制数据。异步从 GPU 转到 CPU 则无法保证正确，除非在访问数据之前显式调用 <code>torch.cuda.synchronize()</code>。总之，异步复制在目标是 CUDA 设备且源在可分页内存时安全，但对于其他方向，必须在访问数据前同步。</p>
+<h2 id="实践建议">实践建议<a href="#实践建议" class="heading-anchor" aria-label="Link to 实践建议">¶</a></h2>
+<p>根据前面的观察，我们可以总结一些建议：</p>
+<ul>
+<li>一般来说，使用 <code>non_blocking=True</code> 可以获得更好的吞吐量，无论原始张量是否处于锁页内存。</li>
+<li>如果张量已在锁页内存中，传输速度会更快；但从 Python 主线程手动将张量锁页是一个阻塞操作，会抵消大部分 <code>non_blocking=True</code> 的好处（因为 CUDA 在传输前无论如何都会进行锁页）。</li>
+<li>因此，除非确定锁页内存带来显著收益，否则不必主动调用 <code>pin_memory()</code>。</li>
+</ul>
+<p>那么 <code>pin_memory()</code> 有什么用呢？接下来讨论的附加考虑会进一步说明该方法如何加速数据传输。</p>
+<h2 id="附加考虑">附加考虑<a href="#附加考虑" class="heading-anchor" aria-label="Link to 附加考虑">¶</a></h2>
+<p>PyTorch 提供了一个 <code>DataLoader</code> 类，其构造函数接受 <code>pin_memory</code> 参数。根据我们之前关于 <code>pin_memory</code> 的讨论，可能会疑惑：如果内存锁页本身是阻塞的，<code>DataLoader</code> 如何加速数据传输？</p>
+<p>关键在于 DataLoader 使用单独的线程在后台将数据从可分页内存复制到锁页内存，从而避免阻塞主线程。</p>
+<p>为了演示这一点，教程使用了 <code>tensordict</code> 库中的 <code>TensorDict</code>。调用 <code>TensorDict.to()</code> 默认会异步将数据发送到设备，随后再调用一次 <code>torch.device.synchronize()</code>。此外，<code>TensorDict.to()</code> 包含 <code>non_blocking_pin</code> 选项，该选项启动多线程执行 <code>pin_memory()</code>，然后再执行 <code>to(device)</code>。这一策略可以进一步加速数据传输。</p>
+<p>例如，将许多大型张量从 CPU 传输到 GPU 的情形适合使用多线程 <code>pin_memory()</code>：</p>
+<p><img src="/blog-preview/previews/pr-341/images/notion/pytorch-nonblocking-pinmemory/30022dca-4210-8122-a365-d21d82fd8654.png" alt=""></p>
+<p>设备转换运行时间</p>
+<p>在示例中，如果张量较小或数量较少，多线程带来的额外开销可能超过收益。类似地，预先在锁页内存中创建永久缓冲区并不能消除将数据复制到锁页内存所造成的瓶颈。</p>
+<p>在实践中，没有一种通用方案适用于所有情况。使用多线程 <code>pin_memory</code> 与 <code>non_blocking</code> 的有效性取决于系统环境、操作系统、硬件及任务性质。以下是加快 CPU 与 GPU 之间数据传输或比较吞吐量时应检查的一些因素：</p>
+<ul>
+<li><strong>可用 CPU 核心数量</strong>：系统有多少可用 CPU 核心？是否与其他用户或进程共享？</li>
+<li><strong>核心利用率</strong>：CPU 核心是否被其他进程大量占用？应用程序是否在数据传输的同时执行其他密集运算？</li>
+<li><strong>内存利用率</strong>：当前可分页和锁页内存的使用量如何？是否有足够的剩余内存来分配额外的锁页内存而不影响系统性能？例如 <code>pin_memory</code> 会消耗 RAM 并可能影响其他任务。</li>
+<li><strong>CUDA 设备能力</strong>：GPU 是否支持多个 DMA 引擎以进行并发数据传输？所用 CUDA 设备有哪些能力与限制？</li>
+<li><strong>要发送的张量数量</strong>：一次操作中要传输多少个张量？</li>
+<li><strong>要发送的张量大小</strong>：传输的是几个大张量还是很多小张量？不同情形可能需要不同的传输方案。</li>
+<li><strong>系统架构</strong>：系统架构（例如总线速率、网络延迟）如何影响数据传输速度？</li>
+</ul>
+<p>此外，大量或大尺寸张量驻留在锁页内存中会占用大量 RAM，减少用于其他重要操作（如分页）的可用内存，从而可能影响算法整体性能。</p>
+<h2 id="结论">结论<a href="#结论" class="heading-anchor" aria-label="Link to 结论">¶</a></h2>
+<p>在本教程中，我们探讨了在将张量从主机发送到设备时影响传输速度和内存管理的几个关键因素。我们了解到，使用 <code>non_blocking=True</code> 通常能加快数据传输，而在合适条件下使用 <code>pin_memory()</code> 也可以提高性能。不过，这些技术需要仔细设计和测试才能发挥作用。</p>
+<p>请记住，对代码进行性能分析、监控内存使用情况对于优化资源使用和获得最佳性能至关重要。</p> <div class="grid md:grid-cols-2 gap-4 mt-10"> <div></div> <a href="/blog-preview/previews/pr-341/efficient-rl-training-optimizing-memory-usage-in-verl/" class="block p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-sky-500 text-right"> <div class="text-xs uppercase text-zinc-500">Next</div> <div class="font-semibold">高效强化学习训练 - 优化 verl 中的内存使用</div> </a> </div>  <section id="comments" class="mt-12" data-comments> <div class="rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 p-6 md:p-8"> <script src="https://giscus.app/client.js" data-repo="yuanlehome/blog" data-repo-id="R_kgDOQu2Jjw" data-category="General" data-category-id="DIC_kwDOQu2Jj84C0QDN" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="bottom" data-theme="light" data-lang="zh-CN" crossorigin="anonymous" async></script> </div> </section> <script>(() => {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return;
+
+  // Theme mapping for Giscus from config
+  const themeMap = {"light":"light","dark":"dark"};
+
+  // Single source of truth: read effective theme from DOM
+  const getEffectiveTheme = () => {
+    const isDark =
+      document.documentElement.dataset.theme === 'dark' ||
+      document.documentElement.classList.contains('dark');
+    return isDark ? 'dark' : 'light';
+  };
+
+  // Track current theme state
+  let currentTheme = getEffectiveTheme();
+
+  // Set initial theme on the script tag before Giscus loads
+  const setInitialTheme = () => {
+    const effectiveTheme = getEffectiveTheme();
+    const giscusTheme = themeMap[effectiveTheme] ?? 'light';
+    const giscusScript = document.querySelector('script[src*="giscus.app/client.js"]');
+    if (giscusScript) {
+      giscusScript.setAttribute('data-theme', giscusTheme);
+    }
+  };
+
+  // Update container data attribute for tracking
+  const setContainerTheme = (theme) => {
+    const container = document.getElementById('comments');
+    if (container) {
+      container.setAttribute('data-giscus-theme', theme);
+    }
+  };
+
+  // Send theme update message to Giscus iframe
+  const postThemeMessage = (resolvedTheme) => {
+    const effective = resolvedTheme ?? currentTheme;
+    const giscusTheme = themeMap[effective] ?? 'light';
+    setContainerTheme(giscusTheme);
+    
+    const iframe = document.querySelector('iframe.giscus-frame');
+    if (iframe && iframe.contentWindow) {
+      iframe.contentWindow.postMessage(
+        { giscus: { setConfig: { theme: giscusTheme } } },
+        'https://giscus.app',
+      );
+    }
+  };
+
+  // Debounce helper to prevent excessive syncs
+  let syncTimeout = null;
+  const debouncedSync = (callback, delay = 50) => {
+    if (syncTimeout) clearTimeout(syncTimeout);
+    syncTimeout = setTimeout(callback, delay);
+  };
+
+  // Main sync function: update theme if changed
+  const syncCommentTheme = (resolvedOverride) => {
+    const detected = resolvedOverride ?? getEffectiveTheme();
+    if (detected !== currentTheme) {
+      currentTheme = detected;
+    }
+    postThemeMessage(detected);
+  };
+
+  // Wait for iframe with improved retry logic
+  let retryCount = 0;
+  const maxRetries = 50; // ~5 seconds with 100ms intervals
+  const waitForIframe = () => {
+    const iframe = document.querySelector('iframe.giscus-frame');
+    if (iframe) {
+      // Found iframe, send theme
+      if (iframe instanceof HTMLIFrameElement) {
+        const sendTheme = () => {
+          postThemeMessage();
+        };
+        
+        // Try to send immediately and also on load event
+        sendTheme();
+        if (!iframe.complete) {
+          iframe.addEventListener('load', sendTheme, { once: true });
+        }
+      }
+      return;
+    }
+
+    // Retry if not found yet
+    retryCount++;
+    if (retryCount < maxRetries) {
+      setTimeout(waitForIframe, 100);
+    }
+  };
+
+  // Set initial theme before Giscus loads
+  setInitialTheme();
+
+  // Listen for DOM changes (class/data-theme attribute)
+  const observer = new MutationObserver(() => {
+    debouncedSync(() => syncCommentTheme());
+  });
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['class', 'data-theme'],
+  });
+
+  // Listen for custom theme change events
+  window.addEventListener('themechange', (event) => {
+    const detail = event?.detail || {};
+    const resolved = detail.resolved || getEffectiveTheme();
+    debouncedSync(() => syncCommentTheme(resolved));
+  });
+
+  // Listen for storage events (cross-tab synchronization)
+  window.addEventListener('storage', (event) => {
+    if (event.key === 'theme' && (event.newValue === 'light' || event.newValue === 'dark')) {
+      debouncedSync(() => syncCommentTheme());
+    }
+  });
+
+  // Listen for system theme changes (if using system preference)
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  const handleSystemThemeChange = () => {
+    // Only sync if theme might be using system preference
+    try {
+      const stored = localStorage.getItem('theme');
+      if (!stored || stored === 'system') {
+        debouncedSync(() => syncCommentTheme());
+      }
+    } catch (e) {
+      // Ignore localStorage errors
+    }
+  };
+  
+  if (mediaQuery.addEventListener) {
+    mediaQuery.addEventListener('change', handleSystemThemeChange);
+  }
+
+  // Initial sync and wait for iframe
+  syncCommentTheme();
+  waitForIframe();
+})();</script> <div id="page-bottom-anchor" aria-hidden="true" style="height: 1px;"></div> </article>  </div> <div class="fixed inset-0 z-50 pointer-events-none data-[open=true]:pointer-events-auto lg:hidden" data-mobile-toc data-open="false" aria-hidden="true"><div class="absolute inset-0 bg-zinc-900/40 opacity-0 transition duration-200 data-[open=true]:opacity-100 dark:bg-black/50" data-mobile-toc-backdrop></div><div id="mobile-toc-drawer" role="dialog" aria-modal="true" aria-label="文章目录" class="absolute inset-x-0 bottom-0 translate-y-full rounded-t-2xl border border-zinc-200 bg-neutral-50/95 shadow-2xl ring-1 ring-black/5 transition duration-200 data-[open=true]:translate-y-0 dark:border-zinc-800 dark:bg-zinc-900/95 dark:ring-white/10" data-mobile-toc-drawer><div class="flex items-center justify-between gap-3 px-4 pt-4 pb-3"><div><p class="text-sm font-semibold text-zinc-900 dark:text-zinc-50">文章目录</p><p class="text-xs text-zinc-500 dark:text-zinc-400">点击条目可跳转</p></div><button type="button" class="rounded-full border border-zinc-200 bg-neutral-50 px-3 py-1 text-sm font-medium text-zinc-800 shadow-sm transition hover:text-sky-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:text-sky-400 dark:focus-visible:ring-offset-zinc-900" data-mobile-toc-close>
+关闭
+</button></div><div class="max-h-[60vh] overflow-y-auto px-4 pb-5" data-mobile-toc-scroll><ol class="space-y-3 text-sm"><li><a href="#引言" data-toc-link data-mobile-toc-link data-target="引言" title="引言¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>引言¶</span></a><ol class="mt-1 space-y-1"><li><a href="#你将学到什么" data-toc-link data-mobile-toc-link data-target="你将学到什么" title="你将学到什么¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>你将学到什么¶</span></a></li><li><a href="#前言" data-toc-link data-mobile-toc-link data-target="前言" title="前言¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>前言¶</span></a></li></ol></li><li><a href="#背景" data-toc-link data-mobile-toc-link data-target="背景" title="背景¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>背景¶</span></a><ol class="mt-1 space-y-1"><li><a href="#内存管理基础" data-toc-link data-mobile-toc-link data-target="内存管理基础" title="内存管理基础¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>内存管理基础¶</span></a></li><li><a href="#cuda-与不可分页内存" data-toc-link data-mobile-toc-link data-target="cuda-与不可分页内存" title="CUDA 与（不可）分页内存¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>CUDA 与（不可）分页内存¶</span></a></li><li><a href="#带--non_blockingtrue--时的异步与同步操作cuda--cudamemcpyasync-" data-toc-link data-mobile-toc-link data-target="带--non_blockingtrue--时的异步与同步操作cuda--cudamemcpyasync-" title="带 non_blocking=True 时的异步与同步操作（CUDA cudaMemcpyAsync）¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>带 non_blocking=True 时的异步与同步操作（CUDA cudaMemcpyAsync）¶</span></a></li></ol></li><li><a href="#pytorch-视角" data-toc-link data-mobile-toc-link data-target="pytorch-视角" title="PyTorch 视角¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>PyTorch 视角¶</span></a><ol class="mt-1 space-y-1"><li><a href="#pin_memory" data-toc-link data-mobile-toc-link data-target="pin_memory" title="pin_memory()¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>pin_memory()¶</span></a></li><li><a href="#non_blockingtrue" data-toc-link data-mobile-toc-link data-target="non_blockingtrue" title="non_blocking=True¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>non_blocking=True¶</span></a></li><li><a href="#综合使用" data-toc-link data-mobile-toc-link data-target="综合使用" title="综合使用¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>综合使用¶</span></a></li><li><a href="#其他传输方向gpu--cpucpu--mps" data-toc-link data-mobile-toc-link data-target="其他传输方向gpu--cpucpu--mps" title="其他传输方向（GPU → CPU、CPU → MPS）¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>其他传输方向（GPU → CPU、CPU → MPS）¶</span></a></li></ol></li><li><a href="#实践建议" data-toc-link data-mobile-toc-link data-target="实践建议" title="实践建议¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>实践建议¶</span></a></li><li><a href="#附加考虑" data-toc-link data-mobile-toc-link data-target="附加考虑" title="附加考虑¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>附加考虑¶</span></a></li><li><a href="#结论" data-toc-link data-mobile-toc-link data-target="结论" title="结论¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>结论¶</span></a></li></ol></div></div></div><script type="module">const c=document.querySelector("[data-mobile-toc]"),s=document.querySelector("[data-mobile-toc-drawer]"),a=document.querySelector("[data-mobile-toc-backdrop]"),p=()=>Array.from(document.querySelectorAll("[data-mobile-toc-open]")),w=document.querySelector("[data-mobile-toc-close]"),f=()=>Array.from((s??c)?.querySelectorAll("[data-mobile-toc-link]")??[]),o=document.body,k=window.matchMedia("(prefers-reduced-motion: reduce)"),E=k.matches,g=96;let i=0;const v=e=>window.dispatchEvent(new CustomEvent("mobile-toc:toggle",{detail:{open:e}})),S=e=>{p().forEach(t=>t.setAttribute("aria-expanded",e?"true":"false"))},l=e=>{e.preventDefault(),r(!0)},y=()=>{p().forEach(e=>{e.removeEventListener("click",l),e.addEventListener("click",l)})},A=()=>{i=window.scrollY,o.style.position="fixed",o.style.width="100%",o.style.top=`-${i}px`},L=()=>{o.style.position="",o.style.width="",o.style.top="",window.scrollTo({top:i})},r=e=>{!c||!s||(c.dataset.open=String(e),s.dataset.open=String(e),a?.setAttribute("data-open",String(e)),c.setAttribute("aria-hidden",e?"false":"true"),S(e),v(e),e?A():L())},B=()=>{f().map(t=>document.getElementById(t.dataset.target||"")).filter(t=>!!t).forEach(t=>{t.style.scrollMarginTop=`${g+12}px`})},d=e=>`#${encodeURIComponent(e)}`,h=(e,t=!1)=>{const n=document.getElementById(e);if(!n)return;const b=window.scrollY+n.getBoundingClientRect().top-g-12;t?history.replaceState(null,"",d(e)):history.pushState(null,"",d(e)),window.scrollTo({top:b,behavior:E?"auto":"smooth"})};y();const T=new MutationObserver(y);T.observe(document.body,{subtree:!0,childList:!0,attributes:!0,attributeFilter:["data-mobile-toc-open"]});w?.addEventListener("click",()=>r(!1));a?.addEventListener("click",e=>{e.target===a&&r(!1)});const u=e=>{const n=e.currentTarget?.dataset.target;n&&(e.preventDefault(),e.stopPropagation(),r(!1),requestAnimationFrame(()=>requestAnimationFrame(()=>h(n))))};f().forEach(e=>{e.removeEventListener("click",u),e.addEventListener("click",u)});window.addEventListener("keydown",e=>{e.key==="Escape"&&r(!1)});B();const m=decodeURIComponent(location.hash.replace(/^#/,""));m&&requestAnimationFrame(()=>h(m,!0));</script> <div class="floating-action-stack fixed z-40 flex flex-col items-end gap-3 lg:hidden pointer-events-auto transition-opacity data-[toc-open=true]:opacity-0 data-[toc-open=true]:pointer-events-none" data-floating-action-stack data-target-selector="[data-article]" style="inset-inline-end: calc(env(safe-area-inset-right, 0px) + 1rem); inset-block-end: calc(env(safe-area-inset-bottom, 0px) + 1rem);"><button type="button" class="floating-action-stack__button h-11 w-11 rounded-full border border-gray-200 bg-white/90 text-gray-900 shadow-lg backdrop-blur-sm ring-offset-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 hover:-translate-y-0.5 hover:border-blue-200 hover:text-blue-600 data-[visible=false]:opacity-0 data-[visible=false]:pointer-events-none data-[visible=true]:opacity-100 data-[visible=true]:pointer-events-auto dark:border-gray-800 dark:bg-gray-900/85 dark:text-gray-100 dark:ring-offset-gray-900 dark:hover:border-blue-500/50 dark:hover:text-blue-300" data-floating-action-button data-action="top" data-visible="false" style="transition-delay: 0ms;" aria-label="返回文章顶部"><span class="sr-only">顶部</span><span aria-hidden="true" class="text-base">⬆️</span></button><button type="button" class="floating-action-stack__button h-11 w-11 rounded-full border border-gray-200 bg-white/90 text-gray-900 shadow-lg backdrop-blur-sm ring-offset-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 hover:-translate-y-0.5 hover:border-blue-200 hover:text-blue-600 data-[visible=false]:opacity-0 data-[visible=false]:pointer-events-none data-[visible=true]:opacity-100 data-[visible=true]:pointer-events-auto dark:border-gray-800 dark:bg-gray-900/85 dark:text-gray-100 dark:ring-offset-gray-900 dark:hover:border-blue-500/50 dark:hover:text-blue-300" data-floating-action-button data-action="toc" data-visible="true" style="transition-delay: 10ms;" aria-label="打开目录抽屉" data-mobile-toc-open="true"><span class="sr-only">目录</span><span aria-hidden="true" class="text-base">📑</span></button><button type="button" class="floating-action-stack__button h-11 w-11 rounded-full border border-gray-200 bg-white/90 text-gray-900 shadow-lg backdrop-blur-sm ring-offset-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 hover:-translate-y-0.5 hover:border-blue-200 hover:text-blue-600 data-[visible=false]:opacity-0 data-[visible=false]:pointer-events-none data-[visible=true]:opacity-100 data-[visible=true]:pointer-events-auto dark:border-gray-800 dark:bg-gray-900/85 dark:text-gray-100 dark:ring-offset-gray-900 dark:hover:border-blue-500/50 dark:hover:text-blue-300" data-floating-action-button data-action="bottom" data-visible="true" style="transition-delay: 20ms;" aria-label="跳转文章底部"><span class="sr-only">底部</span><span aria-hidden="true" class="text-base">⬇️</span></button></div><script type="module">const r=document.querySelector("[data-floating-action-stack]"),B=r?.dataset.targetSelector||"[data-article]",v=r?.querySelector('[data-action="top"]'),E=r?.querySelector('[data-action="bottom"]'),f=r?.querySelector('[data-action="toc"]'),M=window.matchMedia("(prefers-reduced-motion: reduce)"),l=M.matches,i=document.querySelector("[data-mobile-toc]"),c=document.querySelector(B);let s=0,y=0,d=!1;const R=()=>{if(!c)return window;let t=c.parentElement;for(;t;){const o=window.getComputedStyle(t).overflowY;if((o==="auto"||o==="scroll")&&t.scrollHeight>t.clientHeight)return t;t=t.parentElement}return window},n=R(),a=()=>{if(!c)return;s=c.getBoundingClientRect().top+window.scrollY,y=c.scrollHeight},x=(t,e,o)=>Math.min(Math.max(t,e),o),p=(t,e)=>{t&&(t.dataset.visible=e?"true":"false")},u=()=>{if(!c)return;const t=120,e=y>window.innerHeight+40,o=window.scrollY>s+t;p(v,o),p(E,e),d=!1},S=()=>{d||(d=!0,requestAnimationFrame(u))},C=()=>{const t=x(s,0,Number.MAX_SAFE_INTEGER);window.scrollTo({top:t,behavior:l?"auto":"smooth"})},k=()=>{const t=document.getElementById("page-bottom-anchor");if(t){const e=t.getBoundingClientRect(),w=window.scrollY+e.bottom-window.innerHeight;window.scrollTo({top:Math.max(0,w),behavior:l?"auto":"smooth"});let h=0;const T=2,g=()=>{h>=T||(h++,setTimeout(()=>{const b=n instanceof Window?document.documentElement:n,H=n instanceof Window?window.scrollY:n.scrollTop;if(b.scrollHeight-b.clientHeight-H>10){const Y=t.getBoundingClientRect(),q=window.scrollY+Y.bottom-window.innerHeight;window.scrollTo({top:Math.max(0,q),behavior:l?"auto":"smooth"}),g()}},400))};g()}else{const e=n instanceof Window?document.documentElement:n,o=Math.max(e.scrollHeight-e.clientHeight,s);n instanceof Window?window.scrollTo({top:o,behavior:l?"auto":"smooth"}):n.scrollTo({top:o,behavior:l?"auto":"smooth"})}},m=t=>{r&&(r.dataset.tocOpen=t?"true":"false")};m(i?.dataset.open==="true");r&&c&&(a(),u(),window.addEventListener("scroll",S,{passive:!0}),window.addEventListener("resize",()=>{a(),S()}),window.addEventListener("load",()=>{a(),u()},{once:!0}),v?.addEventListener("click",C),E?.addEventListener("click",k));f?.addEventListener("click",()=>{requestAnimationFrame(()=>f?.blur())});window.addEventListener("mobile-toc:toggle",t=>{const e=t.detail;e&&m(e.open)});i&&new MutationObserver(()=>{m(i.dataset.open==="true")}).observe(i,{attributes:!0,attributeFilter:["data-open"]});</script> </main> <footer class="py-8 mt-auto border-t border-zinc-200 dark:border-zinc-800"> <div class="container mx-auto px-4 text-center text-zinc-500 max-w-4xl">
+&copy; 2026 Yuanle Liu. All rights reserved. </div> </footer>  <script type="module">const i=new WeakMap,c=(e,t)=>{e.dataset.state=t,t==="copied"?e.textContent="Copied":t==="error"?e.textContent="Failed":e.textContent="Copy";const o=i.get(e);if(o&&window.clearTimeout(o),t!=="idle"){const r=window.setTimeout(()=>c(e,"idle"),2e3);i.set(e,r)}},n=async e=>{const t=e.closest(".code-block");if(!t)return;const o=t.getAttribute("data-raw-code")??"";try{await navigator.clipboard.writeText(o),c(e,"copied")}catch(r){console.error("Copy failed",r),c(e,"error")}},s=()=>{document.addEventListener("click",e=>{const o=e.target?.closest("button.code-block__copy");o&&(e.preventDefault(),n(o))})},a=()=>{typeof document>"u"||s()};a();</script> <script type="module">function d(){const n=document.querySelector("[data-site-header]");if(!n){document.documentElement.style.setProperty("--site-header-height","0px");return}let i=0;const t=()=>{const e=n.getBoundingClientRect().height;Math.abs(e-i)>.5&&(i=e,document.documentElement.style.setProperty("--site-header-height",`${e}px`),window.dispatchEvent(new CustomEvent("headerheightchange",{detail:{height:e}})))};t(),"ResizeObserver"in window&&new ResizeObserver(()=>{t()}).observe(n),window.addEventListener("resize",t,{passive:!0}),window.addEventListener("load",t,{once:!0})}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",d):d();</script> </body> </html>
