@@ -1,0 +1,1027 @@
+<!DOCTYPE html><html lang="en" data-astro-cid-sckkx6r4> <head><script>(() => {
+  const storageKey = 'theme';
+  const className = 'dark';
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  const validThemes = ['light', 'dark'];
+  let currentPreference = (() => {
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored && validThemes.includes(stored)) return stored;
+    } catch (error) {
+      console.warn('Unable to access localStorage for theme:', error);
+    }
+    return mediaQuery.matches ? 'dark' : 'light';
+  })();
+
+  const resolveTheme = (preference) => (preference === 'dark' ? 'dark' : 'light');
+
+  const applyTheme = (preference) => {
+    const effectiveTheme = resolveTheme(preference);
+    document.documentElement.classList.toggle(className, effectiveTheme === 'dark');
+    document.documentElement.dataset.theme = effectiveTheme;
+    return effectiveTheme;
+  };
+
+  const dispatchChange = (preference) => {
+    const resolved = document.documentElement.classList.contains(className) ? 'dark' : 'light';
+    window.dispatchEvent(
+      new CustomEvent('themechange', {
+        detail: { theme: preference, resolved },
+      }),
+    );
+  };
+
+  applyTheme(currentPreference);
+
+  window.__setTheme = (next) => {
+    const preference = validThemes.includes(String(next)) ? String(next) : resolveTheme(currentPreference);
+    currentPreference = preference;
+    try {
+      localStorage.setItem(storageKey, preference);
+    } catch (error) {
+      console.warn('Unable to persist theme selection:', error);
+    }
+    applyTheme(preference);
+    dispatchChange(preference);
+  };
+})();</script><meta charset="UTF-8"><meta name="description" content="A minimal Astro blog"><meta name="viewport" content="width=device-width"><link rel="icon" type="image/x-icon" href="/blog-preview/previews/pr-369/favicon.ico"><link rel="icon" type="image/png" sizes="32x32" href="/blog-preview/previews/pr-369/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/blog-preview/previews/pr-369/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/blog-preview/previews/pr-369/apple-touch-icon.png"><meta name="generator" content="Astro v5.16.6"><link rel="canonical" href="https://yuanlehome.github.io/blog-preview/previews/pr-369/sglang-diffusion-wan2260percent/"><meta property="og:title" content="通过零开销逐层权重卸载技术将 SGLang Diffusion wan2.2 的推理速度加速 60%"><meta property="og:description" content="A minimal Astro blog"><meta property="og:image" content="/blog-preview/previews/pr-369/images/wechat/sglang-diffusion-wan2260percent/001-85495dc3.png"><meta property="og:type" content="article"><meta property="og:url" content="https://yuanlehome.github.io/blog-preview/previews/pr-369/sglang-diffusion-wan2260percent/"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="通过零开销逐层权重卸载技术将 SGLang Diffusion wan2.2 的推理速度加速 60%"><meta name="twitter:description" content="A minimal Astro blog"><meta name="twitter:image" content="/blog-preview/previews/pr-369/images/wechat/sglang-diffusion-wan2260percent/001-85495dc3.png"><title>通过零开销逐层权重卸载技术将 SGLang Diffusion wan2.2 的推理速度加速 60%</title><style>:root {
+  /* Typography */
+  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial, Noto Sans SC, PingFang SC, Microsoft YaHei, sans-serif;
+  --font-serif: ui-serif, Georgia, Cambria, Times New Roman, Times, serif;
+  --font-mono: JetBrains Mono, Fira Code, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  --font-size-4xl: 2.25rem;
+  --line-height-body: 1.75;
+  --line-height-heading: 1.3;
+  --line-height-code: 1.65;
+  --line-height-tight: 1.25;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Components */
+  --radius-sm: 0.35rem;
+  --radius-md: 0.65rem;
+  --radius-lg: 0.9rem;
+  --radius-xl: 0.75rem;
+  --shadow-card: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-code-block: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-header: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --border-style: solid;
+  --border-width: 1px;
+  --motion-duration: 160ms;
+  --motion-easing: ease;
+  --spacing-multiplier: 1;
+
+  /* Light Mode Colors */
+  --color-brand: #0284c7;
+  --color-accent: #0284c7;
+  --color-background: #fafafa;
+  --color-foreground: #18181b;
+  --color-muted: #71717a;
+  --color-border: #e4e4e7;
+  --color-card: #f4f4f5;
+  --color-code-background: #f4f4f5;
+  --color-code-foreground: #18181b;
+  --color-code-border: #e4e4e7;
+  --color-code-keyword: #0284c7;
+  --color-code-string: #059669;
+  --color-code-comment: #a1a1aa;
+  --color-code-function: #0284c7;
+
+  /* Code block specific (legacy support) */
+  --code-font: var(--font-mono);
+  --code-radius: 0.9rem;
+  --code-border: 1px solid var(--color-code-border);
+  --code-bg: var(--color-code-background);
+  --code-fg: var(--color-code-foreground);
+  --code-scrollbar: rgb(203 213 225 / 0.75);
+  --code-highlight-bg: rgb(59 130 246 / 0.12);
+  --code-highlight-accent: rgb(59 130 246);
+
+  /* Header specific (legacy support) */
+  --header-bg: rgb(248 250 252 / 0.92);
+  --header-bg-scrolled: rgb(248 250 252 / 0.98);
+  --header-border: rgb(226 232 240 / 0.9);
+  --header-shadow: var(--shadow-header);
+  --header-shadow-strong: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+.dark {
+  /* Dark Mode Colors */
+  --color-brand: #38bdf8;
+  --color-accent: #38bdf8;
+  --color-background: #18181b;
+  --color-foreground: #fafafa;
+  --color-muted: #a1a1aa;
+  --color-border: #3f3f46;
+  --color-card: #27272a;
+  --color-code-background: #1f1f23;
+  --color-code-foreground: #e4e4e7;
+  --color-code-border: #3f3f46;
+  --color-code-keyword: #38bdf8;
+  --color-code-string: #34d399;
+  --color-code-comment: #71717a;
+  --color-code-function: #38bdf8;
+
+  /* Dark mode shadows */
+  --shadow-card: 0 10px 30px rgb(0 0 0 / 0.28);
+  --shadow-code-block: 0 10px 30px rgb(0 0 0 / 0.28);
+  --shadow-header: 0 10px 30px rgb(0 0 0 / 0.28);
+
+  /* Code block specific (legacy support) */
+  --code-border: 1px solid var(--color-code-border);
+  --code-bg: var(--color-code-background);
+  --code-fg: var(--color-code-foreground);
+  --code-scrollbar: rgb(71 85 105 / 0.8);
+  --code-highlight-bg: rgb(59 130 246 / 0.2);
+  --code-highlight-accent: rgb(96 165 250);
+
+  /* Header specific (legacy support) */
+  --header-bg: rgb(15 23 42 / 0.72);
+  --header-bg-scrolled: rgb(15 23 42 / 0.8400000000000001);
+  --header-border: rgb(71 85 105 / 0.8);
+  --header-shadow: var(--shadow-header);
+  --header-shadow-strong: 0 20px 40px rgb(0 0 0 / 0.35);
+}
+</style><link rel="stylesheet" href="/blog-preview/previews/pr-369/_astro/_slug_.B3aRnWS6.css">
+<style>.reading-progress[data-astro-cid-mu6cnre2]{position:fixed;inset:0 0 auto;height:3px;width:100%;background:transparent;z-index:50;pointer-events:none}.reading-progress__bar[data-astro-cid-mu6cnre2]{display:block;height:100%;width:100%;transform:scaleX(var(--progress-value, 0));transform-origin:left center;background:linear-gradient(90deg,var(--progress-color-start),var(--progress-color-end));transition:transform .1s linear}:root{--progress-color-start: #2563eb;--progress-color-end: #22d3ee}:root.dark{--progress-color-start: #38bdf8;--progress-color-end: #a855f7}@media(prefers-reduced-motion:reduce){.reading-progress__bar[data-astro-cid-mu6cnre2]{transition:none}}.reading-progress__controls[data-astro-cid-mu6cnre2]{position:fixed;inset:auto 1rem 1.5rem auto;display:flex;flex-direction:column;gap:.5rem;z-index:60;pointer-events:none}.reading-progress__control[data-astro-cid-mu6cnre2]{pointer-events:auto;border:1px solid var(--progress-control-border);background:var(--progress-control-bg);color:var(--progress-control-text);border-radius:9999px;padding:.5rem .75rem;font-size:.875rem;line-height:1.25rem;box-shadow:0 4px 12px #0000001f;transition:transform .15s ease,box-shadow .15s ease,background-color .15s ease}.reading-progress__control[data-astro-cid-mu6cnre2]:hover,.reading-progress__control[data-astro-cid-mu6cnre2]:focus-visible{transform:translateY(-2px);box-shadow:0 8px 20px #0000002e;outline:none}:root{--progress-control-bg: #ffffff;--progress-control-border: rgba(0, 0, 0, .08);--progress-control-text: #0f172a}:root.dark{--progress-control-bg: #0f172a;--progress-control-border: rgba(255, 255, 255, .08);--progress-control-text: #e2e8f0}@media(max-width:640px){.reading-progress__controls[data-astro-cid-mu6cnre2]{inset:auto .75rem 1rem auto}.reading-progress__control[data-astro-cid-mu6cnre2]{padding:.45rem .65rem;font-size:.8125rem}}@media(max-width:1023px){.reading-progress__controls[data-astro-cid-mu6cnre2]{display:none}}
+</style></head> <body class="bg-neutral-50 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 transition-colors duration-300 min-h-screen flex flex-col" data-astro-cid-sckkx6r4>  <div class="reading-progress" data-reading-progress data-target-selector="[data-article]" data-astro-cid-mu6cnre2> <span class="reading-progress__bar" data-reading-progress-bar data-astro-cid-mu6cnre2></span> </div> <div class="reading-progress__controls" data-reading-progress-controls hidden data-astro-cid-mu6cnre2> <button type="button" class="reading-progress__control" data-scroll-top aria-label="返回文章顶部" data-astro-cid-mu6cnre2>
+⬆️ 顶部
+</button> <button type="button" class="reading-progress__control" data-scroll-bottom aria-label="跳转文章底部" data-astro-cid-mu6cnre2>
+⬇️ 底部
+</button> </div>  <script type="module">const a=document.querySelector("[data-reading-progress]"),p=a?.dataset?.targetSelector||"[data-article]",w=a?.querySelector("[data-reading-progress-bar]"),l=document.querySelector(p),r=document.querySelector("[data-reading-progress-controls]"),h=r?.querySelector("[data-scroll-top]"),v=r?.querySelector("[data-scroll-bottom]");if(a&&w&&l){let e=0,s=0,n=!1;const m=(t,o,c)=>Math.min(Math.max(t,o),c),i=()=>{e=l.getBoundingClientRect().top+window.scrollY,s=l.scrollHeight},d=()=>{const t=Math.max(s-window.innerHeight,1),o=m((window.scrollY-e)/t,0,1);w.style.setProperty("--progress-value",o.toString()),n=!1},u=()=>{n||(n=!0,requestAnimationFrame(d))},g=()=>{i(),u()};if(i(),d(),window.addEventListener("scroll",u,{passive:!0}),window.addEventListener("resize",g),window.addEventListener("load",g,{once:!0}),r){r.hidden=!1;const t=()=>{window.scrollTo({top:e,behavior:"smooth"})},o=()=>{const c=Math.max(e+s-window.innerHeight,e);window.scrollTo({top:c,behavior:"smooth"})};h?.addEventListener("click",t),v?.addEventListener("click",o)}}</script> <header class="site-header header-variant-frosted" data-header data-site-header> <div class="container mx-auto px-5 py-3 sm:py-4 flex justify-between items-start max-w-5xl"> <a href="/blog-preview/previews/pr-369/" class="text-xl font-bold hover:text-sky-600 dark:hover:text-sky-400 flex items-center gap-2"> <img src="/blog-preview/previews/pr-369/placeholder-social.jpg" alt="Yuanle Liu" width="32" height="32" class="h-8 w-8 rounded"> <span class="hidden sm:inline">Yuanle Liu</span> </a> <nav class="flex items-start gap-3 items-center"> <a href="/blog-preview/previews/pr-369/" class="hover:underline inline-flex items-center "> Home </a><a href="/blog-preview/previews/pr-369/archive/" class="hover:underline inline-flex items-center "> Archive </a><a href="/blog-preview/previews/pr-369/tags/" class="hover:underline inline-flex items-center "> Tags </a><a href="/blog-preview/previews/pr-369/about/" class="hover:underline inline-flex items-center "> About </a> <button id="theme-toggle" class="inline-flex items-center gap-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 px-1" aria-label="Toggle theme"> 🖥️ ☀️ </button> </nav> </div> </header> <script type="module">const i="theme",c=["light","dark"],d=()=>{try{const e=localStorage.getItem(i);if(e==="light"||e==="dark")return e}catch(e){console.warn("Unable to read theme preference:",e)}return window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"},g=()=>document.documentElement.classList.contains("dark")?"dark":"light",u=e=>e==="dark"?"🌙":"☀️",w=e=>e==="dark"?"Dark":"Light",a=(e,t)=>{const n=document.getElementById("theme-toggle");if(!n)return;const o=t??g(),h=u(o),l=w(o);n.dataset.theme=e,n.textContent="";const r=document.createElement("span");r.className="inline-flex items-center justify-center",r.style.lineHeight="1",r.textContent=h,n.appendChild(r),n.appendChild(document.createTextNode(" "+l)),n.setAttribute("aria-label",`Toggle theme (current: ${l})`)},k=e=>{if(typeof window.__setTheme=="function"){window.__setTheme?.(e);return}const t=e==="dark"?"dark":"light";document.documentElement.classList.toggle("dark",t==="dark");try{localStorage.setItem(i,e)}catch(n){console.warn("Unable to persist theme preference:",n)}window.dispatchEvent(new CustomEvent("themechange",{detail:{theme:e,resolved:t}}))},p=()=>{const e=d(),t=c[(c.indexOf(e)+1)%c.length];k(t),a(t)},s=document.querySelector("[data-header]"),f=window.matchMedia("(prefers-reduced-motion: reduce)").matches,m=()=>{if(!s)return;const e=window.scrollY>6;s.classList.toggle("is-scrolled",e)};document.getElementById("theme-toggle")?.addEventListener("click",p);a(d());window.addEventListener("themechange",e=>{const t=e.detail,n=t?.theme??d(),o=t?.resolved;a(n,o)});m();const v=()=>m();window.addEventListener("scroll",v,{passive:!0});f&&s?.classList.add("reduce-motion");</script> <main class="container mx-auto px-4 py-8 max-w-6xl"> <div class="flex flex-col gap-6 lg:grid lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start lg:gap-12" data-post-layout> <div class="w-full" data-toc-shell> <aside class="hidden lg:block h-full"> <div class="flex h-full w-full flex-col gap-3 overflow-hidden rounded-xl border border-zinc-200 bg-neutral-50/80 p-4 shadow-md backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-900/50 lg:sticky lg:top-[var(--site-header-height)] lg:max-h-[calc(100vh-var(--site-header-height)-16px)] lg:h-[calc(100vh-var(--site-header-height)-16px)]" data-toc-container> <div class="space-y-1"> <p class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">文章目录</p> <p class="text-xs text-zinc-500 dark:text-zinc-400">快速跳转到你关心的章节</p> </div> <nav aria-label="文章目录" class="flex-1 min-h-0 overflow-y-auto pr-1" data-toc-scroll> <ol class="space-y-3 text-sm"> <li><a href="#0x0-前言" data-toc-link data-mobile-toc-link data-target="0x0-前言" title="0x0. 前言¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>0x0. 前言¶</span></a></li><li><a href="#0x1-问题发现为什么-wan22-这么慢" data-toc-link data-mobile-toc-link data-target="0x1-问题发现为什么-wan22-这么慢" title="0x1. 问题发现：为什么 Wan2.2 这么慢？¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>0x1. 问题发现：为什么 Wan2.2 这么慢？¶</span></a><ol class="mt-1 space-y-1"><li><a href="#0x11-性能瓶颈定位" data-toc-link data-mobile-toc-link data-target="0x11-性能瓶颈定位" title="0x1.1 性能瓶颈定位¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>0x1.1 性能瓶颈定位¶</span></a></li><li><a href="#0x12-根因分析" data-toc-link data-mobile-toc-link data-target="0x12-根因分析" title="0x1.2 根因分析¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>0x1.2 根因分析¶</span></a></li></ol></li><li><a href="#0x2-解决方案零开销逐层权重卸载" data-toc-link data-mobile-toc-link data-target="0x2-解决方案零开销逐层权重卸载" title="0x2. 解决方案：零开销逐层权重卸载¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>0x2. 解决方案：零开销逐层权重卸载¶</span></a><ol class="mt-1 space-y-1"><li><a href="#0x21-核心思想" data-toc-link data-mobile-toc-link data-target="0x21-核心思想" title="0x2.1 核心思想¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>0x2.1 核心思想¶</span></a></li><li><a href="#0x22-实现细节" data-toc-link data-mobile-toc-link data-target="0x22-实现细节" title="0x2.2 实现细节¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>0x2.2 实现细节¶</span></a></li><li><a href="#0x23-使用方式" data-toc-link data-mobile-toc-link data-target="0x23-使用方式" title="0x2.3 使用方式¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>0x2.3 使用方式¶</span></a></li></ol></li><li><a href="#0x3-性能提升" data-toc-link data-mobile-toc-link data-target="0x3-性能提升" title="0x3. 性能提升¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>0x3. 性能提升¶</span></a><ol class="mt-1 space-y-1"><li><a href="#0x31-主分支-vs-pr-分支" data-toc-link data-mobile-toc-link data-target="0x31-主分支-vs-pr-分支" title="0x3.1 主分支 vs PR 分支¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>0x3.1 主分支 vs PR 分支¶</span></a></li><li><a href="#0x32-性能分析" data-toc-link data-mobile-toc-link data-target="0x32-性能分析" title="0x3.2 性能分析¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>0x3.2 性能分析¶</span></a></li></ol></li><li><a href="#0x4-额外优化all2all-预热" data-toc-link data-mobile-toc-link data-target="0x4-额外优化all2all-预热" title="0x4. 额外优化：All2All 预热¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>0x4. 额外优化：All2All 预热¶</span></a></li><li><a href="#0x5-总结" data-toc-link data-mobile-toc-link data-target="0x5-总结" title="0x5. 总结¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>0x5. 总结¶</span></a></li> </ol> </nav> </div> </aside> </div> <script type="module">const p=Array.from(document.querySelectorAll("[data-toc-link]")),e=document.querySelector("[data-toc-container]"),i=document.querySelector("[data-toc-shell]"),l=()=>{const t=getComputedStyle(document.documentElement).getPropertyValue("--site-header-height");return parseFloat(t)||0},r=window.matchMedia("(min-width: 1024px)"),g=p.map(t=>document.getElementById(t.dataset.target||"")).filter(t=>!!t),m=()=>{const t=l();g.forEach(n=>{n.style.scrollMarginTop=`${t+12}px`})},w=t=>`#${encodeURIComponent(t)}`,v=t=>decodeURIComponent(t.replace(/^#/,"")),f=t=>{p.forEach(n=>{const o=n.dataset.target===t;n.dataset.active=o?"true":"false",n.setAttribute("aria-current",o?"true":"false")})},u=(t,n=!1)=>{const o=document.getElementById(t);if(!o)return;const a=l(),c=window.scrollY+o.getBoundingClientRect().top-a-12;n?history.replaceState(null,"",w(t)):history.pushState(null,"",w(t)),window.scrollTo({top:c,behavior:"smooth"}),f(t)};p.forEach(t=>t.addEventListener("click",n=>{const o=t.dataset.target;o&&(n.preventDefault(),u(o))}));const y=()=>{e&&(e.dataset.fixed="false",e.style.position="",e.style.left="",e.style.width="",e.style.height="",e.style.maxHeight="",e.style.top="",i&&(i.style.minHeight=""))},x=()=>{if(!e||!i)return;const t=i.getBoundingClientRect(),n=l(),o=`calc(100vh - ${n}px - 16px)`;e.dataset.fixed="true",i.style.minHeight=`${e.offsetHeight}px`,e.style.position="fixed",e.style.top=`${n}px`,e.style.left=`${t.left}px`,e.style.width=`${t.width}px`,e.style.height=o,e.style.maxHeight=o},d=()=>{if(!e||e.dataset.fixed==="true"||!r.matches)return;const t=parseFloat(getComputedStyle(e).top||"0"),n=e.offsetTop-t;if(Number.isNaN(t)||window.scrollY<n)return;const o=e.getBoundingClientRect().top;Math.abs(o-t)>2&&x()},E=()=>{if(!r.matches){y();return}e?.dataset.fixed==="true"&&x()};if(g.length>0){m();const t=new IntersectionObserver(o=>{const a=o.filter(s=>s.isIntersecting).sort((s,h)=>s.target.getBoundingClientRect().top-h.target.getBoundingClientRect().top);if(a[0]){f(a[0].target.id);return}const c=o.filter(s=>s.boundingClientRect.top<0).sort((s,h)=>h.target.getBoundingClientRect().top-s.target.getBoundingClientRect().top);c[0]&&f(c[0].target.id)},{rootMargin:`-${l()}px 0% -55% 0%`,threshold:[0,.25,.5,1]});g.forEach(o=>t.observe(o));const n=v(location.hash||"");n&&requestAnimationFrame(()=>u(n,!0)),window.addEventListener("hashchange",()=>{const o=v(location.hash||"");o&&u(o,!0)})}y();r.matches&&d();r.addEventListener("change",()=>{y(),requestAnimationFrame(()=>{r.matches&&d()})});window.addEventListener("scroll",d,{passive:!0});window.addEventListener("resize",E);window.addEventListener("load",()=>{d(),m()},{once:!0});window.addEventListener("headerheightchange",()=>{m()});</script> <article class="prose dark:prose-invert max-w-none prose-img:rounded-xl min-w-0" data-article> <header class="mb-8 not-prose"> <div class="flex flex-col gap-6 md:grid md:grid-cols-[minmax(0,1fr)_220px] md:items-start md:gap-8"> <div class="flex flex-col gap-4 md:h-full"> <h1 class="text-3xl md:text-4xl font-bold leading-tight text-left"> 通过零开销逐层权重卸载技术将 SGLang Diffusion wan2.2 的推理速度加速 60% </h1> <div class="text-zinc-500 text-sm flex items-start justify-start gap-3 flex-wrap md:mt-auto"> <time class="flex items-center gap-1" datetime="2025-12-28T00:00:00.000Z" title="发布于 2025-12-28"> <span aria-hidden="true">📅</span> <span>
+发布于 <span class="font-medium">2025-12-28</span> </span> </time>   <div class="flex items-center gap-1"> <span aria-hidden="true">✍️</span> 2051 字
+</div> <div class="flex items-center gap-1" title="2051 words"> <span aria-hidden="true">⏱️</span> 5 min read </div> </div> <div class="flex flex-wrap gap-2 items-center" data-testid="post-tags"> <span class="text-zinc-500 text-sm flex items-center gap-1"> <span aria-hidden="true">🏷️</span> <span>标签：</span> </span> <a href="/blog-preview/previews/pr-369/tags/performance/" class="tag-chip inline-flex items-center gap-1.5 rounded-full border transition-colors duration-200 font-medium cursor-pointer text-xs px-2 py-1 
+    border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 
+    dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 dark:hover:border-sky-700
+    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-tag-slug="performance" data-testid="tag-performance"> <span class="tag-name pointer-events-none">Performance</span>  </a> </div> </div> <figure class="hidden md:block md:justify-self-end overflow-hidden rounded-xl border border-zinc-200/80 shadow-md dark:border-zinc-800/80 w-full max-w-[320px] md:max-w-[220px] md:min-w-[160px]" data-post-cover> <img src="/blog-preview/previews/pr-369/images/wechat/sglang-diffusion-wan2260percent/001-85495dc3.png" alt="通过零开销逐层权重卸载技术将 SGLang Diffusion wan2.2 的推理速度加速 60%" class="aspect-[4/3] w-full object-cover transition duration-200" loading="eager" decoding="async"> </figure> <div class="w-full rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 dark:border-sky-900 dark:bg-sky-950 md:col-span-2"> <p class="text-sm text-zinc-700 dark:text-zinc-300 break-words"> <span class="font-semibold">📝 转载 / 引用来源：</span> <span>
+作者 <span class="font-medium">GiantPandaLLM</span> ·  </span> <a href="https://mp.weixin.qq.com/s/Pe5rITX7srkWOoVHTtT4yw" target="_blank" rel="noopener noreferrer" class="text-sky-600 underline hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300">
+查看原文
+</a> </p> </div> </div> </header> <h2 id="0x0-前言">0x0. 前言<a href="#0x0-前言" class="heading-anchor" aria-label="Link to 0x0. 前言">¶</a></h2>
+<p>最近在优化 SGLang 对 Wan2.2 视频生成模型的支持时，发现了一个性能问题：在使用双 Transformer 架构时，第 1 步和第 19 步的推理速度比正常步骤慢了约 7 倍。经过深入分析，通过实现<strong>零开销的逐层权重卸载</strong> (Layerwise Weight Offload) 技术，最终将整体推理速度提升了 <strong>60%</strong>（从 149.69 秒降至 94.22 秒）。需要说明的是这个技术的核心代码实现部分从 Skywork AI Infra 的视频模型优化中修改而来（<a href="https://github.com/sgl-project/sglang/blob/main/python/sglang/multimodal_gen/runtime/utils/layerwise_offload.py#L8" target="_blank" rel="noopener noreferrer">链接</a>）。</p>
+<p>这个优化不仅带来了性能提升，也突破了 Wan2.2 模型的显存墙。比如我们现在可以在 <strong>24GB 显存的 4090</strong> 上运行 wan2.2 而不会 OOM，具有还不错的实用意义。此外这个优化也可以方便的扩展到其他模型上，比如 HunyuanVideo。本文将详细介绍问题的发现、分析和解决过程。</p>
+<p>相关 PR：<a href="https://github.com/sgl-project/sglang/pull/15511" target="_blank" rel="noopener noreferrer">https://github.com/sgl-project/sglang/pull/15511</a></p>
+<p>测试环境：8 卡 H100</p>
+<h2 id="0x1-问题发现为什么-wan22-这么慢">0x1. 问题发现：为什么 Wan2.2 这么慢？<a href="#0x1-问题发现为什么-wan22-这么慢" class="heading-anchor" aria-label="Link to 0x1. 问题发现：为什么 Wan2.2 这么慢？">¶</a></h2>
+<h3 id="0x11-性能瓶颈定位">0x1.1 性能瓶颈定位<a href="#0x11-性能瓶颈定位" class="heading-anchor" aria-label="Link to 0x1.1 性能瓶颈定位">¶</a></h3>
+<p>在对 Wan2.2 模型进行完整的 profiling 之后，发现了一个奇怪的现象：</p>
+<ul>
+<li>第 1 步和第 19 步：耗时约 36 秒和 31 秒，异常缓慢</li>
+<li>中间步骤（第 2-18 步）：耗时约 3.2 秒，性能正常，完全达到了从 cp4 到 cp8 的 2 倍加速预期</li>
+<li>其他步骤（第 20-27 步）：耗时约 3.2 秒，性能正常</li>
+</ul>
+<p>第 1 步和第 19 步的耗时相当于 7 个正常步骤，这显然是不可接受的。</p>
+<p>main 分支的数据：</p>
+<figure class="code-block not-prose" data-language="bash" data-raw-code="sglang generate   --model-path Wan-AI/Wan2.2-T2V-A14B-Diffusers   --text-encoder-cpu-offload   --pin-cpu-memory   --num-gpus 8   --ulysses-degree 8 --attention-backend sage_attn  --enable-torch-compile --prompt &#x22;A cat walks on the grass, realistic&#x22; --num-frames 81 --height 720 --width 1280 --num-inference-steps 27 --guidance-scale 3.5 --guidance-scale-2 4.0 --perf-dump-path /home/lmsys/bbuf/dump/wan_step_profile_cp8_main.json
+
+100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 27/27 [02:28<00:00,  5.52s/it]
+[12-19 08:37:22] [DenoisingStage] average time per step: 5.5156 seconds
+[12-19 08:37:23] [DenoisingStage] finished in 149.6943 seconds
+
+&#x22;denoise_steps_ms&#x22;: [
+    35999.06893167645,
+    3261.483933776617,
+    3270.5406425520778,
+    3267.8588768467307,
+    3260.3964526206255,
+    3263.016454875469,
+    3268.026988953352,
+    3264.5184732973576,
+    3264.636719599366,
+    3267.1875776723027,
+    3268.562350422144,
+    3268.1023878976703,
+    3266.7769035324454,
+    3268.044295720756,
+    3264.268895611167,
+    3271.0087513551116,
+    3267.674465663731,
+    3266.1060262471437,
+    31282.590138725936,
+    3263.5639663785696,
+    3262.301029637456,
+    3262.3210102319717,
+    3261.833382770419,
+    3264.719443395734,
+    3265.314467251301,
+    3267.530156299472,
+    3261.9533529505134
+  ]," data-line-numbers="true"><div class="code-block__header"><div class="code-block__title">bash</div><button type="button" class="code-block__copy" aria-label="复制代码">Copy</button></div><pre class="code-block__pre" tabindex="0" data-theme="light" data-language="bash"><code data-language="bash"><span class="line" data-line-number="1"><span style="color:#6F42C1">sglang</span><span style="color:#032F62"> generate</span><span style="color:#005CC5">   --model-path</span><span style="color:#032F62"> Wan-AI/Wan2.2-T2V-A14B-Diffusers</span><span style="color:#005CC5">   --text-encoder-cpu-offload</span><span style="color:#005CC5">   --pin-cpu-memory</span><span style="color:#005CC5">   --num-gpus</span><span style="color:#005CC5"> 8</span><span style="color:#005CC5">   --ulysses-degree</span><span style="color:#005CC5"> 8</span><span style="color:#005CC5"> --attention-backend</span><span style="color:#032F62"> sage_attn</span><span style="color:#005CC5">  --enable-torch-compile</span><span style="color:#005CC5"> --prompt</span><span style="color:#032F62"> "A cat walks on the grass, realistic"</span><span style="color:#005CC5"> --num-frames</span><span style="color:#005CC5"> 81</span><span style="color:#005CC5"> --height</span><span style="color:#005CC5"> 720</span><span style="color:#005CC5"> --width</span><span style="color:#005CC5"> 1280</span><span style="color:#005CC5"> --num-inference-steps</span><span style="color:#005CC5"> 27</span><span style="color:#005CC5"> --guidance-scale</span><span style="color:#005CC5"> 3.5</span><span style="color:#005CC5"> --guidance-scale-2</span><span style="color:#005CC5"> 4.0</span><span style="color:#005CC5"> --perf-dump-path</span><span style="color:#032F62"> /home/lmsys/bbuf/dump/wan_step_profile_cp8_main.json</span></span>
+<span class="line" data-line-number="2"> </span>
+<span class="line" data-line-number="3"><span style="color:#6F42C1">100%</span><span style="color:#D73A49">|</span><span style="color:#6F42C1">███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████</span><span style="color:#D73A49">|</span><span style="color:#6F42C1"> 27/27</span><span style="color:#24292E"> [02:28&#x3C;00:00,  </span><span style="color:#032F62">5.52s/it]</span></span>
+<span class="line" data-line-number="4"><span style="color:#24292E">[12-19 08:37:22] [DenoisingStage] average </span><span style="color:#D73A49">time</span><span style="color:#24292E"> per step: 5.5156 seconds</span></span>
+<span class="line" data-line-number="5"><span style="color:#24292E">[12-19 08:37:23] [DenoisingStage] finished in 149.6943 seconds</span></span>
+<span class="line" data-line-number="6"> </span>
+<span class="line" data-line-number="7"><span style="color:#6F42C1">"denoise_steps_ms"</span><span style="color:#005CC5">:</span><span style="color:#24292E"> [</span></span>
+<span class="line" data-line-number="8"><span style="color:#6F42C1">    35999.06893167645,</span></span>
+<span class="line" data-line-number="9"><span style="color:#6F42C1">    3261.483933776617,</span></span>
+<span class="line" data-line-number="10"><span style="color:#6F42C1">    3270.5406425520778,</span></span>
+<span class="line" data-line-number="11"><span style="color:#6F42C1">    3267.8588768467307,</span></span>
+<span class="line" data-line-number="12"><span style="color:#6F42C1">    3260.3964526206255,</span></span>
+<span class="line" data-line-number="13"><span style="color:#6F42C1">    3263.016454875469,</span></span>
+<span class="line" data-line-number="14"><span style="color:#6F42C1">    3268.026988953352,</span></span>
+<span class="line" data-line-number="15"><span style="color:#6F42C1">    3264.5184732973576,</span></span>
+<span class="line" data-line-number="16"><span style="color:#6F42C1">    3264.636719599366,</span></span>
+<span class="line" data-line-number="17"><span style="color:#6F42C1">    3267.1875776723027,</span></span>
+<span class="line" data-line-number="18"><span style="color:#6F42C1">    3268.562350422144,</span></span>
+<span class="line" data-line-number="19"><span style="color:#6F42C1">    3268.1023878976703,</span></span>
+<span class="line" data-line-number="20"><span style="color:#6F42C1">    3266.7769035324454,</span></span>
+<span class="line" data-line-number="21"><span style="color:#6F42C1">    3268.044295720756,</span></span>
+<span class="line" data-line-number="22"><span style="color:#6F42C1">    3264.268895611167,</span></span>
+<span class="line" data-line-number="23"><span style="color:#6F42C1">    3271.0087513551116,</span></span>
+<span class="line" data-line-number="24"><span style="color:#6F42C1">    3267.674465663731,</span></span>
+<span class="line" data-line-number="25"><span style="color:#6F42C1">    3266.1060262471437,</span></span>
+<span class="line" data-line-number="26"><span style="color:#6F42C1">    31282.590138725936,</span></span>
+<span class="line" data-line-number="27"><span style="color:#6F42C1">    3263.5639663785696,</span></span>
+<span class="line" data-line-number="28"><span style="color:#6F42C1">    3262.301029637456,</span></span>
+<span class="line" data-line-number="29"><span style="color:#6F42C1">    3262.3210102319717,</span></span>
+<span class="line" data-line-number="30"><span style="color:#6F42C1">    3261.833382770419,</span></span>
+<span class="line" data-line-number="31"><span style="color:#6F42C1">    3264.719443395734,</span></span>
+<span class="line" data-line-number="32"><span style="color:#6F42C1">    3265.314467251301,</span></span>
+<span class="line" data-line-number="33"><span style="color:#6F42C1">    3267.530156299472,</span></span>
+<span class="line" data-line-number="34"><span style="color:#6F42C1">    3261.9533529505134</span></span>
+<span class="line" data-line-number="35"><span style="color:#24292E">  ],</span></span></code></pre><pre class="code-block__pre" tabindex="0" data-theme="dark" data-language="bash"><code data-language="bash"><span class="line" data-line-number="1"><span style="color:#DCDCAA">sglang</span><span style="color:#CE9178"> generate</span><span style="color:#569CD6">   --model-path</span><span style="color:#CE9178"> Wan-AI/Wan2.2-T2V-A14B-Diffusers</span><span style="color:#569CD6">   --text-encoder-cpu-offload</span><span style="color:#569CD6">   --pin-cpu-memory</span><span style="color:#569CD6">   --num-gpus</span><span style="color:#B5CEA8"> 8</span><span style="color:#569CD6">   --ulysses-degree</span><span style="color:#B5CEA8"> 8</span><span style="color:#569CD6"> --attention-backend</span><span style="color:#CE9178"> sage_attn</span><span style="color:#569CD6">  --enable-torch-compile</span><span style="color:#569CD6"> --prompt</span><span style="color:#CE9178"> "A cat walks on the grass, realistic"</span><span style="color:#569CD6"> --num-frames</span><span style="color:#B5CEA8"> 81</span><span style="color:#569CD6"> --height</span><span style="color:#B5CEA8"> 720</span><span style="color:#569CD6"> --width</span><span style="color:#B5CEA8"> 1280</span><span style="color:#569CD6"> --num-inference-steps</span><span style="color:#B5CEA8"> 27</span><span style="color:#569CD6"> --guidance-scale</span><span style="color:#B5CEA8"> 3.5</span><span style="color:#569CD6"> --guidance-scale-2</span><span style="color:#B5CEA8"> 4.0</span><span style="color:#569CD6"> --perf-dump-path</span><span style="color:#CE9178"> /home/lmsys/bbuf/dump/wan_step_profile_cp8_main.json</span></span>
+<span class="line" data-line-number="2"> </span>
+<span class="line" data-line-number="3"><span style="color:#DCDCAA">100%</span><span style="color:#D4D4D4">|</span><span style="color:#DCDCAA">███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████</span><span style="color:#D4D4D4">| </span><span style="color:#DCDCAA">27/27</span><span style="color:#D4D4D4"> [02:28&#x3C;00:00,  </span><span style="color:#CE9178">5.52s/it]</span></span>
+<span class="line" data-line-number="4"><span style="color:#D4D4D4">[12-19 08:37:22] [DenoisingStage] average </span><span style="color:#569CD6">time</span><span style="color:#D4D4D4"> per step: 5.5156 seconds</span></span>
+<span class="line" data-line-number="5"><span style="color:#D4D4D4">[12-19 08:37:23] [DenoisingStage] finished in 149.6943 seconds</span></span>
+<span class="line" data-line-number="6"> </span>
+<span class="line" data-line-number="7"><span style="color:#DCDCAA">"denoise_steps_ms"</span><span style="color:#DCDCAA">:</span><span style="color:#D4D4D4"> [</span></span>
+<span class="line" data-line-number="8"><span style="color:#DCDCAA">    35999.06893167645,</span></span>
+<span class="line" data-line-number="9"><span style="color:#DCDCAA">    3261.483933776617,</span></span>
+<span class="line" data-line-number="10"><span style="color:#DCDCAA">    3270.5406425520778,</span></span>
+<span class="line" data-line-number="11"><span style="color:#DCDCAA">    3267.8588768467307,</span></span>
+<span class="line" data-line-number="12"><span style="color:#DCDCAA">    3260.3964526206255,</span></span>
+<span class="line" data-line-number="13"><span style="color:#DCDCAA">    3263.016454875469,</span></span>
+<span class="line" data-line-number="14"><span style="color:#DCDCAA">    3268.026988953352,</span></span>
+<span class="line" data-line-number="15"><span style="color:#DCDCAA">    3264.5184732973576,</span></span>
+<span class="line" data-line-number="16"><span style="color:#DCDCAA">    3264.636719599366,</span></span>
+<span class="line" data-line-number="17"><span style="color:#DCDCAA">    3267.1875776723027,</span></span>
+<span class="line" data-line-number="18"><span style="color:#DCDCAA">    3268.562350422144,</span></span>
+<span class="line" data-line-number="19"><span style="color:#DCDCAA">    3268.1023878976703,</span></span>
+<span class="line" data-line-number="20"><span style="color:#DCDCAA">    3266.7769035324454,</span></span>
+<span class="line" data-line-number="21"><span style="color:#DCDCAA">    3268.044295720756,</span></span>
+<span class="line" data-line-number="22"><span style="color:#DCDCAA">    3264.268895611167,</span></span>
+<span class="line" data-line-number="23"><span style="color:#DCDCAA">    3271.0087513551116,</span></span>
+<span class="line" data-line-number="24"><span style="color:#DCDCAA">    3267.674465663731,</span></span>
+<span class="line" data-line-number="25"><span style="color:#DCDCAA">    3266.1060262471437,</span></span>
+<span class="line" data-line-number="26"><span style="color:#DCDCAA">    31282.590138725936,</span></span>
+<span class="line" data-line-number="27"><span style="color:#DCDCAA">    3263.5639663785696,</span></span>
+<span class="line" data-line-number="28"><span style="color:#DCDCAA">    3262.301029637456,</span></span>
+<span class="line" data-line-number="29"><span style="color:#DCDCAA">    3262.3210102319717,</span></span>
+<span class="line" data-line-number="30"><span style="color:#DCDCAA">    3261.833382770419,</span></span>
+<span class="line" data-line-number="31"><span style="color:#DCDCAA">    3264.719443395734,</span></span>
+<span class="line" data-line-number="32"><span style="color:#DCDCAA">    3265.314467251301,</span></span>
+<span class="line" data-line-number="33"><span style="color:#DCDCAA">    3267.530156299472,</span></span>
+<span class="line" data-line-number="34"><span style="color:#DCDCAA">    3261.9533529505134</span></span>
+<span class="line" data-line-number="35"><span style="color:#D4D4D4">  ],</span></span></code></pre></figure>
+<p>经过本文介绍的优化之后的数据：</p>
+<figure class="code-block not-prose" data-language="bash" data-raw-code="sglang generate   --model-path Wan-AI/Wan2.2-T2V-A14B-Diffusers   --text-encoder-cpu-offload   --pin-cpu-memory   --num-gpus 8   --ulysses-degree 8 --attention-backend sage_attn  --enable-torch-compile --prompt &#x22;A cat walks on the grass, realistic&#x22; --num-frames 81 --height 720 --width 1280 --num-inference-steps 27 --guidance-scale 3.5 --guidance-scale-2 4.0 --dit-layerwise-offload true --perf-dump-path /home/lmsys/bbuf/dump/wan_step_profile_cp8_async_offload.json
+
+100%|██████████████████████████████████████████████████████████████████████████████████████████████████| 27/27 [01:33<00:00,  3.46s/it]
+[12-20 02:59:10] [DenoisingStage] average time per step: 3.4553 seconds
+[12-20 02:59:10] [DenoisingStage] finished in 94.2283 seconds
+
+&#x22;denoise_steps_ms&#x22;: [
+    7717.6975486800075,
+    3275.042257271707,
+    3280.2467988803983,
+    3282.276245765388,
+    3292.9044039919972,
+    3286.5121429786086,
+    3273.5616639256477,
+    3271.6003246605396,
+    3275.5934856832027,
+    3291.9061705470085,
+    3293.934356421232,
+    3289.3909830600023,
+    3298.0582248419523,
+    3300.408118404448,
+    3305.0247132778168,
+    3299.3013756349683,
+    3302.0150866359472,
+    3299.040620215237,
+    3291.0401169210672,
+    3296.6199973598123,
+    3290.26335850358,
+    3302.190547809005,
+    3295.942653901875,
+    3297.3329443484545,
+    3297.713255509734,
+    3295.0284238904715,
+    3290.1963284239173
+  ]," data-line-numbers="true"><div class="code-block__header"><div class="code-block__title">bash</div><button type="button" class="code-block__copy" aria-label="复制代码">Copy</button></div><pre class="code-block__pre" tabindex="0" data-theme="light" data-language="bash"><code data-language="bash"><span class="line" data-line-number="1"><span style="color:#6F42C1">sglang</span><span style="color:#032F62"> generate</span><span style="color:#005CC5">   --model-path</span><span style="color:#032F62"> Wan-AI/Wan2.2-T2V-A14B-Diffusers</span><span style="color:#005CC5">   --text-encoder-cpu-offload</span><span style="color:#005CC5">   --pin-cpu-memory</span><span style="color:#005CC5">   --num-gpus</span><span style="color:#005CC5"> 8</span><span style="color:#005CC5">   --ulysses-degree</span><span style="color:#005CC5"> 8</span><span style="color:#005CC5"> --attention-backend</span><span style="color:#032F62"> sage_attn</span><span style="color:#005CC5">  --enable-torch-compile</span><span style="color:#005CC5"> --prompt</span><span style="color:#032F62"> "A cat walks on the grass, realistic"</span><span style="color:#005CC5"> --num-frames</span><span style="color:#005CC5"> 81</span><span style="color:#005CC5"> --height</span><span style="color:#005CC5"> 720</span><span style="color:#005CC5"> --width</span><span style="color:#005CC5"> 1280</span><span style="color:#005CC5"> --num-inference-steps</span><span style="color:#005CC5"> 27</span><span style="color:#005CC5"> --guidance-scale</span><span style="color:#005CC5"> 3.5</span><span style="color:#005CC5"> --guidance-scale-2</span><span style="color:#005CC5"> 4.0</span><span style="color:#005CC5"> --dit-layerwise-offload</span><span style="color:#005CC5"> true</span><span style="color:#005CC5"> --perf-dump-path</span><span style="color:#032F62"> /home/lmsys/bbuf/dump/wan_step_profile_cp8_async_offload.json</span></span>
+<span class="line" data-line-number="2"> </span>
+<span class="line" data-line-number="3"><span style="color:#6F42C1">100%</span><span style="color:#D73A49">|</span><span style="color:#6F42C1">██████████████████████████████████████████████████████████████████████████████████████████████████</span><span style="color:#D73A49">|</span><span style="color:#6F42C1"> 27/27</span><span style="color:#24292E"> [01:33&#x3C;00:00,  </span><span style="color:#032F62">3.46s/it]</span></span>
+<span class="line" data-line-number="4"><span style="color:#24292E">[12-20 02:59:10] [DenoisingStage] average </span><span style="color:#D73A49">time</span><span style="color:#24292E"> per step: 3.4553 seconds</span></span>
+<span class="line" data-line-number="5"><span style="color:#24292E">[12-20 02:59:10] [DenoisingStage] finished in 94.2283 seconds</span></span>
+<span class="line" data-line-number="6"> </span>
+<span class="line" data-line-number="7"><span style="color:#6F42C1">"denoise_steps_ms"</span><span style="color:#005CC5">:</span><span style="color:#24292E"> [</span></span>
+<span class="line" data-line-number="8"><span style="color:#6F42C1">    7717.6975486800075,</span></span>
+<span class="line" data-line-number="9"><span style="color:#6F42C1">    3275.042257271707,</span></span>
+<span class="line" data-line-number="10"><span style="color:#6F42C1">    3280.2467988803983,</span></span>
+<span class="line" data-line-number="11"><span style="color:#6F42C1">    3282.276245765388,</span></span>
+<span class="line" data-line-number="12"><span style="color:#6F42C1">    3292.9044039919972,</span></span>
+<span class="line" data-line-number="13"><span style="color:#6F42C1">    3286.5121429786086,</span></span>
+<span class="line" data-line-number="14"><span style="color:#6F42C1">    3273.5616639256477,</span></span>
+<span class="line" data-line-number="15"><span style="color:#6F42C1">    3271.6003246605396,</span></span>
+<span class="line" data-line-number="16"><span style="color:#6F42C1">    3275.5934856832027,</span></span>
+<span class="line" data-line-number="17"><span style="color:#6F42C1">    3291.9061705470085,</span></span>
+<span class="line" data-line-number="18"><span style="color:#6F42C1">    3293.934356421232,</span></span>
+<span class="line" data-line-number="19"><span style="color:#6F42C1">    3289.3909830600023,</span></span>
+<span class="line" data-line-number="20"><span style="color:#6F42C1">    3298.0582248419523,</span></span>
+<span class="line" data-line-number="21"><span style="color:#6F42C1">    3300.408118404448,</span></span>
+<span class="line" data-line-number="22"><span style="color:#6F42C1">    3305.0247132778168,</span></span>
+<span class="line" data-line-number="23"><span style="color:#6F42C1">    3299.3013756349683,</span></span>
+<span class="line" data-line-number="24"><span style="color:#6F42C1">    3302.0150866359472,</span></span>
+<span class="line" data-line-number="25"><span style="color:#6F42C1">    3299.040620215237,</span></span>
+<span class="line" data-line-number="26"><span style="color:#6F42C1">    3291.0401169210672,</span></span>
+<span class="line" data-line-number="27"><span style="color:#6F42C1">    3296.6199973598123,</span></span>
+<span class="line" data-line-number="28"><span style="color:#6F42C1">    3290.26335850358,</span></span>
+<span class="line" data-line-number="29"><span style="color:#6F42C1">    3302.190547809005,</span></span>
+<span class="line" data-line-number="30"><span style="color:#6F42C1">    3295.942653901875,</span></span>
+<span class="line" data-line-number="31"><span style="color:#6F42C1">    3297.3329443484545,</span></span>
+<span class="line" data-line-number="32"><span style="color:#6F42C1">    3297.713255509734,</span></span>
+<span class="line" data-line-number="33"><span style="color:#6F42C1">    3295.0284238904715,</span></span>
+<span class="line" data-line-number="34"><span style="color:#6F42C1">    3290.1963284239173</span></span>
+<span class="line" data-line-number="35"><span style="color:#24292E">  ],</span></span></code></pre><pre class="code-block__pre" tabindex="0" data-theme="dark" data-language="bash"><code data-language="bash"><span class="line" data-line-number="1"><span style="color:#DCDCAA">sglang</span><span style="color:#CE9178"> generate</span><span style="color:#569CD6">   --model-path</span><span style="color:#CE9178"> Wan-AI/Wan2.2-T2V-A14B-Diffusers</span><span style="color:#569CD6">   --text-encoder-cpu-offload</span><span style="color:#569CD6">   --pin-cpu-memory</span><span style="color:#569CD6">   --num-gpus</span><span style="color:#B5CEA8"> 8</span><span style="color:#569CD6">   --ulysses-degree</span><span style="color:#B5CEA8"> 8</span><span style="color:#569CD6"> --attention-backend</span><span style="color:#CE9178"> sage_attn</span><span style="color:#569CD6">  --enable-torch-compile</span><span style="color:#569CD6"> --prompt</span><span style="color:#CE9178"> "A cat walks on the grass, realistic"</span><span style="color:#569CD6"> --num-frames</span><span style="color:#B5CEA8"> 81</span><span style="color:#569CD6"> --height</span><span style="color:#B5CEA8"> 720</span><span style="color:#569CD6"> --width</span><span style="color:#B5CEA8"> 1280</span><span style="color:#569CD6"> --num-inference-steps</span><span style="color:#B5CEA8"> 27</span><span style="color:#569CD6"> --guidance-scale</span><span style="color:#B5CEA8"> 3.5</span><span style="color:#569CD6"> --guidance-scale-2</span><span style="color:#B5CEA8"> 4.0</span><span style="color:#569CD6"> --dit-layerwise-offload</span><span style="color:#569CD6"> true</span><span style="color:#569CD6"> --perf-dump-path</span><span style="color:#CE9178"> /home/lmsys/bbuf/dump/wan_step_profile_cp8_async_offload.json</span></span>
+<span class="line" data-line-number="2"> </span>
+<span class="line" data-line-number="3"><span style="color:#DCDCAA">100%</span><span style="color:#D4D4D4">|</span><span style="color:#DCDCAA">██████████████████████████████████████████████████████████████████████████████████████████████████</span><span style="color:#D4D4D4">| </span><span style="color:#DCDCAA">27/27</span><span style="color:#D4D4D4"> [01:33&#x3C;00:00,  </span><span style="color:#CE9178">3.46s/it]</span></span>
+<span class="line" data-line-number="4"><span style="color:#D4D4D4">[12-20 02:59:10] [DenoisingStage] average </span><span style="color:#569CD6">time</span><span style="color:#D4D4D4"> per step: 3.4553 seconds</span></span>
+<span class="line" data-line-number="5"><span style="color:#D4D4D4">[12-20 02:59:10] [DenoisingStage] finished in 94.2283 seconds</span></span>
+<span class="line" data-line-number="6"> </span>
+<span class="line" data-line-number="7"><span style="color:#DCDCAA">"denoise_steps_ms"</span><span style="color:#DCDCAA">:</span><span style="color:#D4D4D4"> [</span></span>
+<span class="line" data-line-number="8"><span style="color:#DCDCAA">    7717.6975486800075,</span></span>
+<span class="line" data-line-number="9"><span style="color:#DCDCAA">    3275.042257271707,</span></span>
+<span class="line" data-line-number="10"><span style="color:#DCDCAA">    3280.2467988803983,</span></span>
+<span class="line" data-line-number="11"><span style="color:#DCDCAA">    3282.276245765388,</span></span>
+<span class="line" data-line-number="12"><span style="color:#DCDCAA">    3292.9044039919972,</span></span>
+<span class="line" data-line-number="13"><span style="color:#DCDCAA">    3286.5121429786086,</span></span>
+<span class="line" data-line-number="14"><span style="color:#DCDCAA">    3273.5616639256477,</span></span>
+<span class="line" data-line-number="15"><span style="color:#DCDCAA">    3271.6003246605396,</span></span>
+<span class="line" data-line-number="16"><span style="color:#DCDCAA">    3275.5934856832027,</span></span>
+<span class="line" data-line-number="17"><span style="color:#DCDCAA">    3291.9061705470085,</span></span>
+<span class="line" data-line-number="18"><span style="color:#DCDCAA">    3293.934356421232,</span></span>
+<span class="line" data-line-number="19"><span style="color:#DCDCAA">    3289.3909830600023,</span></span>
+<span class="line" data-line-number="20"><span style="color:#DCDCAA">    3298.0582248419523,</span></span>
+<span class="line" data-line-number="21"><span style="color:#DCDCAA">    3300.408118404448,</span></span>
+<span class="line" data-line-number="22"><span style="color:#DCDCAA">    3305.0247132778168,</span></span>
+<span class="line" data-line-number="23"><span style="color:#DCDCAA">    3299.3013756349683,</span></span>
+<span class="line" data-line-number="24"><span style="color:#DCDCAA">    3302.0150866359472,</span></span>
+<span class="line" data-line-number="25"><span style="color:#DCDCAA">    3299.040620215237,</span></span>
+<span class="line" data-line-number="26"><span style="color:#DCDCAA">    3291.0401169210672,</span></span>
+<span class="line" data-line-number="27"><span style="color:#DCDCAA">    3296.6199973598123,</span></span>
+<span class="line" data-line-number="28"><span style="color:#DCDCAA">    3290.26335850358,</span></span>
+<span class="line" data-line-number="29"><span style="color:#DCDCAA">    3302.190547809005,</span></span>
+<span class="line" data-line-number="30"><span style="color:#DCDCAA">    3295.942653901875,</span></span>
+<span class="line" data-line-number="31"><span style="color:#DCDCAA">    3297.3329443484545,</span></span>
+<span class="line" data-line-number="32"><span style="color:#DCDCAA">    3297.713255509734,</span></span>
+<span class="line" data-line-number="33"><span style="color:#DCDCAA">    3295.0284238904715,</span></span>
+<span class="line" data-line-number="34"><span style="color:#DCDCAA">    3290.1963284239173</span></span>
+<span class="line" data-line-number="35"><span style="color:#D4D4D4">  ],</span></span></code></pre></figure>
+<h3 id="0x12-根因分析">0x1.2 根因分析<a href="#0x12-根因分析" class="heading-anchor" aria-label="Link to 0x1.2 根因分析">¶</a></h3>
+<p>通过深入分析代码和 profiling 结果，找到了问题的根本原因：</p>
+<ol>
+<li>Wan2.2 使用<strong>双 Transformer 架构</strong>：模型包含 <code>transformer</code> 和 <code>transformer_2</code> 两个大型 Transformer 模块</li>
+<li>启用了 <strong>dit_cpu_offload</strong>：为了节省 GPU 显存，模型权重在加载后被放置在 CPU 上</li>
+<li>第 1 步的开销：在第一次推理时，需要将 <code>transformer</code> 和 <code>transformer_2</code> 的权重从 CPU 拷贝到 GPU，导致第 1 步非常慢，并且第一步还有 torch compile、nccl 初始化等开销</li>
+<li>第 19 步的开销：在第 19 步发生了 <strong>dual-stream 切换</strong>，需要将两个 Transformer 的权重卸载回 CPU，交换它们，然后再拷贝回 GPU</li>
+</ol>
+<p>这种全模型级别的权重搬运导致了巨大的性能损失。</p>
+<h2 id="0x2-解决方案零开销逐层权重卸载">0x2. 解决方案：零开销逐层权重卸载<a href="#0x2-解决方案零开销逐层权重卸载" class="heading-anchor" aria-label="Link to 0x2. 解决方案：零开销逐层权重卸载">¶</a></h2>
+<h3 id="0x21-核心思想">0x2.1 核心思想<a href="#0x21-核心思想" class="heading-anchor" aria-label="Link to 0x2.1 核心思想">¶</a></h3>
+<p>传统的 <code>dit_cpu_offload</code> 是将整个模型的权重一次性在 CPU 和 GPU 之间搬运，这会导致：</p>
+<ul>
+<li>大量的数据传输时间</li>
+<li>GPU 计算和数据传输无法 overlap</li>
+<li>在 dual-stream 切换时需要重新搬运所有权重</li>
+</ul>
+<p><strong>零开销逐层权重卸载</strong>的核心思想是：</p>
+<ol>
+<li><strong>逐层管理</strong>：只在需要时将某一层的权重从 CPU 加载到 GPU</li>
+<li><strong>异步预取</strong>：使用独立的 CUDA Stream 提前预取下一层的权重</li>
+<li><strong>计算与传输 overlap</strong>：当前层在计算时，下一层的权重已经在异步加载</li>
+<li><strong>及时释放</strong>：当前层计算完成后，立即释放其 GPU 显存</li>
+<li><strong>Pin Memory 优化</strong>：将 CPU 上的权重 pin 到物理内存，避免页面交换，这对于实现零开销至关重要</li>
+</ol>
+<p>这样可以实现零额外开销：数据传输完全被计算隐藏，不会增加总体推理时间。</p>
+<h3 id="0x22-实现细节">0x2.2 实现细节<a href="#0x22-实现细节" class="heading-anchor" aria-label="Link to 0x2.2 实现细节">¶</a></h3>
+<h4 id="layerwiseoffloadmanager-核心类">LayerwiseOffloadManager 核心类<a href="#layerwiseoffloadmanager-核心类" class="heading-anchor" aria-label="Link to LayerwiseOffloadManager 核心类">¶</a></h4>
+<p>实现了一个轻量级的逐层 CPU 卸载管理器，核心功能包括：</p>
+<figure class="code-block not-prose" data-language="python" data-raw-code="class LayerwiseOffloadManager:
+    &#x22;&#x22;&#x22;A lightweight layerwise CPU offload manager.
+
+    This utility offloads per-layer parameters/buffers from GPU to CPU, and
+    supports async H2D prefetch using a dedicated CUDA stream.
+    &#x22;&#x22;&#x22;
+
+    def __init__(
+        self,
+        model: torch.nn.Module,
+        *,
+        module_list_attr: str,  # 例如 &#x22;blocks&#x22;
+        num_layers: int,
+        enabled: bool,
+        pin_cpu_memory: bool = True,
+        auto_initialize: bool = False,
+    ):
+        # 创建独立的CUDA Stream用于异步拷贝
+        self.copy_stream = torch.cuda.Stream() if self.enabled else None
+        # 存储CPU上的权重
+        self._cpu_weights: Dict[int, Dict[str, torch.Tensor]] = {}
+        # 跟踪哪些层在GPU上
+        self._gpu_layers: Dict[int, Set[str]] = {}" data-line-numbers="true"><div class="code-block__header"><div class="code-block__title">python</div><button type="button" class="code-block__copy" aria-label="复制代码">Copy</button></div><pre class="code-block__pre" tabindex="0" data-theme="light" data-language="python"><code data-language="python"><span class="line" data-line-number="1"><span style="color:#D73A49">class</span><span style="color:#6F42C1"> LayerwiseOffloadManager</span><span style="color:#24292E">:</span></span>
+<span class="line" data-line-number="2"><span style="color:#032F62">    """A lightweight layerwise CPU offload manager.</span></span>
+<span class="line" data-line-number="3"> </span>
+<span class="line" data-line-number="4"><span style="color:#032F62">    This utility offloads per-layer parameters/buffers from GPU to CPU, and</span></span>
+<span class="line" data-line-number="5"><span style="color:#032F62">    supports async H2D prefetch using a dedicated CUDA stream.</span></span>
+<span class="line" data-line-number="6"><span style="color:#032F62">    """</span></span>
+<span class="line" data-line-number="7"> </span>
+<span class="line" data-line-number="8"><span style="color:#D73A49">    def</span><span style="color:#005CC5"> __init__</span><span style="color:#24292E">(</span></span>
+<span class="line" data-line-number="9"><span style="color:#24292E">        self,</span></span>
+<span class="line" data-line-number="10"><span style="color:#24292E">        model: torch.nn.Module,</span></span>
+<span class="line" data-line-number="11"><span style="color:#D73A49">        *</span><span style="color:#24292E">,</span></span>
+<span class="line" data-line-number="12"><span style="color:#24292E">        module_list_attr: </span><span style="color:#005CC5">str</span><span style="color:#24292E">,  </span><span style="color:#6A737D"># 例如 "blocks"</span></span>
+<span class="line" data-line-number="13"><span style="color:#24292E">        num_layers: </span><span style="color:#005CC5">int</span><span style="color:#24292E">,</span></span>
+<span class="line" data-line-number="14"><span style="color:#24292E">        enabled: </span><span style="color:#005CC5">bool</span><span style="color:#24292E">,</span></span>
+<span class="line" data-line-number="15"><span style="color:#24292E">        pin_cpu_memory: </span><span style="color:#005CC5">bool</span><span style="color:#D73A49"> =</span><span style="color:#005CC5"> True</span><span style="color:#24292E">,</span></span>
+<span class="line" data-line-number="16"><span style="color:#24292E">        auto_initialize: </span><span style="color:#005CC5">bool</span><span style="color:#D73A49"> =</span><span style="color:#005CC5"> False</span><span style="color:#24292E">,</span></span>
+<span class="line" data-line-number="17"><span style="color:#24292E">    ):</span></span>
+<span class="line" data-line-number="18"><span style="color:#6A737D">        # 创建独立的CUDA Stream用于异步拷贝</span></span>
+<span class="line" data-line-number="19"><span style="color:#005CC5">        self</span><span style="color:#24292E">.copy_stream </span><span style="color:#D73A49">=</span><span style="color:#24292E"> torch.cuda.Stream() </span><span style="color:#D73A49">if</span><span style="color:#005CC5"> self</span><span style="color:#24292E">.enabled </span><span style="color:#D73A49">else</span><span style="color:#005CC5"> None</span></span>
+<span class="line" data-line-number="20"><span style="color:#6A737D">        # 存储CPU上的权重</span></span>
+<span class="line" data-line-number="21"><span style="color:#005CC5">        self</span><span style="color:#24292E">._cpu_weights: Dict[</span><span style="color:#005CC5">int</span><span style="color:#24292E">, Dict[</span><span style="color:#005CC5">str</span><span style="color:#24292E">, torch.Tensor]] </span><span style="color:#D73A49">=</span><span style="color:#24292E"> {}</span></span>
+<span class="line" data-line-number="22"><span style="color:#6A737D">        # 跟踪哪些层在GPU上</span></span>
+<span class="line" data-line-number="23"><span style="color:#005CC5">        self</span><span style="color:#24292E">._gpu_layers: Dict[</span><span style="color:#005CC5">int</span><span style="color:#24292E">, Set[</span><span style="color:#005CC5">str</span><span style="color:#24292E">]] </span><span style="color:#D73A49">=</span><span style="color:#24292E"> {}</span></span></code></pre><pre class="code-block__pre" tabindex="0" data-theme="dark" data-language="python"><code data-language="python"><span class="line" data-line-number="1"><span style="color:#569CD6">class</span><span style="color:#4EC9B0"> LayerwiseOffloadManager</span><span style="color:#D4D4D4">:</span></span>
+<span class="line" data-line-number="2"><span style="color:#CE9178">    """A lightweight layerwise CPU offload manager.</span></span>
+<span class="line" data-line-number="3"> </span>
+<span class="line" data-line-number="4"><span style="color:#CE9178">    This utility offloads per-layer parameters/buffers from GPU to CPU, and</span></span>
+<span class="line" data-line-number="5"><span style="color:#CE9178">    supports async H2D prefetch using a dedicated CUDA stream.</span></span>
+<span class="line" data-line-number="6"><span style="color:#CE9178">    """</span></span>
+<span class="line" data-line-number="7"> </span>
+<span class="line" data-line-number="8"><span style="color:#569CD6">    def</span><span style="color:#DCDCAA"> __init__</span><span style="color:#D4D4D4">(</span></span>
+<span class="line" data-line-number="9"><span style="color:#9CDCFE">        self</span><span style="color:#D4D4D4">,</span></span>
+<span class="line" data-line-number="10"><span style="color:#9CDCFE">        model</span><span style="color:#D4D4D4">: torch.nn.Module,</span></span>
+<span class="line" data-line-number="11"><span style="color:#D4D4D4">        *,</span></span>
+<span class="line" data-line-number="12"><span style="color:#9CDCFE">        module_list_attr</span><span style="color:#D4D4D4">: </span><span style="color:#4EC9B0">str</span><span style="color:#D4D4D4">,  </span><span style="color:#6A9955"># 例如 "blocks"</span></span>
+<span class="line" data-line-number="13"><span style="color:#9CDCFE">        num_layers</span><span style="color:#D4D4D4">: </span><span style="color:#4EC9B0">int</span><span style="color:#D4D4D4">,</span></span>
+<span class="line" data-line-number="14"><span style="color:#9CDCFE">        enabled</span><span style="color:#D4D4D4">: </span><span style="color:#4EC9B0">bool</span><span style="color:#D4D4D4">,</span></span>
+<span class="line" data-line-number="15"><span style="color:#9CDCFE">        pin_cpu_memory</span><span style="color:#D4D4D4">: </span><span style="color:#4EC9B0">bool</span><span style="color:#D4D4D4"> = </span><span style="color:#569CD6">True</span><span style="color:#D4D4D4">,</span></span>
+<span class="line" data-line-number="16"><span style="color:#9CDCFE">        auto_initialize</span><span style="color:#D4D4D4">: </span><span style="color:#4EC9B0">bool</span><span style="color:#D4D4D4"> = </span><span style="color:#569CD6">False</span><span style="color:#D4D4D4">,</span></span>
+<span class="line" data-line-number="17"><span style="color:#D4D4D4">    ):</span></span>
+<span class="line" data-line-number="18"><span style="color:#6A9955">        # 创建独立的CUDA Stream用于异步拷贝</span></span>
+<span class="line" data-line-number="19"><span style="color:#569CD6">        self</span><span style="color:#D4D4D4">.copy_stream = torch.cuda.Stream() </span><span style="color:#C586C0">if</span><span style="color:#569CD6"> self</span><span style="color:#D4D4D4">.enabled </span><span style="color:#C586C0">else</span><span style="color:#569CD6"> None</span></span>
+<span class="line" data-line-number="20"><span style="color:#6A9955">        # 存储CPU上的权重</span></span>
+<span class="line" data-line-number="21"><span style="color:#569CD6">        self</span><span style="color:#D4D4D4">._cpu_weights: Dict[</span><span style="color:#4EC9B0">int</span><span style="color:#D4D4D4">, Dict[</span><span style="color:#4EC9B0">str</span><span style="color:#D4D4D4">, torch.Tensor]] = {}</span></span>
+<span class="line" data-line-number="22"><span style="color:#6A9955">        # 跟踪哪些层在GPU上</span></span>
+<span class="line" data-line-number="23"><span style="color:#569CD6">        self</span><span style="color:#D4D4D4">._gpu_layers: Dict[</span><span style="color:#4EC9B0">int</span><span style="color:#D4D4D4">, Set[</span><span style="color:#4EC9B0">str</span><span style="color:#D4D4D4">]] = {}</span></span></code></pre></figure>
+<h4 id="初始化将所有层权重卸载到-cpu">初始化：将所有层权重卸载到 CPU<a href="#初始化将所有层权重卸载到-cpu" class="heading-anchor" aria-label="Link to 初始化：将所有层权重卸载到 CPU">¶</a></h4>
+<figure class="code-block not-prose" data-language="python" data-raw-code="def initialize(self) -> None:
+    if not self.enabled:
+        return
+
+    # 遍历所有参数和buffer
+    for name, param in self._named_parameters.items():
+        layer_idx = self._match_layer_idx(name)
+        if layer_idx is None or layer_idx >= self.num_layers:
+            continue
+        # 卸载到CPU并pin memory
+        self._offload_tensor(name, param, layer_idx)
+
+    # 预取第0层
+    self.prefetch_layer(0, non_blocking=False)" data-line-numbers="true"><div class="code-block__header"><div class="code-block__title">python</div><button type="button" class="code-block__copy" aria-label="复制代码">Copy</button></div><pre class="code-block__pre" tabindex="0" data-theme="light" data-language="python"><code data-language="python"><span class="line" data-line-number="1"><span style="color:#D73A49">def</span><span style="color:#6F42C1"> initialize</span><span style="color:#24292E">(self) -> </span><span style="color:#005CC5">None</span><span style="color:#24292E">:</span></span>
+<span class="line" data-line-number="2"><span style="color:#D73A49">    if</span><span style="color:#D73A49"> not</span><span style="color:#005CC5"> self</span><span style="color:#24292E">.enabled:</span></span>
+<span class="line" data-line-number="3"><span style="color:#D73A49">        return</span></span>
+<span class="line" data-line-number="4"> </span>
+<span class="line" data-line-number="5"><span style="color:#6A737D">    # 遍历所有参数和buffer</span></span>
+<span class="line" data-line-number="6"><span style="color:#D73A49">    for</span><span style="color:#24292E"> name, param </span><span style="color:#D73A49">in</span><span style="color:#005CC5"> self</span><span style="color:#24292E">._named_parameters.items():</span></span>
+<span class="line" data-line-number="7"><span style="color:#24292E">        layer_idx </span><span style="color:#D73A49">=</span><span style="color:#005CC5"> self</span><span style="color:#24292E">._match_layer_idx(name)</span></span>
+<span class="line" data-line-number="8"><span style="color:#D73A49">        if</span><span style="color:#24292E"> layer_idx </span><span style="color:#D73A49">is</span><span style="color:#005CC5"> None</span><span style="color:#D73A49"> or</span><span style="color:#24292E"> layer_idx </span><span style="color:#D73A49">>=</span><span style="color:#005CC5"> self</span><span style="color:#24292E">.num_layers:</span></span>
+<span class="line" data-line-number="9"><span style="color:#D73A49">            continue</span></span>
+<span class="line" data-line-number="10"><span style="color:#6A737D">        # 卸载到CPU并pin memory</span></span>
+<span class="line" data-line-number="11"><span style="color:#005CC5">        self</span><span style="color:#24292E">._offload_tensor(name, param, layer_idx)</span></span>
+<span class="line" data-line-number="12"> </span>
+<span class="line" data-line-number="13"><span style="color:#6A737D">    # 预取第0层</span></span>
+<span class="line" data-line-number="14"><span style="color:#005CC5">    self</span><span style="color:#24292E">.prefetch_layer(</span><span style="color:#005CC5">0</span><span style="color:#24292E">, </span><span style="color:#E36209">non_blocking</span><span style="color:#D73A49">=</span><span style="color:#005CC5">False</span><span style="color:#24292E">)</span></span></code></pre><pre class="code-block__pre" tabindex="0" data-theme="dark" data-language="python"><code data-language="python"><span class="line" data-line-number="1"><span style="color:#569CD6">def</span><span style="color:#DCDCAA"> initialize</span><span style="color:#D4D4D4">(</span><span style="color:#9CDCFE">self</span><span style="color:#D4D4D4">) -> </span><span style="color:#569CD6">None</span><span style="color:#D4D4D4">:</span></span>
+<span class="line" data-line-number="2"><span style="color:#C586C0">    if</span><span style="color:#569CD6"> not</span><span style="color:#569CD6"> self</span><span style="color:#D4D4D4">.enabled:</span></span>
+<span class="line" data-line-number="3"><span style="color:#C586C0">        return</span></span>
+<span class="line" data-line-number="4"> </span>
+<span class="line" data-line-number="5"><span style="color:#6A9955">    # 遍历所有参数和buffer</span></span>
+<span class="line" data-line-number="6"><span style="color:#C586C0">    for</span><span style="color:#D4D4D4"> name, param </span><span style="color:#C586C0">in</span><span style="color:#569CD6"> self</span><span style="color:#D4D4D4">._named_parameters.items():</span></span>
+<span class="line" data-line-number="7"><span style="color:#D4D4D4">        layer_idx = </span><span style="color:#569CD6">self</span><span style="color:#D4D4D4">._match_layer_idx(name)</span></span>
+<span class="line" data-line-number="8"><span style="color:#C586C0">        if</span><span style="color:#D4D4D4"> layer_idx </span><span style="color:#569CD6">is</span><span style="color:#569CD6"> None</span><span style="color:#569CD6"> or</span><span style="color:#D4D4D4"> layer_idx >= </span><span style="color:#569CD6">self</span><span style="color:#D4D4D4">.num_layers:</span></span>
+<span class="line" data-line-number="9"><span style="color:#C586C0">            continue</span></span>
+<span class="line" data-line-number="10"><span style="color:#6A9955">        # 卸载到CPU并pin memory</span></span>
+<span class="line" data-line-number="11"><span style="color:#569CD6">        self</span><span style="color:#D4D4D4">._offload_tensor(name, param, layer_idx)</span></span>
+<span class="line" data-line-number="12"> </span>
+<span class="line" data-line-number="13"><span style="color:#6A9955">    # 预取第0层</span></span>
+<span class="line" data-line-number="14"><span style="color:#569CD6">    self</span><span style="color:#D4D4D4">.prefetch_layer(</span><span style="color:#B5CEA8">0</span><span style="color:#D4D4D4">, </span><span style="color:#9CDCFE">non_blocking</span><span style="color:#D4D4D4">=</span><span style="color:#569CD6">False</span><span style="color:#D4D4D4">)</span></span></code></pre></figure>
+<p>这里有个关键点是 <code>_offload_tensor</code> 方法中会将 CPU 上的 tensor 进行 pin memory 操作：</p>
+<figure class="code-block not-prose" data-language="python" data-raw-code="cpu_weight = tensor.detach().to(&#x22;cpu&#x22;)
+if self.pin_cpu_memory:
+    cpu_weight = cpu_weight.pin_memory()  # 锁定物理内存" data-line-numbers="true"><div class="code-block__header"><div class="code-block__title">python</div><button type="button" class="code-block__copy" aria-label="复制代码">Copy</button></div><pre class="code-block__pre" tabindex="0" data-theme="light" data-language="python"><code data-language="python"><span class="line" data-line-number="1"><span style="color:#24292E">cpu_weight </span><span style="color:#D73A49">=</span><span style="color:#24292E"> tensor.detach().to(</span><span style="color:#032F62">"cpu"</span><span style="color:#24292E">)</span></span>
+<span class="line" data-line-number="2"><span style="color:#D73A49">if</span><span style="color:#005CC5"> self</span><span style="color:#24292E">.pin_cpu_memory:</span></span>
+<span class="line" data-line-number="3"><span style="color:#24292E">    cpu_weight </span><span style="color:#D73A49">=</span><span style="color:#24292E"> cpu_weight.pin_memory()  </span><span style="color:#6A737D"># 锁定物理内存</span></span></code></pre><pre class="code-block__pre" tabindex="0" data-theme="dark" data-language="python"><code data-language="python"><span class="line" data-line-number="1"><span style="color:#D4D4D4">cpu_weight = tensor.detach().to(</span><span style="color:#CE9178">"cpu"</span><span style="color:#D4D4D4">)</span></span>
+<span class="line" data-line-number="2"><span style="color:#C586C0">if</span><span style="color:#569CD6"> self</span><span style="color:#D4D4D4">.pin_cpu_memory:</span></span>
+<span class="line" data-line-number="3"><span style="color:#D4D4D4">    cpu_weight = cpu_weight.pin_memory()  </span><span style="color:#6A9955"># 锁定物理内存</span></span></code></pre></figure>
+<p><strong>Pin memory</strong> 的作用是将内存页锁定在物理内存中，避免被操作系统 swap 到磁盘。这样做有两个好处：</p>
+<ol>
+<li><strong>异步拷贝</strong>（non_blocking=True）只对 pinned memory 有效，否则会退化为同步拷贝</li>
+<li><strong>DMA</strong>（Direct Memory Access）可以直接访问 pinned memory，传输速度更快</li>
+</ol>
+<p>在 Wan2.2 这种大模型场景下，如果不使用 pin memory，异步拷贝会失效，计算和传输就无法 overlap，也就谈不上零开销了。</p>
+<h4 id="异步预取提前加载下一层">异步预取：提前加载下一层<a href="#异步预取提前加载下一层" class="heading-anchor" aria-label="Link to 异步预取：提前加载下一层">¶</a></h4>
+<figure class="code-block not-prose" data-language="python" data-raw-code="def prefetch_layer(self, layer_idx: int, non_blocking: bool = True) -> None:
+    if not self.enabled:
+        return
+
+    # 等待主stream完成当前计算
+    self.copy_stream.wait_stream(torch.cuda.current_stream())
+
+    # 在独立stream中异步拷贝权重
+    for name, cpu_weight in self._cpu_weights[layer_idx].items():
+        gpu_weight = torch.empty(
+            cpu_weight.shape,
+            dtype=self._cpu_dtypes[layer_idx][name],
+            device=self.device,
+        )
+        with torch.cuda.stream(self.copy_stream):
+            gpu_weight.copy_(cpu_weight, non_blocking=non_blocking)
+        target.data = gpu_weight" data-line-numbers="true"><div class="code-block__header"><div class="code-block__title">python</div><button type="button" class="code-block__copy" aria-label="复制代码">Copy</button></div><pre class="code-block__pre" tabindex="0" data-theme="light" data-language="python"><code data-language="python"><span class="line" data-line-number="1"><span style="color:#D73A49">def</span><span style="color:#6F42C1"> prefetch_layer</span><span style="color:#24292E">(self, layer_idx: </span><span style="color:#005CC5">int</span><span style="color:#24292E">, non_blocking: </span><span style="color:#005CC5">bool</span><span style="color:#D73A49"> =</span><span style="color:#005CC5"> True</span><span style="color:#24292E">) -> </span><span style="color:#005CC5">None</span><span style="color:#24292E">:</span></span>
+<span class="line" data-line-number="2"><span style="color:#D73A49">    if</span><span style="color:#D73A49"> not</span><span style="color:#005CC5"> self</span><span style="color:#24292E">.enabled:</span></span>
+<span class="line" data-line-number="3"><span style="color:#D73A49">        return</span></span>
+<span class="line" data-line-number="4"> </span>
+<span class="line" data-line-number="5"><span style="color:#6A737D">    # 等待主stream完成当前计算</span></span>
+<span class="line" data-line-number="6"><span style="color:#005CC5">    self</span><span style="color:#24292E">.copy_stream.wait_stream(torch.cuda.current_stream())</span></span>
+<span class="line" data-line-number="7"> </span>
+<span class="line" data-line-number="8"><span style="color:#6A737D">    # 在独立stream中异步拷贝权重</span></span>
+<span class="line" data-line-number="9"><span style="color:#D73A49">    for</span><span style="color:#24292E"> name, cpu_weight </span><span style="color:#D73A49">in</span><span style="color:#005CC5"> self</span><span style="color:#24292E">._cpu_weights[layer_idx].items():</span></span>
+<span class="line" data-line-number="10"><span style="color:#24292E">        gpu_weight </span><span style="color:#D73A49">=</span><span style="color:#24292E"> torch.empty(</span></span>
+<span class="line" data-line-number="11"><span style="color:#24292E">            cpu_weight.shape,</span></span>
+<span class="line" data-line-number="12"><span style="color:#E36209">            dtype</span><span style="color:#D73A49">=</span><span style="color:#005CC5">self</span><span style="color:#24292E">._cpu_dtypes[layer_idx][name],</span></span>
+<span class="line" data-line-number="13"><span style="color:#E36209">            device</span><span style="color:#D73A49">=</span><span style="color:#005CC5">self</span><span style="color:#24292E">.device,</span></span>
+<span class="line" data-line-number="14"><span style="color:#24292E">        )</span></span>
+<span class="line" data-line-number="15"><span style="color:#D73A49">        with</span><span style="color:#24292E"> torch.cuda.stream(</span><span style="color:#005CC5">self</span><span style="color:#24292E">.copy_stream):</span></span>
+<span class="line" data-line-number="16"><span style="color:#24292E">            gpu_weight.copy_(cpu_weight, </span><span style="color:#E36209">non_blocking</span><span style="color:#D73A49">=</span><span style="color:#24292E">non_blocking)</span></span>
+<span class="line" data-line-number="17"><span style="color:#24292E">        target.data </span><span style="color:#D73A49">=</span><span style="color:#24292E"> gpu_weight</span></span></code></pre><pre class="code-block__pre" tabindex="0" data-theme="dark" data-language="python"><code data-language="python"><span class="line" data-line-number="1"><span style="color:#569CD6">def</span><span style="color:#DCDCAA"> prefetch_layer</span><span style="color:#D4D4D4">(</span><span style="color:#9CDCFE">self</span><span style="color:#D4D4D4">, </span><span style="color:#9CDCFE">layer_idx</span><span style="color:#D4D4D4">: </span><span style="color:#4EC9B0">int</span><span style="color:#D4D4D4">, </span><span style="color:#9CDCFE">non_blocking</span><span style="color:#D4D4D4">: </span><span style="color:#4EC9B0">bool</span><span style="color:#D4D4D4"> = </span><span style="color:#569CD6">True</span><span style="color:#D4D4D4">) -> </span><span style="color:#569CD6">None</span><span style="color:#D4D4D4">:</span></span>
+<span class="line" data-line-number="2"><span style="color:#C586C0">    if</span><span style="color:#569CD6"> not</span><span style="color:#569CD6"> self</span><span style="color:#D4D4D4">.enabled:</span></span>
+<span class="line" data-line-number="3"><span style="color:#C586C0">        return</span></span>
+<span class="line" data-line-number="4"> </span>
+<span class="line" data-line-number="5"><span style="color:#6A9955">    # 等待主stream完成当前计算</span></span>
+<span class="line" data-line-number="6"><span style="color:#569CD6">    self</span><span style="color:#D4D4D4">.copy_stream.wait_stream(torch.cuda.current_stream())</span></span>
+<span class="line" data-line-number="7"> </span>
+<span class="line" data-line-number="8"><span style="color:#6A9955">    # 在独立stream中异步拷贝权重</span></span>
+<span class="line" data-line-number="9"><span style="color:#C586C0">    for</span><span style="color:#D4D4D4"> name, cpu_weight </span><span style="color:#C586C0">in</span><span style="color:#569CD6"> self</span><span style="color:#D4D4D4">._cpu_weights[layer_idx].items():</span></span>
+<span class="line" data-line-number="10"><span style="color:#D4D4D4">        gpu_weight = torch.empty(</span></span>
+<span class="line" data-line-number="11"><span style="color:#D4D4D4">            cpu_weight.shape,</span></span>
+<span class="line" data-line-number="12"><span style="color:#9CDCFE">            dtype</span><span style="color:#D4D4D4">=</span><span style="color:#569CD6">self</span><span style="color:#D4D4D4">._cpu_dtypes[layer_idx][name],</span></span>
+<span class="line" data-line-number="13"><span style="color:#9CDCFE">            device</span><span style="color:#D4D4D4">=</span><span style="color:#569CD6">self</span><span style="color:#D4D4D4">.device,</span></span>
+<span class="line" data-line-number="14"><span style="color:#D4D4D4">        )</span></span>
+<span class="line" data-line-number="15"><span style="color:#C586C0">        with</span><span style="color:#D4D4D4"> torch.cuda.stream(</span><span style="color:#569CD6">self</span><span style="color:#D4D4D4">.copy_stream):</span></span>
+<span class="line" data-line-number="16"><span style="color:#D4D4D4">            gpu_weight.copy_(cpu_weight, </span><span style="color:#9CDCFE">non_blocking</span><span style="color:#D4D4D4">=non_blocking)</span></span>
+<span class="line" data-line-number="17"><span style="color:#D4D4D4">        target.data = gpu_weight</span></span></code></pre></figure>
+<h4 id="层级作用域优雅的使用方式">层级作用域：优雅的使用方式<a href="#层级作用域优雅的使用方式" class="heading-anchor" aria-label="Link to 层级作用域：优雅的使用方式">¶</a></h4>
+<figure class="code-block not-prose" data-language="python" data-raw-code="@contextmanager
+def layer_scope(
+    self,
+    *,
+    prefetch_layer_idx: int | None,
+    release_layer_idx: int | None,
+    non_blocking: bool = True,
+):
+    &#x22;&#x22;&#x22;在进入时预取下一层,退出时等待拷贝完成并释放当前层&#x22;&#x22;&#x22;
+    if self.enabled and prefetch_layer_idx is not None:
+        self.prefetch_layer(prefetch_layer_idx, non_blocking=non_blocking)
+    try:
+        yield
+    finally:
+        if self.enabled and self.copy_stream is not None:
+            # 等待异步拷贝完成
+            torch.cuda.current_stream().wait_stream(self.copy_stream)
+        if self.enabled and release_layer_idx is not None:
+            self.release_layer(release_layer_idx)" data-line-numbers="true"><div class="code-block__header"><div class="code-block__title">python</div><button type="button" class="code-block__copy" aria-label="复制代码">Copy</button></div><pre class="code-block__pre" tabindex="0" data-theme="light" data-language="python"><code data-language="python"><span class="line" data-line-number="1"><span style="color:#6F42C1">@contextmanager</span></span>
+<span class="line" data-line-number="2"><span style="color:#D73A49">def</span><span style="color:#6F42C1"> layer_scope</span><span style="color:#24292E">(</span></span>
+<span class="line" data-line-number="3"><span style="color:#24292E">    self,</span></span>
+<span class="line" data-line-number="4"><span style="color:#D73A49">    *</span><span style="color:#24292E">,</span></span>
+<span class="line" data-line-number="5"><span style="color:#24292E">    prefetch_layer_idx: </span><span style="color:#005CC5">int</span><span style="color:#D73A49"> |</span><span style="color:#005CC5"> None</span><span style="color:#24292E">,</span></span>
+<span class="line" data-line-number="6"><span style="color:#24292E">    release_layer_idx: </span><span style="color:#005CC5">int</span><span style="color:#D73A49"> |</span><span style="color:#005CC5"> None</span><span style="color:#24292E">,</span></span>
+<span class="line" data-line-number="7"><span style="color:#24292E">    non_blocking: </span><span style="color:#005CC5">bool</span><span style="color:#D73A49"> =</span><span style="color:#005CC5"> True</span><span style="color:#24292E">,</span></span>
+<span class="line" data-line-number="8"><span style="color:#24292E">):</span></span>
+<span class="line" data-line-number="9"><span style="color:#032F62">    """在进入时预取下一层,退出时等待拷贝完成并释放当前层"""</span></span>
+<span class="line" data-line-number="10"><span style="color:#D73A49">    if</span><span style="color:#005CC5"> self</span><span style="color:#24292E">.enabled </span><span style="color:#D73A49">and</span><span style="color:#24292E"> prefetch_layer_idx </span><span style="color:#D73A49">is</span><span style="color:#D73A49"> not</span><span style="color:#005CC5"> None</span><span style="color:#24292E">:</span></span>
+<span class="line" data-line-number="11"><span style="color:#005CC5">        self</span><span style="color:#24292E">.prefetch_layer(prefetch_layer_idx, </span><span style="color:#E36209">non_blocking</span><span style="color:#D73A49">=</span><span style="color:#24292E">non_blocking)</span></span>
+<span class="line" data-line-number="12"><span style="color:#D73A49">    try</span><span style="color:#24292E">:</span></span>
+<span class="line" data-line-number="13"><span style="color:#D73A49">        yield</span></span>
+<span class="line" data-line-number="14"><span style="color:#D73A49">    finally</span><span style="color:#24292E">:</span></span>
+<span class="line" data-line-number="15"><span style="color:#D73A49">        if</span><span style="color:#005CC5"> self</span><span style="color:#24292E">.enabled </span><span style="color:#D73A49">and</span><span style="color:#005CC5"> self</span><span style="color:#24292E">.copy_stream </span><span style="color:#D73A49">is</span><span style="color:#D73A49"> not</span><span style="color:#005CC5"> None</span><span style="color:#24292E">:</span></span>
+<span class="line" data-line-number="16"><span style="color:#6A737D">            # 等待异步拷贝完成</span></span>
+<span class="line" data-line-number="17"><span style="color:#24292E">            torch.cuda.current_stream().wait_stream(</span><span style="color:#005CC5">self</span><span style="color:#24292E">.copy_stream)</span></span>
+<span class="line" data-line-number="18"><span style="color:#D73A49">        if</span><span style="color:#005CC5"> self</span><span style="color:#24292E">.enabled </span><span style="color:#D73A49">and</span><span style="color:#24292E"> release_layer_idx </span><span style="color:#D73A49">is</span><span style="color:#D73A49"> not</span><span style="color:#005CC5"> None</span><span style="color:#24292E">:</span></span>
+<span class="line" data-line-number="19"><span style="color:#005CC5">            self</span><span style="color:#24292E">.release_layer(release_layer_idx)</span></span></code></pre><pre class="code-block__pre" tabindex="0" data-theme="dark" data-language="python"><code data-language="python"><span class="line" data-line-number="1"><span style="color:#DCDCAA">@contextmanager</span></span>
+<span class="line" data-line-number="2"><span style="color:#569CD6">def</span><span style="color:#DCDCAA"> layer_scope</span><span style="color:#D4D4D4">(</span></span>
+<span class="line" data-line-number="3"><span style="color:#9CDCFE">    self</span><span style="color:#D4D4D4">,</span></span>
+<span class="line" data-line-number="4"><span style="color:#D4D4D4">    *,</span></span>
+<span class="line" data-line-number="5"><span style="color:#9CDCFE">    prefetch_layer_idx</span><span style="color:#D4D4D4">: </span><span style="color:#4EC9B0">int</span><span style="color:#D4D4D4"> | </span><span style="color:#569CD6">None</span><span style="color:#D4D4D4">,</span></span>
+<span class="line" data-line-number="6"><span style="color:#9CDCFE">    release_layer_idx</span><span style="color:#D4D4D4">: </span><span style="color:#4EC9B0">int</span><span style="color:#D4D4D4"> | </span><span style="color:#569CD6">None</span><span style="color:#D4D4D4">,</span></span>
+<span class="line" data-line-number="7"><span style="color:#9CDCFE">    non_blocking</span><span style="color:#D4D4D4">: </span><span style="color:#4EC9B0">bool</span><span style="color:#D4D4D4"> = </span><span style="color:#569CD6">True</span><span style="color:#D4D4D4">,</span></span>
+<span class="line" data-line-number="8"><span style="color:#D4D4D4">):</span></span>
+<span class="line" data-line-number="9"><span style="color:#CE9178">    """在进入时预取下一层,退出时等待拷贝完成并释放当前层"""</span></span>
+<span class="line" data-line-number="10"><span style="color:#C586C0">    if</span><span style="color:#569CD6"> self</span><span style="color:#D4D4D4">.enabled </span><span style="color:#569CD6">and</span><span style="color:#D4D4D4"> prefetch_layer_idx </span><span style="color:#569CD6">is</span><span style="color:#569CD6"> not</span><span style="color:#569CD6"> None</span><span style="color:#D4D4D4">:</span></span>
+<span class="line" data-line-number="11"><span style="color:#569CD6">        self</span><span style="color:#D4D4D4">.prefetch_layer(prefetch_layer_idx, </span><span style="color:#9CDCFE">non_blocking</span><span style="color:#D4D4D4">=non_blocking)</span></span>
+<span class="line" data-line-number="12"><span style="color:#C586C0">    try</span><span style="color:#D4D4D4">:</span></span>
+<span class="line" data-line-number="13"><span style="color:#C586C0">        yield</span></span>
+<span class="line" data-line-number="14"><span style="color:#C586C0">    finally</span><span style="color:#D4D4D4">:</span></span>
+<span class="line" data-line-number="15"><span style="color:#C586C0">        if</span><span style="color:#569CD6"> self</span><span style="color:#D4D4D4">.enabled </span><span style="color:#569CD6">and</span><span style="color:#569CD6"> self</span><span style="color:#D4D4D4">.copy_stream </span><span style="color:#569CD6">is</span><span style="color:#569CD6"> not</span><span style="color:#569CD6"> None</span><span style="color:#D4D4D4">:</span></span>
+<span class="line" data-line-number="16"><span style="color:#6A9955">            # 等待异步拷贝完成</span></span>
+<span class="line" data-line-number="17"><span style="color:#D4D4D4">            torch.cuda.current_stream().wait_stream(</span><span style="color:#569CD6">self</span><span style="color:#D4D4D4">.copy_stream)</span></span>
+<span class="line" data-line-number="18"><span style="color:#C586C0">        if</span><span style="color:#569CD6"> self</span><span style="color:#D4D4D4">.enabled </span><span style="color:#569CD6">and</span><span style="color:#D4D4D4"> release_layer_idx </span><span style="color:#569CD6">is</span><span style="color:#569CD6"> not</span><span style="color:#569CD6"> None</span><span style="color:#D4D4D4">:</span></span>
+<span class="line" data-line-number="19"><span style="color:#569CD6">            self</span><span style="color:#D4D4D4">.release_layer(release_layer_idx)</span></span></code></pre></figure>
+<h4 id="在模型-forward-中使用">在模型 forward 中使用<a href="#在模型-forward-中使用" class="heading-anchor" aria-label="Link to 在模型 forward 中使用">¶</a></h4>
+<p>在 Wan2.2 的 Transformer forward 中集成：</p>
+<figure class="code-block not-prose" data-language="python" data-raw-code="offload_mgr = getattr(self, &#x22;_layerwise_offload_manager&#x22;, None)
+if offload_mgr is not None and getattr(offload_mgr, &#x22;enabled&#x22;, False):
+    for i, block in enumerate(self.blocks):
+        with offload_mgr.layer_scope(
+            prefetch_layer_idx=i + 1,  # 预取下一层
+            release_layer_idx=i,        # 释放当前层
+            non_blocking=True,
+        ):
+            hidden_states = block(
+                hidden_states,
+                encoder_hidden_states,
+                timestep_proj,
+                freqs_cis,
+            )" data-line-numbers="true"><div class="code-block__header"><div class="code-block__title">python</div><button type="button" class="code-block__copy" aria-label="复制代码">Copy</button></div><pre class="code-block__pre" tabindex="0" data-theme="light" data-language="python"><code data-language="python"><span class="line" data-line-number="1"><span style="color:#24292E">offload_mgr </span><span style="color:#D73A49">=</span><span style="color:#005CC5"> getattr</span><span style="color:#24292E">(</span><span style="color:#005CC5">self</span><span style="color:#24292E">, </span><span style="color:#032F62">"_layerwise_offload_manager"</span><span style="color:#24292E">, </span><span style="color:#005CC5">None</span><span style="color:#24292E">)</span></span>
+<span class="line" data-line-number="2"><span style="color:#D73A49">if</span><span style="color:#24292E"> offload_mgr </span><span style="color:#D73A49">is</span><span style="color:#D73A49"> not</span><span style="color:#005CC5"> None</span><span style="color:#D73A49"> and</span><span style="color:#005CC5"> getattr</span><span style="color:#24292E">(offload_mgr, </span><span style="color:#032F62">"enabled"</span><span style="color:#24292E">, </span><span style="color:#005CC5">False</span><span style="color:#24292E">):</span></span>
+<span class="line" data-line-number="3"><span style="color:#D73A49">    for</span><span style="color:#24292E"> i, block </span><span style="color:#D73A49">in</span><span style="color:#005CC5"> enumerate</span><span style="color:#24292E">(</span><span style="color:#005CC5">self</span><span style="color:#24292E">.blocks):</span></span>
+<span class="line" data-line-number="4"><span style="color:#D73A49">        with</span><span style="color:#24292E"> offload_mgr.layer_scope(</span></span>
+<span class="line" data-line-number="5"><span style="color:#E36209">            prefetch_layer_idx</span><span style="color:#D73A49">=</span><span style="color:#24292E">i </span><span style="color:#D73A49">+</span><span style="color:#005CC5"> 1</span><span style="color:#24292E">,  </span><span style="color:#6A737D"># 预取下一层</span></span>
+<span class="line" data-line-number="6"><span style="color:#E36209">            release_layer_idx</span><span style="color:#D73A49">=</span><span style="color:#24292E">i,        </span><span style="color:#6A737D"># 释放当前层</span></span>
+<span class="line" data-line-number="7"><span style="color:#E36209">            non_blocking</span><span style="color:#D73A49">=</span><span style="color:#005CC5">True</span><span style="color:#24292E">,</span></span>
+<span class="line" data-line-number="8"><span style="color:#24292E">        ):</span></span>
+<span class="line" data-line-number="9"><span style="color:#24292E">            hidden_states </span><span style="color:#D73A49">=</span><span style="color:#24292E"> block(</span></span>
+<span class="line" data-line-number="10"><span style="color:#24292E">                hidden_states,</span></span>
+<span class="line" data-line-number="11"><span style="color:#24292E">                encoder_hidden_states,</span></span>
+<span class="line" data-line-number="12"><span style="color:#24292E">                timestep_proj,</span></span>
+<span class="line" data-line-number="13"><span style="color:#24292E">                freqs_cis,</span></span>
+<span class="line" data-line-number="14"><span style="color:#24292E">            )</span></span></code></pre><pre class="code-block__pre" tabindex="0" data-theme="dark" data-language="python"><code data-language="python"><span class="line" data-line-number="1"><span style="color:#D4D4D4">offload_mgr = </span><span style="color:#DCDCAA">getattr</span><span style="color:#D4D4D4">(</span><span style="color:#569CD6">self</span><span style="color:#D4D4D4">, </span><span style="color:#CE9178">"_layerwise_offload_manager"</span><span style="color:#D4D4D4">, </span><span style="color:#569CD6">None</span><span style="color:#D4D4D4">)</span></span>
+<span class="line" data-line-number="2"><span style="color:#C586C0">if</span><span style="color:#D4D4D4"> offload_mgr </span><span style="color:#569CD6">is</span><span style="color:#569CD6"> not</span><span style="color:#569CD6"> None</span><span style="color:#569CD6"> and</span><span style="color:#DCDCAA"> getattr</span><span style="color:#D4D4D4">(offload_mgr, </span><span style="color:#CE9178">"enabled"</span><span style="color:#D4D4D4">, </span><span style="color:#569CD6">False</span><span style="color:#D4D4D4">):</span></span>
+<span class="line" data-line-number="3"><span style="color:#C586C0">    for</span><span style="color:#D4D4D4"> i, block </span><span style="color:#C586C0">in</span><span style="color:#DCDCAA"> enumerate</span><span style="color:#D4D4D4">(</span><span style="color:#569CD6">self</span><span style="color:#D4D4D4">.blocks):</span></span>
+<span class="line" data-line-number="4"><span style="color:#C586C0">        with</span><span style="color:#D4D4D4"> offload_mgr.layer_scope(</span></span>
+<span class="line" data-line-number="5"><span style="color:#9CDCFE">            prefetch_layer_idx</span><span style="color:#D4D4D4">=i + </span><span style="color:#B5CEA8">1</span><span style="color:#D4D4D4">,  </span><span style="color:#6A9955"># 预取下一层</span></span>
+<span class="line" data-line-number="6"><span style="color:#9CDCFE">            release_layer_idx</span><span style="color:#D4D4D4">=i,        </span><span style="color:#6A9955"># 释放当前层</span></span>
+<span class="line" data-line-number="7"><span style="color:#9CDCFE">            non_blocking</span><span style="color:#D4D4D4">=</span><span style="color:#569CD6">True</span><span style="color:#D4D4D4">,</span></span>
+<span class="line" data-line-number="8"><span style="color:#D4D4D4">        ):</span></span>
+<span class="line" data-line-number="9"><span style="color:#D4D4D4">            hidden_states = block(</span></span>
+<span class="line" data-line-number="10"><span style="color:#D4D4D4">                hidden_states,</span></span>
+<span class="line" data-line-number="11"><span style="color:#D4D4D4">                encoder_hidden_states,</span></span>
+<span class="line" data-line-number="12"><span style="color:#D4D4D4">                timestep_proj,</span></span>
+<span class="line" data-line-number="13"><span style="color:#D4D4D4">                freqs_cis,</span></span>
+<span class="line" data-line-number="14"><span style="color:#D4D4D4">            )</span></span></code></pre></figure>
+<p>通过 <code>layer_scope</code> 上下文管理器：</p>
+<ul>
+<li>在执行第 i 层时，第 i+1 层的权重已经在异步加载</li>
+<li>第 i 层计算完成后，立即释放其显存</li>
+<li>数据传输和计算完全 overlap，实现零开销</li>
+</ul>
+<h3 id="0x23-使用方式">0x2.3 使用方式<a href="#0x23-使用方式" class="heading-anchor" aria-label="Link to 0x2.3 使用方式">¶</a></h3>
+<p>在启动 SGLang 服务时，添加 <code>--dit-layerwise-offload true</code> 参数。下面是在 8 卡 H100 上的测试命令：</p>
+<figure class="code-block not-prose" data-language="bash" data-raw-code="sglang generate \
+  --model-path Wan-AI/Wan2.2-T2V-A14B-Diffusers \
+  --text-encoder-cpu-offload \
+  --pin-cpu-memory \
+  --num-gpus 8 \
+  --ulysses-degree 8 \
+  --attention-backend sage_attn \
+  --enable-torch-compile \
+  --dit-layerwise-offload true \
+  --prompt &#x22;A cat walks on the grass, realistic&#x22; \
+  --num-frames 81 \
+  --height 720 \
+  --width 1280 \
+  --num-inference-steps 27 \
+  --guidance-scale 3.5 \
+  --guidance-scale-2 4.0" data-line-numbers="true"><div class="code-block__header"><div class="code-block__title">bash</div><button type="button" class="code-block__copy" aria-label="复制代码">Copy</button></div><pre class="code-block__pre" tabindex="0" data-theme="light" data-language="bash"><code data-language="bash"><span class="line" data-line-number="1"><span style="color:#6F42C1">sglang</span><span style="color:#032F62"> generate</span><span style="color:#005CC5"> \</span></span>
+<span class="line" data-line-number="2"><span style="color:#005CC5">  --model-path</span><span style="color:#032F62"> Wan-AI/Wan2.2-T2V-A14B-Diffusers</span><span style="color:#005CC5"> \</span></span>
+<span class="line" data-line-number="3"><span style="color:#005CC5">  --text-encoder-cpu-offload</span><span style="color:#005CC5"> \</span></span>
+<span class="line" data-line-number="4"><span style="color:#005CC5">  --pin-cpu-memory</span><span style="color:#005CC5"> \</span></span>
+<span class="line" data-line-number="5"><span style="color:#005CC5">  --num-gpus</span><span style="color:#005CC5"> 8</span><span style="color:#005CC5"> \</span></span>
+<span class="line" data-line-number="6"><span style="color:#005CC5">  --ulysses-degree</span><span style="color:#005CC5"> 8</span><span style="color:#005CC5"> \</span></span>
+<span class="line" data-line-number="7"><span style="color:#005CC5">  --attention-backend</span><span style="color:#032F62"> sage_attn</span><span style="color:#005CC5"> \</span></span>
+<span class="line" data-line-number="8"><span style="color:#005CC5">  --enable-torch-compile</span><span style="color:#005CC5"> \</span></span>
+<span class="line" data-line-number="9"><span style="color:#005CC5">  --dit-layerwise-offload</span><span style="color:#005CC5"> true</span><span style="color:#005CC5"> \</span></span>
+<span class="line" data-line-number="10"><span style="color:#005CC5">  --prompt</span><span style="color:#032F62"> "A cat walks on the grass, realistic"</span><span style="color:#005CC5"> \</span></span>
+<span class="line" data-line-number="11"><span style="color:#005CC5">  --num-frames</span><span style="color:#005CC5"> 81</span><span style="color:#005CC5"> \</span></span>
+<span class="line" data-line-number="12"><span style="color:#005CC5">  --height</span><span style="color:#005CC5"> 720</span><span style="color:#005CC5"> \</span></span>
+<span class="line" data-line-number="13"><span style="color:#005CC5">  --width</span><span style="color:#005CC5"> 1280</span><span style="color:#005CC5"> \</span></span>
+<span class="line" data-line-number="14"><span style="color:#005CC5">  --num-inference-steps</span><span style="color:#005CC5"> 27</span><span style="color:#005CC5"> \</span></span>
+<span class="line" data-line-number="15"><span style="color:#005CC5">  --guidance-scale</span><span style="color:#005CC5"> 3.5</span><span style="color:#005CC5"> \</span></span>
+<span class="line" data-line-number="16"><span style="color:#005CC5">  --guidance-scale-2</span><span style="color:#005CC5"> 4.0</span></span></code></pre><pre class="code-block__pre" tabindex="0" data-theme="dark" data-language="bash"><code data-language="bash"><span class="line" data-line-number="1"><span style="color:#DCDCAA">sglang</span><span style="color:#CE9178"> generate</span><span style="color:#D7BA7D"> \</span></span>
+<span class="line" data-line-number="2"><span style="color:#569CD6">  --model-path</span><span style="color:#CE9178"> Wan-AI/Wan2.2-T2V-A14B-Diffusers</span><span style="color:#D7BA7D"> \</span></span>
+<span class="line" data-line-number="3"><span style="color:#569CD6">  --text-encoder-cpu-offload</span><span style="color:#D7BA7D"> \</span></span>
+<span class="line" data-line-number="4"><span style="color:#569CD6">  --pin-cpu-memory</span><span style="color:#D7BA7D"> \</span></span>
+<span class="line" data-line-number="5"><span style="color:#569CD6">  --num-gpus</span><span style="color:#B5CEA8"> 8</span><span style="color:#D7BA7D"> \</span></span>
+<span class="line" data-line-number="6"><span style="color:#569CD6">  --ulysses-degree</span><span style="color:#B5CEA8"> 8</span><span style="color:#D7BA7D"> \</span></span>
+<span class="line" data-line-number="7"><span style="color:#569CD6">  --attention-backend</span><span style="color:#CE9178"> sage_attn</span><span style="color:#D7BA7D"> \</span></span>
+<span class="line" data-line-number="8"><span style="color:#569CD6">  --enable-torch-compile</span><span style="color:#D7BA7D"> \</span></span>
+<span class="line" data-line-number="9"><span style="color:#569CD6">  --dit-layerwise-offload</span><span style="color:#569CD6"> true</span><span style="color:#D7BA7D"> \</span></span>
+<span class="line" data-line-number="10"><span style="color:#569CD6">  --prompt</span><span style="color:#CE9178"> "A cat walks on the grass, realistic"</span><span style="color:#D7BA7D"> \</span></span>
+<span class="line" data-line-number="11"><span style="color:#569CD6">  --num-frames</span><span style="color:#B5CEA8"> 81</span><span style="color:#D7BA7D"> \</span></span>
+<span class="line" data-line-number="12"><span style="color:#569CD6">  --height</span><span style="color:#B5CEA8"> 720</span><span style="color:#D7BA7D"> \</span></span>
+<span class="line" data-line-number="13"><span style="color:#569CD6">  --width</span><span style="color:#B5CEA8"> 1280</span><span style="color:#D7BA7D"> \</span></span>
+<span class="line" data-line-number="14"><span style="color:#569CD6">  --num-inference-steps</span><span style="color:#B5CEA8"> 27</span><span style="color:#D7BA7D"> \</span></span>
+<span class="line" data-line-number="15"><span style="color:#569CD6">  --guidance-scale</span><span style="color:#B5CEA8"> 3.5</span><span style="color:#D7BA7D"> \</span></span>
+<span class="line" data-line-number="16"><span style="color:#569CD6">  --guidance-scale-2</span><span style="color:#B5CEA8"> 4.0</span></span></code></pre></figure>
+<p>注意：</p>
+<ul>
+<li><code>--dit-layerwise-offload</code> 不能与 <code>dit_cpu_offload</code>、<code>use_fsdp_inference</code> 或 <code>cache-dit</code> 同时使用</li>
+</ul>
+<h2 id="0x3-性能提升">0x3. 性能提升<a href="#0x3-性能提升" class="heading-anchor" aria-label="Link to 0x3. 性能提升">¶</a></h2>
+<h3 id="0x31-主分支-vs-pr-分支">0x3.1 主分支 vs PR 分支<a href="#0x31-主分支-vs-pr-分支" class="heading-anchor" aria-label="Link to 0x3.1 主分支 vs PR 分支">¶</a></h3>
+<p><strong>主分支（使用 dit_cpu_offload）</strong>：</p>
+<figure class="code-block not-prose" data-language="text" data-raw-code="[12-19 08:37:22] [DenoisingStage] average time per step: 5.5156 seconds
+[12-19 08:37:23] [DenoisingStage] finished in 149.6943 seconds
+
+&#x22;denoise_steps_ms&#x22;: [
+    35999.07,  // 第1步: 36秒!
+    3261.48, 3270.54, 3267.86, 3260.40, 3263.02, 3268.03, 3264.52,
+    3264.64, 3267.19, 3268.56, 3268.10, 3266.78, 3268.04, 3264.27,
+    3271.01, 3267.67, 3266.11,
+    31282.59,  // 第19步: 31秒!
+    3263.56, 3262.30, 3262.32, 3261.83, 3264.72, 3265.31, 3267.53, 3261.95
+]" data-line-numbers="true"><div class="code-block__header"><div class="code-block__title">text</div><button type="button" class="code-block__copy" aria-label="复制代码">Copy</button></div><pre class="code-block__pre" tabindex="0" data-theme="light" data-language="text"><code data-language="text"><span class="line" data-line-number="1"><span>[12-19 08:37:22] [DenoisingStage] average time per step: 5.5156 seconds</span></span>
+<span class="line" data-line-number="2"><span>[12-19 08:37:23] [DenoisingStage] finished in 149.6943 seconds</span></span>
+<span class="line" data-line-number="3"><span></span></span>
+<span class="line" data-line-number="4"><span>"denoise_steps_ms": [</span></span>
+<span class="line" data-line-number="5"><span>    35999.07,  // 第1步: 36秒!</span></span>
+<span class="line" data-line-number="6"><span>    3261.48, 3270.54, 3267.86, 3260.40, 3263.02, 3268.03, 3264.52,</span></span>
+<span class="line" data-line-number="7"><span>    3264.64, 3267.19, 3268.56, 3268.10, 3266.78, 3268.04, 3264.27,</span></span>
+<span class="line" data-line-number="8"><span>    3271.01, 3267.67, 3266.11,</span></span>
+<span class="line" data-line-number="9"><span>    31282.59,  // 第19步: 31秒!</span></span>
+<span class="line" data-line-number="10"><span>    3263.56, 3262.30, 3262.32, 3261.83, 3264.72, 3265.31, 3267.53, 3261.95</span></span>
+<span class="line" data-line-number="11"><span>]</span></span></code></pre><pre class="code-block__pre" tabindex="0" data-theme="dark" data-language="text"><code data-language="text"><span class="line" data-line-number="1"><span>[12-19 08:37:22] [DenoisingStage] average time per step: 5.5156 seconds</span></span>
+<span class="line" data-line-number="2"><span>[12-19 08:37:23] [DenoisingStage] finished in 149.6943 seconds</span></span>
+<span class="line" data-line-number="3"><span></span></span>
+<span class="line" data-line-number="4"><span>"denoise_steps_ms": [</span></span>
+<span class="line" data-line-number="5"><span>    35999.07,  // 第1步: 36秒!</span></span>
+<span class="line" data-line-number="6"><span>    3261.48, 3270.54, 3267.86, 3260.40, 3263.02, 3268.03, 3264.52,</span></span>
+<span class="line" data-line-number="7"><span>    3264.64, 3267.19, 3268.56, 3268.10, 3266.78, 3268.04, 3264.27,</span></span>
+<span class="line" data-line-number="8"><span>    3271.01, 3267.67, 3266.11,</span></span>
+<span class="line" data-line-number="9"><span>    31282.59,  // 第19步: 31秒!</span></span>
+<span class="line" data-line-number="10"><span>    3263.56, 3262.30, 3262.32, 3261.83, 3264.72, 3265.31, 3267.53, 3261.95</span></span>
+<span class="line" data-line-number="11"><span>]</span></span></code></pre></figure>
+<p><strong>PR 分支（使用 dit_layerwise_offload）</strong>：</p>
+<figure class="code-block not-prose" data-language="text" data-raw-code="[12-20 02:59:10] [DenoisingStage] average time per step: 3.4553 seconds
+[12-20 02:59:10] [DenoisingStage] finished in 94.2283 seconds
+
+&#x22;denoise_steps_ms&#x22;: [
+    7717.70,   // 第1步: 7.7秒,提升78%!
+    3275.04, 3280.25, 3282.28, 3292.90, 3286.51, 3273.56, 3271.60,
+    3275.59, 3291.91, 3293.93, 3289.39, 3298.06, 3300.41, 3305.02,
+    3299.30, 3302.02, 3299.04,
+    3291.04,   // 第19步: 3.3秒,提升89%!
+    3296.62, 3290.26, 3302.19, 3295.94, 3297.33, 3297.71, 3295.03, 3290.20
+]" data-line-numbers="true"><div class="code-block__header"><div class="code-block__title">text</div><button type="button" class="code-block__copy" aria-label="复制代码">Copy</button></div><pre class="code-block__pre" tabindex="0" data-theme="light" data-language="text"><code data-language="text"><span class="line" data-line-number="1"><span>[12-20 02:59:10] [DenoisingStage] average time per step: 3.4553 seconds</span></span>
+<span class="line" data-line-number="2"><span>[12-20 02:59:10] [DenoisingStage] finished in 94.2283 seconds</span></span>
+<span class="line" data-line-number="3"><span></span></span>
+<span class="line" data-line-number="4"><span>"denoise_steps_ms": [</span></span>
+<span class="line" data-line-number="5"><span>    7717.70,   // 第1步: 7.7秒,提升78%!</span></span>
+<span class="line" data-line-number="6"><span>    3275.04, 3280.25, 3282.28, 3292.90, 3286.51, 3273.56, 3271.60,</span></span>
+<span class="line" data-line-number="7"><span>    3275.59, 3291.91, 3293.93, 3289.39, 3298.06, 3300.41, 3305.02,</span></span>
+<span class="line" data-line-number="8"><span>    3299.30, 3302.02, 3299.04,</span></span>
+<span class="line" data-line-number="9"><span>    3291.04,   // 第19步: 3.3秒,提升89%!</span></span>
+<span class="line" data-line-number="10"><span>    3296.62, 3290.26, 3302.19, 3295.94, 3297.33, 3297.71, 3295.03, 3290.20</span></span>
+<span class="line" data-line-number="11"><span>]</span></span></code></pre><pre class="code-block__pre" tabindex="0" data-theme="dark" data-language="text"><code data-language="text"><span class="line" data-line-number="1"><span>[12-20 02:59:10] [DenoisingStage] average time per step: 3.4553 seconds</span></span>
+<span class="line" data-line-number="2"><span>[12-20 02:59:10] [DenoisingStage] finished in 94.2283 seconds</span></span>
+<span class="line" data-line-number="3"><span></span></span>
+<span class="line" data-line-number="4"><span>"denoise_steps_ms": [</span></span>
+<span class="line" data-line-number="5"><span>    7717.70,   // 第1步: 7.7秒,提升78%!</span></span>
+<span class="line" data-line-number="6"><span>    3275.04, 3280.25, 3282.28, 3292.90, 3286.51, 3273.56, 3271.60,</span></span>
+<span class="line" data-line-number="7"><span>    3275.59, 3291.91, 3293.93, 3289.39, 3298.06, 3300.41, 3305.02,</span></span>
+<span class="line" data-line-number="8"><span>    3299.30, 3302.02, 3299.04,</span></span>
+<span class="line" data-line-number="9"><span>    3291.04,   // 第19步: 3.3秒,提升89%!</span></span>
+<span class="line" data-line-number="10"><span>    3296.62, 3290.26, 3302.19, 3295.94, 3297.33, 3297.71, 3295.03, 3290.20</span></span>
+<span class="line" data-line-number="11"><span>]</span></span></code></pre></figure>
+<h3 id="0x32-性能分析">0x3.2 性能分析<a href="#0x32-性能分析" class="heading-anchor" aria-label="Link to 0x3.2 性能分析">¶</a></h3>
+<p>从数据上看：</p>
+<ul>
+<li><strong>总体加速</strong>：149.69 秒 → 94.22 秒，提升 58%</li>
+<li><strong>第 1 步加速</strong>：36 秒 → 7.7 秒，提升 78%</li>
+<li><strong>第 19 步加速</strong>：31 秒 → 3.3 秒，提升 89%</li>
+<li><strong>中间步骤</strong>：保持在 3.2-3.3 秒，性能稳定</li>
+</ul>
+<p>下面是 torch profiler 的 trace 截图，可以清楚地看到 memcpy 和 compute 完全 overlap，没有额外开销：</p>
+<p><img src="/blog-preview/previews/pr-369/images/wechat/sglang-diffusion-wan2260percent/001-85495dc3.png" alt="图片"></p>
+<p>从 timeline 可以看到，<strong>H2D 的 memcpy 操作和 kernel 执行是完全重叠的</strong>，这就是零开销的体现。异步拷贝在独立的 stream 中进行，不会阻塞主 stream 的计算。</p>
+<h2 id="0x4-额外优化all2all-预热">0x4. 额外优化：All2All 预热<a href="#0x4-额外优化all2all-预热" class="heading-anchor" aria-label="Link to 0x4. 额外优化：All2All 预热">¶</a></h2>
+<p>即使解决了权重卸载的问题，我发现无论是否启用 torch compile，第 1 步的性能仍然比后续步骤慢约 7 倍。通过完整的 profiling 发现，这是因为 <strong>NCCL All2All 操作的初始化开销</strong>。</p>
+<p><img src="/blog-preview/previews/pr-369/images/wechat/sglang-diffusion-wan2260percent/002-adaa8024.png" alt="图片"></p>
+<p>这个初始化开销不应该在 denoise 阶段，而应该提前处理。因此实现了专门针对 All2All 操作的<strong>预热逻辑</strong>。预热之后，不启用 compile 时第 1 步的时间几乎与后续步骤相同，启用 compile 时第 1 步的时间仅为后续步骤的约 2 倍（而不是 7 倍）。NCCL All2All 的初始化开销被提前消除，denoise 阶段的第 1 步不再有明显的延迟。</p>
+<h2 id="0x5-总结">0x5. 总结<a href="#0x5-总结" class="heading-anchor" aria-label="Link to 0x5. 总结">¶</a></h2>
+<p>这个优化方案的关键技术点包括：<strong>逐层权重管理</strong>只在需要时加载特定层的权重，避免全模型搬运；使用<strong>独立 CUDA Stream</strong> 实现异步 H2D 传输，让当前层计算时下一层权重已在加载；使用 <strong>pinned memory</strong> 锁定物理内存，这是实现异步拷贝和零开销的前提条件；每层计算完成后立即释放 GPU 显存。</p>
+<p>实现的亮点在于数据传输完全被计算隐藏，通过 <code>layer_scope</code> context manager 提供了简洁的 API，支持任意具有 <code>blocks</code> 属性的 DiT 模型，并且与 cache-dit 等特性互斥避免潜在错误。</p>
+<p>这个技术特别适合大型 Diffusion 模型（如 Wan2.2）、显存受限的场景（可以让原本需要 80GB 显存的模型在 24GB 显存的 4090 上运行）、需要在 CPU 和 GPU 之间频繁搬运权重的场景，以及具有多层 Transformer 结构的模型。</p> <div class="grid md:grid-cols-2 gap-4 mt-10"> <a href="/blog-preview/previews/pr-369/inside-vllm-anatomy-of-a-high-throughput-llm-inference-system/" class="block p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-sky-500"> <div class="text-xs uppercase text-zinc-500">Previous</div> <div class="font-semibold">Inside vLLM: Anatomy of a High-Throughput LLM Inference System</div> </a> <a href="/blog-preview/previews/pr-369/cuda-graph/" class="block p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-sky-500 text-right"> <div class="text-xs uppercase text-zinc-500">Next</div> <div class="font-semibold">CUDA Graph 学习笔记</div> </a> </div> <div class="mt-10 border-t border-zinc-200 dark:border-zinc-800 pt-6"><h3 class="text-lg font-semibold mb-4">Related posts</h3><div class="grid md:grid-cols-2 gap-4"><a href="/blog-preview/previews/pr-369/inside-nvidia-gpus-anatomy-of-high-performance-matmul-kernels/" class="block p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-sky-500 hover:-translate-y-0.5 transition"><div class="text-xs text-zinc-500 mb-1">12/29/2025</div><div class="font-semibold">Inside NVIDIA GPUs: Anatomy of high performance matmul kernels</div></a></div></div> <section id="comments" class="mt-12" data-comments> <div class="rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 p-6 md:p-8"> <script src="https://giscus.app/client.js" data-repo="yuanlehome/blog" data-repo-id="R_kgDOQu2Jjw" data-category="General" data-category-id="DIC_kwDOQu2Jj84C0QDN" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="bottom" data-theme="light" data-lang="zh-CN" crossorigin="anonymous" async></script> </div> </section> <script>(() => {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return;
+
+  // Theme mapping for Giscus from config
+  const themeMap = {"light":"light","dark":"dark"};
+
+  // Single source of truth: read effective theme from DOM
+  const getEffectiveTheme = () => {
+    const isDark =
+      document.documentElement.dataset.theme === 'dark' ||
+      document.documentElement.classList.contains('dark');
+    return isDark ? 'dark' : 'light';
+  };
+
+  // Track current theme state
+  let currentTheme = getEffectiveTheme();
+
+  // Set initial theme on the script tag before Giscus loads
+  const setInitialTheme = () => {
+    const effectiveTheme = getEffectiveTheme();
+    const giscusTheme = themeMap[effectiveTheme] ?? 'light';
+    const giscusScript = document.querySelector('script[src*="giscus.app/client.js"]');
+    if (giscusScript) {
+      giscusScript.setAttribute('data-theme', giscusTheme);
+    }
+  };
+
+  // Update container data attribute for tracking
+  const setContainerTheme = (theme) => {
+    const container = document.getElementById('comments');
+    if (container) {
+      container.setAttribute('data-giscus-theme', theme);
+    }
+  };
+
+  // Send theme update message to Giscus iframe
+  const postThemeMessage = (resolvedTheme) => {
+    const effective = resolvedTheme ?? currentTheme;
+    const giscusTheme = themeMap[effective] ?? 'light';
+    setContainerTheme(giscusTheme);
+    
+    const iframe = document.querySelector('iframe.giscus-frame');
+    if (iframe && iframe.contentWindow) {
+      iframe.contentWindow.postMessage(
+        { giscus: { setConfig: { theme: giscusTheme } } },
+        'https://giscus.app',
+      );
+    }
+  };
+
+  // Debounce helper to prevent excessive syncs
+  let syncTimeout = null;
+  const debouncedSync = (callback, delay = 50) => {
+    if (syncTimeout) clearTimeout(syncTimeout);
+    syncTimeout = setTimeout(callback, delay);
+  };
+
+  // Main sync function: update theme if changed
+  const syncCommentTheme = (resolvedOverride) => {
+    const detected = resolvedOverride ?? getEffectiveTheme();
+    if (detected !== currentTheme) {
+      currentTheme = detected;
+    }
+    postThemeMessage(detected);
+  };
+
+  // Wait for iframe with improved retry logic
+  let retryCount = 0;
+  const maxRetries = 50; // ~5 seconds with 100ms intervals
+  const waitForIframe = () => {
+    const iframe = document.querySelector('iframe.giscus-frame');
+    if (iframe) {
+      // Found iframe, send theme
+      if (iframe instanceof HTMLIFrameElement) {
+        const sendTheme = () => {
+          postThemeMessage();
+        };
+        
+        // Try to send immediately and also on load event
+        sendTheme();
+        if (!iframe.complete) {
+          iframe.addEventListener('load', sendTheme, { once: true });
+        }
+      }
+      return;
+    }
+
+    // Retry if not found yet
+    retryCount++;
+    if (retryCount < maxRetries) {
+      setTimeout(waitForIframe, 100);
+    }
+  };
+
+  // Set initial theme before Giscus loads
+  setInitialTheme();
+
+  // Listen for DOM changes (class/data-theme attribute)
+  const observer = new MutationObserver(() => {
+    debouncedSync(() => syncCommentTheme());
+  });
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['class', 'data-theme'],
+  });
+
+  // Listen for custom theme change events
+  window.addEventListener('themechange', (event) => {
+    const detail = event?.detail || {};
+    const resolved = detail.resolved || getEffectiveTheme();
+    debouncedSync(() => syncCommentTheme(resolved));
+  });
+
+  // Listen for storage events (cross-tab synchronization)
+  window.addEventListener('storage', (event) => {
+    if (event.key === 'theme' && (event.newValue === 'light' || event.newValue === 'dark')) {
+      debouncedSync(() => syncCommentTheme());
+    }
+  });
+
+  // Listen for system theme changes (if using system preference)
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  const handleSystemThemeChange = () => {
+    // Only sync if theme might be using system preference
+    try {
+      const stored = localStorage.getItem('theme');
+      if (!stored || stored === 'system') {
+        debouncedSync(() => syncCommentTheme());
+      }
+    } catch (e) {
+      // Ignore localStorage errors
+    }
+  };
+  
+  if (mediaQuery.addEventListener) {
+    mediaQuery.addEventListener('change', handleSystemThemeChange);
+  }
+
+  // Initial sync and wait for iframe
+  syncCommentTheme();
+  waitForIframe();
+})();</script> <div id="page-bottom-anchor" aria-hidden="true" style="height: 1px;"></div> </article>  </div> <div class="fixed inset-0 z-50 pointer-events-none data-[open=true]:pointer-events-auto lg:hidden" data-mobile-toc data-open="false" aria-hidden="true"><div class="absolute inset-0 bg-zinc-900/40 opacity-0 transition duration-200 data-[open=true]:opacity-100 dark:bg-black/50" data-mobile-toc-backdrop></div><div id="mobile-toc-drawer" role="dialog" aria-modal="true" aria-label="文章目录" class="absolute inset-x-0 bottom-0 translate-y-full rounded-t-2xl border border-zinc-200 bg-neutral-50/95 shadow-2xl ring-1 ring-black/5 transition duration-200 data-[open=true]:translate-y-0 dark:border-zinc-800 dark:bg-zinc-900/95 dark:ring-white/10" data-mobile-toc-drawer><div class="flex items-center justify-between gap-3 px-4 pt-4 pb-3"><div><p class="text-sm font-semibold text-zinc-900 dark:text-zinc-50">文章目录</p><p class="text-xs text-zinc-500 dark:text-zinc-400">点击条目可跳转</p></div><button type="button" class="rounded-full border border-zinc-200 bg-neutral-50 px-3 py-1 text-sm font-medium text-zinc-800 shadow-sm transition hover:text-sky-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:text-sky-400 dark:focus-visible:ring-offset-zinc-900" data-mobile-toc-close>
+关闭
+</button></div><div class="max-h-[60vh] overflow-y-auto px-4 pb-5" data-mobile-toc-scroll><ol class="space-y-3 text-sm"><li><a href="#0x0-前言" data-toc-link data-mobile-toc-link data-target="0x0-前言" title="0x0. 前言¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>0x0. 前言¶</span></a></li><li><a href="#0x1-问题发现为什么-wan22-这么慢" data-toc-link data-mobile-toc-link data-target="0x1-问题发现为什么-wan22-这么慢" title="0x1. 问题发现：为什么 Wan2.2 这么慢？¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>0x1. 问题发现：为什么 Wan2.2 这么慢？¶</span></a><ol class="mt-1 space-y-1"><li><a href="#0x11-性能瓶颈定位" data-toc-link data-mobile-toc-link data-target="0x11-性能瓶颈定位" title="0x1.1 性能瓶颈定位¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>0x1.1 性能瓶颈定位¶</span></a></li><li><a href="#0x12-根因分析" data-toc-link data-mobile-toc-link data-target="0x12-根因分析" title="0x1.2 根因分析¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>0x1.2 根因分析¶</span></a></li></ol></li><li><a href="#0x2-解决方案零开销逐层权重卸载" data-toc-link data-mobile-toc-link data-target="0x2-解决方案零开销逐层权重卸载" title="0x2. 解决方案：零开销逐层权重卸载¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>0x2. 解决方案：零开销逐层权重卸载¶</span></a><ol class="mt-1 space-y-1"><li><a href="#0x21-核心思想" data-toc-link data-mobile-toc-link data-target="0x21-核心思想" title="0x2.1 核心思想¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>0x2.1 核心思想¶</span></a></li><li><a href="#0x22-实现细节" data-toc-link data-mobile-toc-link data-target="0x22-实现细节" title="0x2.2 实现细节¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>0x2.2 实现细节¶</span></a></li><li><a href="#0x23-使用方式" data-toc-link data-mobile-toc-link data-target="0x23-使用方式" title="0x2.3 使用方式¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>0x2.3 使用方式¶</span></a></li></ol></li><li><a href="#0x3-性能提升" data-toc-link data-mobile-toc-link data-target="0x3-性能提升" title="0x3. 性能提升¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>0x3. 性能提升¶</span></a><ol class="mt-1 space-y-1"><li><a href="#0x31-主分支-vs-pr-分支" data-toc-link data-mobile-toc-link data-target="0x31-主分支-vs-pr-分支" title="0x3.1 主分支 vs PR 分支¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>0x3.1 主分支 vs PR 分支¶</span></a></li><li><a href="#0x32-性能分析" data-toc-link data-mobile-toc-link data-target="0x32-性能分析" title="0x3.2 性能分析¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>0x3.2 性能分析¶</span></a></li></ol></li><li><a href="#0x4-额外优化all2all-预热" data-toc-link data-mobile-toc-link data-target="0x4-额外优化all2all-预热" title="0x4. 额外优化：All2All 预热¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>0x4. 额外优化：All2All 预热¶</span></a></li><li><a href="#0x5-总结" data-toc-link data-mobile-toc-link data-target="0x5-总结" title="0x5. 总结¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>0x5. 总结¶</span></a></li></ol></div></div></div><script type="module">const c=document.querySelector("[data-mobile-toc]"),s=document.querySelector("[data-mobile-toc-drawer]"),a=document.querySelector("[data-mobile-toc-backdrop]"),p=()=>Array.from(document.querySelectorAll("[data-mobile-toc-open]")),w=document.querySelector("[data-mobile-toc-close]"),f=()=>Array.from((s??c)?.querySelectorAll("[data-mobile-toc-link]")??[]),o=document.body,k=window.matchMedia("(prefers-reduced-motion: reduce)"),E=k.matches,g=96;let i=0;const v=e=>window.dispatchEvent(new CustomEvent("mobile-toc:toggle",{detail:{open:e}})),S=e=>{p().forEach(t=>t.setAttribute("aria-expanded",e?"true":"false"))},l=e=>{e.preventDefault(),r(!0)},y=()=>{p().forEach(e=>{e.removeEventListener("click",l),e.addEventListener("click",l)})},A=()=>{i=window.scrollY,o.style.position="fixed",o.style.width="100%",o.style.top=`-${i}px`},L=()=>{o.style.position="",o.style.width="",o.style.top="",window.scrollTo({top:i})},r=e=>{!c||!s||(c.dataset.open=String(e),s.dataset.open=String(e),a?.setAttribute("data-open",String(e)),c.setAttribute("aria-hidden",e?"false":"true"),S(e),v(e),e?A():L())},B=()=>{f().map(t=>document.getElementById(t.dataset.target||"")).filter(t=>!!t).forEach(t=>{t.style.scrollMarginTop=`${g+12}px`})},d=e=>`#${encodeURIComponent(e)}`,h=(e,t=!1)=>{const n=document.getElementById(e);if(!n)return;const b=window.scrollY+n.getBoundingClientRect().top-g-12;t?history.replaceState(null,"",d(e)):history.pushState(null,"",d(e)),window.scrollTo({top:b,behavior:E?"auto":"smooth"})};y();const T=new MutationObserver(y);T.observe(document.body,{subtree:!0,childList:!0,attributes:!0,attributeFilter:["data-mobile-toc-open"]});w?.addEventListener("click",()=>r(!1));a?.addEventListener("click",e=>{e.target===a&&r(!1)});const u=e=>{const n=e.currentTarget?.dataset.target;n&&(e.preventDefault(),e.stopPropagation(),r(!1),requestAnimationFrame(()=>requestAnimationFrame(()=>h(n))))};f().forEach(e=>{e.removeEventListener("click",u),e.addEventListener("click",u)});window.addEventListener("keydown",e=>{e.key==="Escape"&&r(!1)});B();const m=decodeURIComponent(location.hash.replace(/^#/,""));m&&requestAnimationFrame(()=>h(m,!0));</script> <div class="floating-action-stack fixed z-40 flex flex-col items-end gap-3 lg:hidden pointer-events-auto transition-opacity data-[toc-open=true]:opacity-0 data-[toc-open=true]:pointer-events-none" data-floating-action-stack data-target-selector="[data-article]" style="inset-inline-end: calc(env(safe-area-inset-right, 0px) + 1rem); inset-block-end: calc(env(safe-area-inset-bottom, 0px) + 1rem);"><button type="button" class="floating-action-stack__button h-11 w-11 rounded-full border border-gray-200 bg-white/90 text-gray-900 shadow-lg backdrop-blur-sm ring-offset-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 hover:-translate-y-0.5 hover:border-blue-200 hover:text-blue-600 data-[visible=false]:opacity-0 data-[visible=false]:pointer-events-none data-[visible=true]:opacity-100 data-[visible=true]:pointer-events-auto dark:border-gray-800 dark:bg-gray-900/85 dark:text-gray-100 dark:ring-offset-gray-900 dark:hover:border-blue-500/50 dark:hover:text-blue-300" data-floating-action-button data-action="top" data-visible="false" style="transition-delay: 0ms;" aria-label="返回文章顶部"><span class="sr-only">顶部</span><span aria-hidden="true" class="text-base">⬆️</span></button><button type="button" class="floating-action-stack__button h-11 w-11 rounded-full border border-gray-200 bg-white/90 text-gray-900 shadow-lg backdrop-blur-sm ring-offset-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 hover:-translate-y-0.5 hover:border-blue-200 hover:text-blue-600 data-[visible=false]:opacity-0 data-[visible=false]:pointer-events-none data-[visible=true]:opacity-100 data-[visible=true]:pointer-events-auto dark:border-gray-800 dark:bg-gray-900/85 dark:text-gray-100 dark:ring-offset-gray-900 dark:hover:border-blue-500/50 dark:hover:text-blue-300" data-floating-action-button data-action="toc" data-visible="true" style="transition-delay: 10ms;" aria-label="打开目录抽屉" data-mobile-toc-open="true"><span class="sr-only">目录</span><span aria-hidden="true" class="text-base">📑</span></button><button type="button" class="floating-action-stack__button h-11 w-11 rounded-full border border-gray-200 bg-white/90 text-gray-900 shadow-lg backdrop-blur-sm ring-offset-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 hover:-translate-y-0.5 hover:border-blue-200 hover:text-blue-600 data-[visible=false]:opacity-0 data-[visible=false]:pointer-events-none data-[visible=true]:opacity-100 data-[visible=true]:pointer-events-auto dark:border-gray-800 dark:bg-gray-900/85 dark:text-gray-100 dark:ring-offset-gray-900 dark:hover:border-blue-500/50 dark:hover:text-blue-300" data-floating-action-button data-action="bottom" data-visible="true" style="transition-delay: 20ms;" aria-label="跳转文章底部"><span class="sr-only">底部</span><span aria-hidden="true" class="text-base">⬇️</span></button></div><script type="module">const r=document.querySelector("[data-floating-action-stack]"),B=r?.dataset.targetSelector||"[data-article]",v=r?.querySelector('[data-action="top"]'),E=r?.querySelector('[data-action="bottom"]'),f=r?.querySelector('[data-action="toc"]'),M=window.matchMedia("(prefers-reduced-motion: reduce)"),l=M.matches,i=document.querySelector("[data-mobile-toc]"),c=document.querySelector(B);let s=0,y=0,d=!1;const R=()=>{if(!c)return window;let t=c.parentElement;for(;t;){const o=window.getComputedStyle(t).overflowY;if((o==="auto"||o==="scroll")&&t.scrollHeight>t.clientHeight)return t;t=t.parentElement}return window},n=R(),a=()=>{if(!c)return;s=c.getBoundingClientRect().top+window.scrollY,y=c.scrollHeight},x=(t,e,o)=>Math.min(Math.max(t,e),o),p=(t,e)=>{t&&(t.dataset.visible=e?"true":"false")},u=()=>{if(!c)return;const t=120,e=y>window.innerHeight+40,o=window.scrollY>s+t;p(v,o),p(E,e),d=!1},S=()=>{d||(d=!0,requestAnimationFrame(u))},C=()=>{const t=x(s,0,Number.MAX_SAFE_INTEGER);window.scrollTo({top:t,behavior:l?"auto":"smooth"})},k=()=>{const t=document.getElementById("page-bottom-anchor");if(t){const e=t.getBoundingClientRect(),w=window.scrollY+e.bottom-window.innerHeight;window.scrollTo({top:Math.max(0,w),behavior:l?"auto":"smooth"});let h=0;const T=2,g=()=>{h>=T||(h++,setTimeout(()=>{const b=n instanceof Window?document.documentElement:n,H=n instanceof Window?window.scrollY:n.scrollTop;if(b.scrollHeight-b.clientHeight-H>10){const Y=t.getBoundingClientRect(),q=window.scrollY+Y.bottom-window.innerHeight;window.scrollTo({top:Math.max(0,q),behavior:l?"auto":"smooth"}),g()}},400))};g()}else{const e=n instanceof Window?document.documentElement:n,o=Math.max(e.scrollHeight-e.clientHeight,s);n instanceof Window?window.scrollTo({top:o,behavior:l?"auto":"smooth"}):n.scrollTo({top:o,behavior:l?"auto":"smooth"})}},m=t=>{r&&(r.dataset.tocOpen=t?"true":"false")};m(i?.dataset.open==="true");r&&c&&(a(),u(),window.addEventListener("scroll",S,{passive:!0}),window.addEventListener("resize",()=>{a(),S()}),window.addEventListener("load",()=>{a(),u()},{once:!0}),v?.addEventListener("click",C),E?.addEventListener("click",k));f?.addEventListener("click",()=>{requestAnimationFrame(()=>f?.blur())});window.addEventListener("mobile-toc:toggle",t=>{const e=t.detail;e&&m(e.open)});i&&new MutationObserver(()=>{m(i.dataset.open==="true")}).observe(i,{attributes:!0,attributeFilter:["data-open"]});</script> </main> <footer class="py-8 mt-auto border-t border-zinc-200 dark:border-zinc-800"> <div class="container mx-auto px-4 text-center text-zinc-500 max-w-4xl">
+&copy; 2026 Yuanle Liu. All rights reserved. </div> </footer>  <script type="module">const i=new WeakMap,c=(e,t)=>{e.dataset.state=t,t==="copied"?e.textContent="Copied":t==="error"?e.textContent="Failed":e.textContent="Copy";const o=i.get(e);if(o&&window.clearTimeout(o),t!=="idle"){const r=window.setTimeout(()=>c(e,"idle"),2e3);i.set(e,r)}},n=async e=>{const t=e.closest(".code-block");if(!t)return;const o=t.getAttribute("data-raw-code")??"";try{await navigator.clipboard.writeText(o),c(e,"copied")}catch(r){console.error("Copy failed",r),c(e,"error")}},s=()=>{document.addEventListener("click",e=>{const o=e.target?.closest("button.code-block__copy");o&&(e.preventDefault(),n(o))})},a=()=>{typeof document>"u"||s()};a();</script> <script type="module">function d(){const n=document.querySelector("[data-site-header]");if(!n){document.documentElement.style.setProperty("--site-header-height","0px");return}let i=0;const t=()=>{const e=n.getBoundingClientRect().height;Math.abs(e-i)>.5&&(i=e,document.documentElement.style.setProperty("--site-header-height",`${e}px`),window.dispatchEvent(new CustomEvent("headerheightchange",{detail:{height:e}})))};t(),"ResizeObserver"in window&&new ResizeObserver(()=>{t()}).observe(n),window.addEventListener("resize",t,{passive:!0}),window.addEventListener("load",t,{once:!0})}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",d):d();</script> </body> </html>
