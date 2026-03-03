@@ -44,7 +44,7 @@
     applyTheme(preference);
     dispatchChange(preference);
   };
-})();</script><meta charset="UTF-8"><meta name="description" content="A minimal Astro blog"><meta name="viewport" content="width=device-width"><link rel="icon" type="image/x-icon" href="/blog-preview/previews/pr-426/favicon.ico"><link rel="icon" type="image/png" sizes="32x32" href="/blog-preview/previews/pr-426/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/blog-preview/previews/pr-426/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/blog-preview/previews/pr-426/apple-touch-icon.png"><meta name="generator" content="Astro v5.16.6"><link rel="canonical" href="https://yuanlehome.github.io/blog-preview/previews/pr-426/april-rollpacker-rl-long-tail-rollouts/"><meta property="og:title" content="从 APRIL 到 RollPacker：如何在 RL 里处理 Long-tail Rollouts"><meta property="og:description" content="A minimal Astro blog"><meta property="og:image" content="/blog-preview/previews/pr-426/placeholder-social.jpg"><meta property="og:type" content="article"><meta property="og:url" content="https://yuanlehome.github.io/blog-preview/previews/pr-426/april-rollpacker-rl-long-tail-rollouts/"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="从 APRIL 到 RollPacker：如何在 RL 里处理 Long-tail Rollouts"><meta name="twitter:description" content="A minimal Astro blog"><meta name="twitter:image" content="/blog-preview/previews/pr-426/placeholder-social.jpg"><title>从 APRIL 到 RollPacker：如何在 RL 里处理 Long-tail Rollouts</title><style>:root {
+})();</script><meta charset="UTF-8"><meta name="description" content="A minimal Astro blog"><meta name="viewport" content="width=device-width"><link rel="icon" type="image/x-icon" href="/blog-preview/previews/pr-426/favicon.ico"><link rel="icon" type="image/png" sizes="32x32" href="/blog-preview/previews/pr-426/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/blog-preview/previews/pr-426/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/blog-preview/previews/pr-426/apple-touch-icon.png"><meta name="generator" content="Astro v5.16.6"><link rel="canonical" href="https://yuanlehome.github.io/blog-preview/previews/pr-426/april-rollpacker-rl-long-tail-rollouts/"><meta property="og:title" content="从 APRIL 到 RollPacker：如何在 RL 里处理 Long-tail Rollouts"><meta property="og:description" content="A minimal Astro blog"><meta property="og:image" content="/blog-preview/previews/pr-426/generated/mermaid/notion/a9fa49574fc6.light.svg"><meta property="og:type" content="article"><meta property="og:url" content="https://yuanlehome.github.io/blog-preview/previews/pr-426/april-rollpacker-rl-long-tail-rollouts/"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="从 APRIL 到 RollPacker：如何在 RL 里处理 Long-tail Rollouts"><meta name="twitter:description" content="A minimal Astro blog"><meta name="twitter:image" content="/blog-preview/previews/pr-426/generated/mermaid/notion/a9fa49574fc6.light.svg"><title>从 APRIL 到 RollPacker：如何在 RL 里处理 Long-tail Rollouts</title><style>:root {
   /* Typography */
   --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial, Noto Sans SC, PingFang SC, Microsoft YaHei, sans-serif;
   --font-serif: ui-serif, Georgia, Cambria, Times New Roman, Times, serif;
@@ -171,13 +171,13 @@
 #
 </span><span class="flex-1 truncate" data-title>4.1 Tail Batching 的隐含前提：同步边界要“抬高”¶</span></a></li></ol></li><li><a href="#结语" data-toc-link data-mobile-toc-link data-target="结语" title="结语¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
 #
-</span><span class="flex-1 truncate" data-title>结语¶</span></a></li> </ol> </nav> </div> </aside> </div> <script type="module">const p=Array.from(document.querySelectorAll("[data-toc-link]")),e=document.querySelector("[data-toc-container]"),i=document.querySelector("[data-toc-shell]"),l=()=>{const t=getComputedStyle(document.documentElement).getPropertyValue("--site-header-height");return parseFloat(t)||0},r=window.matchMedia("(min-width: 1024px)"),g=p.map(t=>document.getElementById(t.dataset.target||"")).filter(t=>!!t),m=()=>{const t=l();g.forEach(n=>{n.style.scrollMarginTop=`${t+12}px`})},w=t=>`#${encodeURIComponent(t)}`,v=t=>decodeURIComponent(t.replace(/^#/,"")),f=t=>{p.forEach(n=>{const o=n.dataset.target===t;n.dataset.active=o?"true":"false",n.setAttribute("aria-current",o?"true":"false")})},u=(t,n=!1)=>{const o=document.getElementById(t);if(!o)return;const a=l(),c=window.scrollY+o.getBoundingClientRect().top-a-12;n?history.replaceState(null,"",w(t)):history.pushState(null,"",w(t)),window.scrollTo({top:c,behavior:"smooth"}),f(t)};p.forEach(t=>t.addEventListener("click",n=>{const o=t.dataset.target;o&&(n.preventDefault(),u(o))}));const y=()=>{e&&(e.dataset.fixed="false",e.style.position="",e.style.left="",e.style.width="",e.style.height="",e.style.maxHeight="",e.style.top="",i&&(i.style.minHeight=""))},x=()=>{if(!e||!i)return;const t=i.getBoundingClientRect(),n=l(),o=`calc(100vh - ${n}px - 16px)`;e.dataset.fixed="true",i.style.minHeight=`${e.offsetHeight}px`,e.style.position="fixed",e.style.top=`${n}px`,e.style.left=`${t.left}px`,e.style.width=`${t.width}px`,e.style.height=o,e.style.maxHeight=o},d=()=>{if(!e||e.dataset.fixed==="true"||!r.matches)return;const t=parseFloat(getComputedStyle(e).top||"0"),n=e.offsetTop-t;if(Number.isNaN(t)||window.scrollY<n)return;const o=e.getBoundingClientRect().top;Math.abs(o-t)>2&&x()},E=()=>{if(!r.matches){y();return}e?.dataset.fixed==="true"&&x()};if(g.length>0){m();const t=new IntersectionObserver(o=>{const a=o.filter(s=>s.isIntersecting).sort((s,h)=>s.target.getBoundingClientRect().top-h.target.getBoundingClientRect().top);if(a[0]){f(a[0].target.id);return}const c=o.filter(s=>s.boundingClientRect.top<0).sort((s,h)=>h.target.getBoundingClientRect().top-s.target.getBoundingClientRect().top);c[0]&&f(c[0].target.id)},{rootMargin:`-${l()}px 0% -55% 0%`,threshold:[0,.25,.5,1]});g.forEach(o=>t.observe(o));const n=v(location.hash||"");n&&requestAnimationFrame(()=>u(n,!0)),window.addEventListener("hashchange",()=>{const o=v(location.hash||"");o&&u(o,!0)})}y();r.matches&&d();r.addEventListener("change",()=>{y(),requestAnimationFrame(()=>{r.matches&&d()})});window.addEventListener("scroll",d,{passive:!0});window.addEventListener("resize",E);window.addEventListener("load",()=>{d(),m()},{once:!0});window.addEventListener("headerheightchange",()=>{m()});</script> <article class="prose dark:prose-invert max-w-none prose-img:rounded-xl prose-img:cursor-zoom-in min-w-0" data-article> <header class="mb-8 not-prose"> <div class="flex flex-col gap-6 md:grid md:grid-cols-1"> <div class="flex flex-col gap-4 "> <h1 class="text-3xl md:text-4xl font-bold leading-tight text-left"> 从 APRIL 到 RollPacker：如何在 RL 里处理 Long-tail Rollouts </h1> <div class="text-zinc-500 text-sm flex items-start justify-start gap-3 flex-wrap "> <time class="flex items-center gap-1" datetime="2026-03-02T00:00:00.000Z" title="发布于 2026-03-02"> <span aria-hidden="true">📅</span> <span>
+</span><span class="flex-1 truncate" data-title>结语¶</span></a></li> </ol> </nav> </div> </aside> </div> <script type="module">const p=Array.from(document.querySelectorAll("[data-toc-link]")),e=document.querySelector("[data-toc-container]"),i=document.querySelector("[data-toc-shell]"),l=()=>{const t=getComputedStyle(document.documentElement).getPropertyValue("--site-header-height");return parseFloat(t)||0},r=window.matchMedia("(min-width: 1024px)"),g=p.map(t=>document.getElementById(t.dataset.target||"")).filter(t=>!!t),m=()=>{const t=l();g.forEach(n=>{n.style.scrollMarginTop=`${t+12}px`})},w=t=>`#${encodeURIComponent(t)}`,v=t=>decodeURIComponent(t.replace(/^#/,"")),f=t=>{p.forEach(n=>{const o=n.dataset.target===t;n.dataset.active=o?"true":"false",n.setAttribute("aria-current",o?"true":"false")})},u=(t,n=!1)=>{const o=document.getElementById(t);if(!o)return;const a=l(),c=window.scrollY+o.getBoundingClientRect().top-a-12;n?history.replaceState(null,"",w(t)):history.pushState(null,"",w(t)),window.scrollTo({top:c,behavior:"smooth"}),f(t)};p.forEach(t=>t.addEventListener("click",n=>{const o=t.dataset.target;o&&(n.preventDefault(),u(o))}));const y=()=>{e&&(e.dataset.fixed="false",e.style.position="",e.style.left="",e.style.width="",e.style.height="",e.style.maxHeight="",e.style.top="",i&&(i.style.minHeight=""))},x=()=>{if(!e||!i)return;const t=i.getBoundingClientRect(),n=l(),o=`calc(100vh - ${n}px - 16px)`;e.dataset.fixed="true",i.style.minHeight=`${e.offsetHeight}px`,e.style.position="fixed",e.style.top=`${n}px`,e.style.left=`${t.left}px`,e.style.width=`${t.width}px`,e.style.height=o,e.style.maxHeight=o},d=()=>{if(!e||e.dataset.fixed==="true"||!r.matches)return;const t=parseFloat(getComputedStyle(e).top||"0"),n=e.offsetTop-t;if(Number.isNaN(t)||window.scrollY<n)return;const o=e.getBoundingClientRect().top;Math.abs(o-t)>2&&x()},E=()=>{if(!r.matches){y();return}e?.dataset.fixed==="true"&&x()};if(g.length>0){m();const t=new IntersectionObserver(o=>{const a=o.filter(s=>s.isIntersecting).sort((s,h)=>s.target.getBoundingClientRect().top-h.target.getBoundingClientRect().top);if(a[0]){f(a[0].target.id);return}const c=o.filter(s=>s.boundingClientRect.top<0).sort((s,h)=>h.target.getBoundingClientRect().top-s.target.getBoundingClientRect().top);c[0]&&f(c[0].target.id)},{rootMargin:`-${l()}px 0% -55% 0%`,threshold:[0,.25,.5,1]});g.forEach(o=>t.observe(o));const n=v(location.hash||"");n&&requestAnimationFrame(()=>u(n,!0)),window.addEventListener("hashchange",()=>{const o=v(location.hash||"");o&&u(o,!0)})}y();r.matches&&d();r.addEventListener("change",()=>{y(),requestAnimationFrame(()=>{r.matches&&d()})});window.addEventListener("scroll",d,{passive:!0});window.addEventListener("resize",E);window.addEventListener("load",()=>{d(),m()},{once:!0});window.addEventListener("headerheightchange",()=>{m()});</script> <article class="prose dark:prose-invert max-w-none prose-img:rounded-xl prose-img:cursor-zoom-in min-w-0" data-article> <header class="mb-8 not-prose"> <div class="flex flex-col gap-6 md:grid md:grid-cols-[minmax(0,1fr)_220px] md:items-start md:gap-8"> <div class="flex flex-col gap-4 md:h-full"> <h1 class="text-3xl md:text-4xl font-bold leading-tight text-left"> 从 APRIL 到 RollPacker：如何在 RL 里处理 Long-tail Rollouts </h1> <div class="text-zinc-500 text-sm flex items-start justify-start gap-3 flex-wrap md:mt-auto"> <time class="flex items-center gap-1" datetime="2026-03-02T00:00:00.000Z" title="发布于 2026-03-02"> <span aria-hidden="true">📅</span> <span>
 发布于 <span class="font-medium">2026-03-02</span> </span> </time> <span aria-hidden="true">·</span> <time class="flex items-center gap-1" datetime="2026-03-03T06:12:00.000Z" title="更新于 2026-03-03"> <span aria-hidden="true">🔄</span> <span>
 更新于 <span class="font-medium">2026-03-03</span> </span> </time> <div class="flex items-center gap-1"> <span aria-hidden="true">✍️</span> 2695 字
 </div> <div class="flex items-center gap-1" title="2695 words"> <span aria-hidden="true">⏱️</span> 6 min read </div> </div> <div class="flex flex-wrap gap-2 items-center" data-testid="post-tags"> <span class="text-zinc-500 text-sm flex items-center gap-1"> <span aria-hidden="true">🏷️</span> <span>标签：</span> </span> <a href="/blog-preview/previews/pr-426/tags/rl-infra/" class="tag-chip inline-flex items-center gap-1.5 rounded-full border transition-colors duration-200 font-medium cursor-pointer text-xs px-2 py-1 
     border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 
     dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 dark:hover:border-sky-700
-    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-tag-slug="rl-infra" data-testid="tag-rl-infra"> <span class="tag-name pointer-events-none">RL Infra</span>  </a> </div> </div>   </div> </header> <p>在 LLM 的 RL post-training（PPO / GRPO / DAPO / GSPO 等）里，工程团队经常会遇到一个“看起来像算法问题，实际上是系统瓶颈”的现象：<strong>rollout 占掉 90%+ 的端到端时间</strong>，而且<strong>同步 rollout 的每一步会被极少数超长样本拖死</strong>。<a href="https://arxiv.org/pdf/2509.18521" target="_blank" rel="noopener noreferrer">APRIL</a> 和 <a href="https://arxiv.org/pdf/2509.21009" target="_blank" rel="noopener noreferrer">RollPacker</a> 可以看作对同一类瓶颈的两条路线：前者从“请求生命周期”切入做 <strong>Partial Rollouts</strong>，后者从“轮次调度”切入做 <strong>Tail Batching</strong>。两者共同目标都是：<strong>减少 GPU bubbles（空转）</strong>，提高吞吐，但尽量不牺牲同步 on-policy 的训练属性与最终效果。</p>
+    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-tag-slug="rl-infra" data-testid="tag-rl-infra"> <span class="tag-name pointer-events-none">RL Infra</span>  </a> </div> </div> <figure class="hidden md:block md:justify-self-end overflow-hidden rounded-xl border border-zinc-200/80 shadow-md dark:border-zinc-800/80 w-full max-w-[320px] md:max-w-[220px] md:min-w-[160px]" data-post-cover> <img src="/blog-preview/previews/pr-426/generated/mermaid/notion/a9fa49574fc6.light.svg" alt="从 APRIL 到 RollPacker：如何在 RL 里处理 Long-tail Rollouts" class="aspect-[4/3] w-full object-cover transition duration-200" loading="eager" decoding="async"> </figure>  </div> </header> <p>在 LLM 的 RL post-training（PPO / GRPO / DAPO / GSPO 等）里，工程团队经常会遇到一个“看起来像算法问题，实际上是系统瓶颈”的现象：<strong>rollout 占掉 90%+ 的端到端时间</strong>，而且<strong>同步 rollout 的每一步会被极少数超长样本拖死</strong>。<a href="https://arxiv.org/pdf/2509.18521" target="_blank" rel="noopener noreferrer">APRIL</a> 和 <a href="https://arxiv.org/pdf/2509.21009" target="_blank" rel="noopener noreferrer">RollPacker</a> 可以看作对同一类瓶颈的两条路线：前者从“请求生命周期”切入做 <strong>Partial Rollouts</strong>，后者从“轮次调度”切入做 <strong>Tail Batching</strong>。两者共同目标都是：<strong>减少 GPU bubbles（空转）</strong>，提高吞吐，但尽量不牺牲同步 on-policy 的训练属性与最终效果。</p>
 <hr>
 <h2 id="一long-tail-rollouts同步-rl-的-makespan-被尾巴决定">一、Long-tail rollouts：同步 RL 的 makespan 被尾巴决定<a href="#一long-tail-rollouts同步-rl-的-makespan-被尾巴决定" class="heading-anchor" aria-label="Link to 一、Long-tail rollouts：同步 RL 的 makespan 被尾巴决定">¶</a></h2>
 <p>把一个同步 rollout step 抽象成三段：</p>
@@ -232,257 +232,11 @@
 </blockquote>
 <p>APRIL/Partial Rollouts 要成立，abort 必须是真正意义上的“停止正在跑的请求”。SGLang 提供了明确的 HTTP 链路（<code>/generate</code> + <code>/abort_request</code>），并把 abort 传递到 tokenizer manager 和调度器里进行队列清理与状态回收。工程上这非常关键：如果 abort 只是“上层不等结果”，而底层推理还在继续烧 GPU，那 bubble 依然存在，只是被隐藏了。Rollout 系统能否吃到 APRIL 的收益，很大程度取决于 serving 引擎是否具备这种“可抢占/可中止”的能力。</p>
 <p><u><em>数据流图</em></u></p>
-<figure class="code-block not-prose" data-language="mermaid" data-raw-code="flowchart TD
-  A[&#x22;Prompt Dataset\n(slime.utils.data.Dataset)&#x22;] -->|&#x22;get_samples(num)\n从全局数据集取 prompt&#x22;| B[&#x22;RolloutDataSourceWithBuffer\n(slime.rollout.data_source.RolloutDataSourceWithBuffer)&#x22;]
-  B -->|&#x22;优先从 buffer 弹出 partial\nbuffer_filter(...)&#x22;| C[&#x22;Sample Groups\nlist[list[Sample]]&#x22;]
-  B -->|&#x22;不足部分从 dataset 生成新样本\nsuper().get_samples&#x22;| C
-
-  C -->|&#x22;submit_generate_tasks(groups)\nasyncio.create_task(...)&#x22;| D[&#x22;Pending Tasks\nGenerateState.pendings\n(slime.rollout.sglang_rollout.GenerateState)&#x22;]
-
-  D -->|&#x22;task 完成: group=task.result()\nasyncio.wait(FIRST_COMPLETED)&#x22;| E[&#x22;Generated Groups\n(list[Sample])&#x22;]
-
-  E -->|&#x22;dynamic_filter(group)\ncall_dynamic_filter&#x22;| F[&#x22;Keep?&#x22;]
-  F -->|keep=true| G[&#x22;Accepted Data\nlen(data)++\n(用于本轮训练)&#x22;]
-  F -->|keep=false| H[&#x22;Dropped\nmetric_gatherer.on_dynamic_filter_drop&#x22;]
-
-  G -->|&#x22;达到 target_data_size\n(args.rollout_batch_size)&#x22;| I[&#x22;Early Stop Trigger\n(本轮结束)&#x22;]
-  I -->|&#x22;abort(args, rollout_id)\nPOST /abort_request abort_all=true&#x22;| J[&#x22;Abort Remaining Requests\n(未完成的 pendings)&#x22;]
-
-  J -->|&#x22;收集 partial groups:\nif sample.response non-empty\nmetadata.start_rollout_id=...&#x22;| K[&#x22;aborted_samples\n(partial groups)&#x22;]
-
-  K -->|&#x22;data_source.add_samples(aborted_samples)\n回灌 buffer&#x22;| B
-
-  G -->|&#x22;RolloutFnTrainOutput\nsamples=data&#x22;| L[&#x22;Training Pipeline\n(Ray RolloutManager -> Learner)&#x22;]" data-line-numbers="true"><div class="code-block__header"><div class="code-block__title">mermaid</div><button type="button" class="code-block__copy" aria-label="复制代码">Copy</button></div><pre class="code-block__pre" tabindex="0" data-theme="light" data-language="mermaid"><code data-language="mermaid"><span class="line" data-line-number="1"><span style="color:#24292E">flowchart TD</span></span>
-<span class="line" data-line-number="2"><span style="color:#24292E">  A["Prompt Dataset\n(slime.utils.data.Dataset)"] -->|"get_samples(num)\n从全局数据集取 prompt"| B["RolloutDataSourceWithBuffer\n(slime.rollout.data_source.RolloutDataSourceWithBuffer)"]</span></span>
-<span class="line" data-line-number="3"><span style="color:#24292E">  B -->|"优先从 buffer 弹出 partial\nbuffer_filter(...)"| C["Sample Groups\nlist[list[Sample]]"]</span></span>
-<span class="line" data-line-number="4"><span style="color:#24292E">  B -->|"不足部分从 dataset 生成新样本\nsuper().get_samples"| C</span></span>
-<span class="line" data-line-number="5"> </span>
-<span class="line" data-line-number="6"><span style="color:#24292E">  C -->|"submit_generate_tasks(groups)\nasyncio.create_task(...)"| D["Pending Tasks\nGenerateState.pendings\n(slime.rollout.sglang_rollout.GenerateState)"]</span></span>
-<span class="line" data-line-number="7"> </span>
-<span class="line" data-line-number="8"><span style="color:#24292E">  D -->|"task 完成: group=task.result()\nasyncio.wait(FIRST_COMPLETED)"| E["Generated Groups\n(list[Sample])"]</span></span>
-<span class="line" data-line-number="9"> </span>
-<span class="line" data-line-number="10"><span style="color:#24292E">  E -->|"dynamic_filter(group)\ncall_dynamic_filter"| F["Keep?"]</span></span>
-<span class="line" data-line-number="11"><span style="color:#24292E">  F -->|keep=true| G["Accepted Data\nlen(data)++\n(用于本轮训练)"]</span></span>
-<span class="line" data-line-number="12"><span style="color:#24292E">  F -->|keep=false| H["Dropped\nmetric_gatherer.on_dynamic_filter_drop"]</span></span>
-<span class="line" data-line-number="13"> </span>
-<span class="line" data-line-number="14"><span style="color:#24292E">  G -->|"达到 target_data_size\n(args.rollout_batch_size)"| I["Early Stop Trigger\n(本轮结束)"]</span></span>
-<span class="line" data-line-number="15"><span style="color:#24292E">  I -->|"abort(args, rollout_id)\nPOST /abort_request abort_all=true"| J["Abort Remaining Requests\n(未完成的 pendings)"]</span></span>
-<span class="line" data-line-number="16"> </span>
-<span class="line" data-line-number="17"><span style="color:#24292E">  J -->|"收集 partial groups:\nif sample.response non-empty\nmetadata.start_rollout_id=..."| K["aborted_samples\n(partial groups)"]</span></span>
-<span class="line" data-line-number="18"> </span>
-<span class="line" data-line-number="19"><span style="color:#24292E">  K -->|"data_source.add_samples(aborted_samples)\n回灌 buffer"| B</span></span>
-<span class="line" data-line-number="20"> </span>
-<span class="line" data-line-number="21"><span style="color:#24292E">  G -->|"RolloutFnTrainOutput\nsamples=data"| L["Training Pipeline\n(Ray RolloutManager -> Learner)"]</span></span></code></pre><pre class="code-block__pre" tabindex="0" data-theme="dark" data-language="mermaid"><code data-language="mermaid"><span class="line" data-line-number="1"><span style="color:#D4D4D4">flowchart TD</span></span>
-<span class="line" data-line-number="2"><span style="color:#D4D4D4">  A["Prompt Dataset\n(slime.utils.data.Dataset)"] -->|"get_samples(num)\n从全局数据集取 prompt"| B["RolloutDataSourceWithBuffer\n(slime.rollout.data_source.RolloutDataSourceWithBuffer)"]</span></span>
-<span class="line" data-line-number="3"><span style="color:#D4D4D4">  B -->|"优先从 buffer 弹出 partial\nbuffer_filter(...)"| C["Sample Groups\nlist[list[Sample]]"]</span></span>
-<span class="line" data-line-number="4"><span style="color:#D4D4D4">  B -->|"不足部分从 dataset 生成新样本\nsuper().get_samples"| C</span></span>
-<span class="line" data-line-number="5"> </span>
-<span class="line" data-line-number="6"><span style="color:#D4D4D4">  C -->|"submit_generate_tasks(groups)\nasyncio.create_task(...)"| D["Pending Tasks\nGenerateState.pendings\n(slime.rollout.sglang_rollout.GenerateState)"]</span></span>
-<span class="line" data-line-number="7"> </span>
-<span class="line" data-line-number="8"><span style="color:#D4D4D4">  D -->|"task 完成: group=task.result()\nasyncio.wait(FIRST_COMPLETED)"| E["Generated Groups\n(list[Sample])"]</span></span>
-<span class="line" data-line-number="9"> </span>
-<span class="line" data-line-number="10"><span style="color:#D4D4D4">  E -->|"dynamic_filter(group)\ncall_dynamic_filter"| F["Keep?"]</span></span>
-<span class="line" data-line-number="11"><span style="color:#D4D4D4">  F -->|keep=true| G["Accepted Data\nlen(data)++\n(用于本轮训练)"]</span></span>
-<span class="line" data-line-number="12"><span style="color:#D4D4D4">  F -->|keep=false| H["Dropped\nmetric_gatherer.on_dynamic_filter_drop"]</span></span>
-<span class="line" data-line-number="13"> </span>
-<span class="line" data-line-number="14"><span style="color:#D4D4D4">  G -->|"达到 target_data_size\n(args.rollout_batch_size)"| I["Early Stop Trigger\n(本轮结束)"]</span></span>
-<span class="line" data-line-number="15"><span style="color:#D4D4D4">  I -->|"abort(args, rollout_id)\nPOST /abort_request abort_all=true"| J["Abort Remaining Requests\n(未完成的 pendings)"]</span></span>
-<span class="line" data-line-number="16"> </span>
-<span class="line" data-line-number="17"><span style="color:#D4D4D4">  J -->|"收集 partial groups:\nif sample.response non-empty\nmetadata.start_rollout_id=..."| K["aborted_samples\n(partial groups)"]</span></span>
-<span class="line" data-line-number="18"> </span>
-<span class="line" data-line-number="19"><span style="color:#D4D4D4">  K -->|"data_source.add_samples(aborted_samples)\n回灌 buffer"| B</span></span>
-<span class="line" data-line-number="20"> </span>
-<span class="line" data-line-number="21"><span style="color:#D4D4D4">  G -->|"RolloutFnTrainOutput\nsamples=data"| L["Training Pipeline\n(Ray RolloutManager -> Learner)"]</span></span></code></pre></figure>
+<span class="mermaid-dual-image"><img src="/blog-preview/previews/pr-426/generated/mermaid/notion/a9fa49574fc6.light.svg" alt="Mermaid Diagram" loading="lazy" decoding="async" data-theme="light" class="mermaid-dual-image__img mermaid-dual-image__img--light"><img src="/blog-preview/previews/pr-426/generated/mermaid/notion/a9fa49574fc6.dark.svg" alt="Mermaid Diagram" loading="lazy" decoding="async" data-theme="dark" class="mermaid-dual-image__img mermaid-dual-image__img--dark"></span>
 <p><u><em>架构图</em></u></p>
-<figure class="code-block not-prose" data-language="mermaid" data-raw-code="flowchart LR
-  subgraph R[&#x22;RL Driver / Orchestrator\n(train.py / train_async.py + Ray)&#x22;]
-    RMGR[&#x22;RolloutManager Actor\n(slime.ray.rollout.RolloutManager)&#x22;]
-    DS[&#x22;DataSource\n(RolloutDataSourceWithBuffer)&#x22;]
-  end
-
-  subgraph SG[&#x22;SGLang Serving Side&#x22;]
-    ROUTER[&#x22;Router / Frontend\n(HTTP)&#x22;]
-    WORKER[&#x22;Workers\n(http_server.py + TokenizerManager + Scheduler)&#x22;]
-  end
-
-  subgraph RLALG[&#x22;RL Logic&#x22;]
-    ROLLOUT_FN[&#x22;Rollout Fn\n(slime.rollout.sglang_rollout.generate_rollout)&#x22;]
-    GEN_STATE[&#x22;GenerateState\n(semaphore + pendings)&#x22;]
-    RMFN[&#x22;Reward Model Call\n(async_rm / batched_async_rm)&#x22;]
-  end
-
-  RMGR -->|&#x22;call_rollout_fn(...)\nslime.rollout.base_types.call_rollout_fn&#x22;| ROLLOUT_FN
-  ROLLOUT_FN -->|&#x22;data_source.get_samples()\n+ add_samples(partials)&#x22;| DS
-  ROLLOUT_FN -->|&#x22;submit_generate_tasks\nwait FIRST_COMPLETED&#x22;| GEN_STATE
-
-  GEN_STATE -->|&#x22;POST /generate\npayload.input_ids=prompt_ids or sample.tokens&#x22;| ROUTER
-  ROUTER -->|&#x22;forward to worker&#x22;| WORKER
-  WORKER -->|&#x22;return text + meta_info\n(logprobs, etc.)&#x22;| GEN_STATE
-
-  GEN_STATE -->|&#x22;reward compute\nasync_rm/batched_async_rm&#x22;| RMFN
-  RMFN -->|&#x22;reward attached to Sample&#x22;| GEN_STATE
-
-  ROLLOUT_FN -->|&#x22;POST /abort_request\nabort_all=true&#x22;| WORKER
-  ROLLOUT_FN -->|&#x22;collect partial samples\naborted_samples -> buffer&#x22;| DS" data-line-numbers="true"><div class="code-block__header"><div class="code-block__title">mermaid</div><button type="button" class="code-block__copy" aria-label="复制代码">Copy</button></div><pre class="code-block__pre" tabindex="0" data-theme="light" data-language="mermaid"><code data-language="mermaid"><span class="line" data-line-number="1"><span style="color:#24292E">flowchart LR</span></span>
-<span class="line" data-line-number="2"><span style="color:#24292E">  subgraph R["RL Driver / Orchestrator\n(train.py / train_async.py + Ray)"]</span></span>
-<span class="line" data-line-number="3"><span style="color:#24292E">    RMGR["RolloutManager Actor\n(slime.ray.rollout.RolloutManager)"]</span></span>
-<span class="line" data-line-number="4"><span style="color:#24292E">    DS["DataSource\n(RolloutDataSourceWithBuffer)"]</span></span>
-<span class="line" data-line-number="5"><span style="color:#24292E">  end</span></span>
-<span class="line" data-line-number="6"> </span>
-<span class="line" data-line-number="7"><span style="color:#24292E">  subgraph SG["SGLang Serving Side"]</span></span>
-<span class="line" data-line-number="8"><span style="color:#24292E">    ROUTER["Router / Frontend\n(HTTP)"]</span></span>
-<span class="line" data-line-number="9"><span style="color:#24292E">    WORKER["Workers\n(http_server.py + TokenizerManager + Scheduler)"]</span></span>
-<span class="line" data-line-number="10"><span style="color:#24292E">  end</span></span>
-<span class="line" data-line-number="11"> </span>
-<span class="line" data-line-number="12"><span style="color:#24292E">  subgraph RLALG["RL Logic"]</span></span>
-<span class="line" data-line-number="13"><span style="color:#24292E">    ROLLOUT_FN["Rollout Fn\n(slime.rollout.sglang_rollout.generate_rollout)"]</span></span>
-<span class="line" data-line-number="14"><span style="color:#24292E">    GEN_STATE["GenerateState\n(semaphore + pendings)"]</span></span>
-<span class="line" data-line-number="15"><span style="color:#24292E">    RMFN["Reward Model Call\n(async_rm / batched_async_rm)"]</span></span>
-<span class="line" data-line-number="16"><span style="color:#24292E">  end</span></span>
-<span class="line" data-line-number="17"> </span>
-<span class="line" data-line-number="18"><span style="color:#24292E">  RMGR -->|"call_rollout_fn(...)\nslime.rollout.base_types.call_rollout_fn"| ROLLOUT_FN</span></span>
-<span class="line" data-line-number="19"><span style="color:#24292E">  ROLLOUT_FN -->|"data_source.get_samples()\n+ add_samples(partials)"| DS</span></span>
-<span class="line" data-line-number="20"><span style="color:#24292E">  ROLLOUT_FN -->|"submit_generate_tasks\nwait FIRST_COMPLETED"| GEN_STATE</span></span>
-<span class="line" data-line-number="21"> </span>
-<span class="line" data-line-number="22"><span style="color:#24292E">  GEN_STATE -->|"POST /generate\npayload.input_ids=prompt_ids or sample.tokens"| ROUTER</span></span>
-<span class="line" data-line-number="23"><span style="color:#24292E">  ROUTER -->|"forward to worker"| WORKER</span></span>
-<span class="line" data-line-number="24"><span style="color:#24292E">  WORKER -->|"return text + meta_info\n(logprobs, etc.)"| GEN_STATE</span></span>
-<span class="line" data-line-number="25"> </span>
-<span class="line" data-line-number="26"><span style="color:#24292E">  GEN_STATE -->|"reward compute\nasync_rm/batched_async_rm"| RMFN</span></span>
-<span class="line" data-line-number="27"><span style="color:#24292E">  RMFN -->|"reward attached to Sample"| GEN_STATE</span></span>
-<span class="line" data-line-number="28"> </span>
-<span class="line" data-line-number="29"><span style="color:#24292E">  ROLLOUT_FN -->|"POST /abort_request\nabort_all=true"| WORKER</span></span>
-<span class="line" data-line-number="30"><span style="color:#24292E">  ROLLOUT_FN -->|"collect partial samples\naborted_samples -> buffer"| DS</span></span></code></pre><pre class="code-block__pre" tabindex="0" data-theme="dark" data-language="mermaid"><code data-language="mermaid"><span class="line" data-line-number="1"><span style="color:#D4D4D4">flowchart LR</span></span>
-<span class="line" data-line-number="2"><span style="color:#D4D4D4">  subgraph R["RL Driver / Orchestrator\n(train.py / train_async.py + Ray)"]</span></span>
-<span class="line" data-line-number="3"><span style="color:#D4D4D4">    RMGR["RolloutManager Actor\n(slime.ray.rollout.RolloutManager)"]</span></span>
-<span class="line" data-line-number="4"><span style="color:#D4D4D4">    DS["DataSource\n(RolloutDataSourceWithBuffer)"]</span></span>
-<span class="line" data-line-number="5"><span style="color:#D4D4D4">  end</span></span>
-<span class="line" data-line-number="6"> </span>
-<span class="line" data-line-number="7"><span style="color:#D4D4D4">  subgraph SG["SGLang Serving Side"]</span></span>
-<span class="line" data-line-number="8"><span style="color:#D4D4D4">    ROUTER["Router / Frontend\n(HTTP)"]</span></span>
-<span class="line" data-line-number="9"><span style="color:#D4D4D4">    WORKER["Workers\n(http_server.py + TokenizerManager + Scheduler)"]</span></span>
-<span class="line" data-line-number="10"><span style="color:#D4D4D4">  end</span></span>
-<span class="line" data-line-number="11"> </span>
-<span class="line" data-line-number="12"><span style="color:#D4D4D4">  subgraph RLALG["RL Logic"]</span></span>
-<span class="line" data-line-number="13"><span style="color:#D4D4D4">    ROLLOUT_FN["Rollout Fn\n(slime.rollout.sglang_rollout.generate_rollout)"]</span></span>
-<span class="line" data-line-number="14"><span style="color:#D4D4D4">    GEN_STATE["GenerateState\n(semaphore + pendings)"]</span></span>
-<span class="line" data-line-number="15"><span style="color:#D4D4D4">    RMFN["Reward Model Call\n(async_rm / batched_async_rm)"]</span></span>
-<span class="line" data-line-number="16"><span style="color:#D4D4D4">  end</span></span>
-<span class="line" data-line-number="17"> </span>
-<span class="line" data-line-number="18"><span style="color:#D4D4D4">  RMGR -->|"call_rollout_fn(...)\nslime.rollout.base_types.call_rollout_fn"| ROLLOUT_FN</span></span>
-<span class="line" data-line-number="19"><span style="color:#D4D4D4">  ROLLOUT_FN -->|"data_source.get_samples()\n+ add_samples(partials)"| DS</span></span>
-<span class="line" data-line-number="20"><span style="color:#D4D4D4">  ROLLOUT_FN -->|"submit_generate_tasks\nwait FIRST_COMPLETED"| GEN_STATE</span></span>
-<span class="line" data-line-number="21"> </span>
-<span class="line" data-line-number="22"><span style="color:#D4D4D4">  GEN_STATE -->|"POST /generate\npayload.input_ids=prompt_ids or sample.tokens"| ROUTER</span></span>
-<span class="line" data-line-number="23"><span style="color:#D4D4D4">  ROUTER -->|"forward to worker"| WORKER</span></span>
-<span class="line" data-line-number="24"><span style="color:#D4D4D4">  WORKER -->|"return text + meta_info\n(logprobs, etc.)"| GEN_STATE</span></span>
-<span class="line" data-line-number="25"> </span>
-<span class="line" data-line-number="26"><span style="color:#D4D4D4">  GEN_STATE -->|"reward compute\nasync_rm/batched_async_rm"| RMFN</span></span>
-<span class="line" data-line-number="27"><span style="color:#D4D4D4">  RMFN -->|"reward attached to Sample"| GEN_STATE</span></span>
-<span class="line" data-line-number="28"> </span>
-<span class="line" data-line-number="29"><span style="color:#D4D4D4">  ROLLOUT_FN -->|"POST /abort_request\nabort_all=true"| WORKER</span></span>
-<span class="line" data-line-number="30"><span style="color:#D4D4D4">  ROLLOUT_FN -->|"collect partial samples\naborted_samples -> buffer"| DS</span></span></code></pre></figure>
+<span class="mermaid-dual-image"><img src="/blog-preview/previews/pr-426/generated/mermaid/notion/13f6c96de350.light.svg" alt="Mermaid Diagram" loading="lazy" decoding="async" data-theme="light" class="mermaid-dual-image__img mermaid-dual-image__img--light"><img src="/blog-preview/previews/pr-426/generated/mermaid/notion/13f6c96de350.dark.svg" alt="Mermaid Diagram" loading="lazy" decoding="async" data-theme="dark" class="mermaid-dual-image__img mermaid-dual-image__img--dark"></span>
 <p><u><em>时序图</em></u></p>
-<figure class="code-block not-prose" data-language="mermaid" data-raw-code="sequenceDiagram
-  participant M as [&#x22;RolloutManager\n(slime.ray.rollout.RolloutManager)&#x22;]
-  participant RF as [&#x22;generate_rollout\n(slime.rollout.sglang_rollout.generate_rollout)&#x22;]
-  participant DS as [&#x22;DataSourceWithBuffer\n(slime.rollout.data_source.RolloutDataSourceWithBuffer)&#x22;]
-  participant GS as [&#x22;GenerateState\n(slime.rollout.sglang_rollout.GenerateState)&#x22;]
-  participant SW as [&#x22;SGLang Worker\n(http_server.py + TokenizerManager)&#x22;]
-  participant SCH as [&#x22;Scheduler\n(sglang.srt.managers.scheduler.Scheduler)&#x22;]
-
-  M->>RF: [&#x22;call_rollout_fn(generate_rollout, ...)\n(slime/rollout/base_types.py:19-26)&#x22;]
-  loop [&#x22;直到收集到 target_data_size&#x22;]
-    RF->>DS: [&#x22;get_samples(over_sampling_batch_size)\n优先 buffer 再 dataset&#x22;]
-    RF->>GS: [&#x22;submit_generate_tasks(groups)\ncreate_task(generate_and_rm_group)&#x22;]
-    GS->>SW: [&#x22;POST /generate\n(slime.generate -> http_server.generate_request)&#x22;]
-    SW->>SW: [&#x22;tokenizer_manager.generate_request(...).__anext__()\n(http_server.py:675-680)&#x22;]
-    SW->>SCH: [&#x22;scheduler runs decoding loop\n(内部调度/队列)&#x22;]
-    SCH-->>SW: [&#x22;partial/full output&#x22;]
-    SW-->>GS: [&#x22;return text + meta_info\n(logprobs etc.)&#x22;]
-    GS-->>RF: [&#x22;task.result() => group(list[Sample])\nasyncio.wait(FIRST_COMPLETED)&#x22;]
-    RF->>RF: [&#x22;dynamic_filter(group)\nkeep? then append to data&#x22;]
-  end
-
-  RF->>RF: [&#x22;Early stop reached\nlen(data)=rollout_batch_size&#x22;]
-  RF->>SW: [&#x22;POST /abort_request abort_all=true\n(slime.abort:304-306)&#x22;]
-  SW->>SW: [&#x22;tokenizer_manager.abort_request\n(tokenizer_manager.py:1315-1324)&#x22;]
-  SW->>SCH: [&#x22;send AbortReq to scheduler\n(tokenizer_manager.py:1318-1319)&#x22;]
-  SCH->>SCH: [&#x22;abort_request\n(scheduler.py:2738-2779...)&#x22;]
-
-  loop [&#x22;drain pendings&#x22;]
-    RF->>GS: [&#x22;wait pending tasks to finish\nasyncio.wait(FIRST_COMPLETED)&#x22;]
-    RF->>RF: [&#x22;if partial_rollout:\ncollect group where sample.response non-empty\nadd start_rollout_id\n(sglang_rollout.py:312-321)&#x22;]
-  end
-
-  RF->>DS: [&#x22;add_samples(aborted_samples)\nrecycle partial groups\n(sglang_rollout.py:561-562)&#x22;]
-  RF-->>M: [&#x22;RolloutFnTrainOutput(samples=data, ...)\n+ partials buffered&#x22;]" data-line-numbers="true"><div class="code-block__header"><div class="code-block__title">mermaid</div><button type="button" class="code-block__copy" aria-label="复制代码">Copy</button></div><pre class="code-block__pre" tabindex="0" data-theme="light" data-language="mermaid"><code data-language="mermaid"><span class="line" data-line-number="1"><span style="color:#24292E">sequenceDiagram</span></span>
-<span class="line" data-line-number="2"><span style="color:#24292E">  participant M as ["RolloutManager\n(slime.ray.rollout.RolloutManager)"]</span></span>
-<span class="line" data-line-number="3"><span style="color:#24292E">  participant RF as ["generate_rollout\n(slime.rollout.sglang_rollout.generate_rollout)"]</span></span>
-<span class="line" data-line-number="4"><span style="color:#24292E">  participant DS as ["DataSourceWithBuffer\n(slime.rollout.data_source.RolloutDataSourceWithBuffer)"]</span></span>
-<span class="line" data-line-number="5"><span style="color:#24292E">  participant GS as ["GenerateState\n(slime.rollout.sglang_rollout.GenerateState)"]</span></span>
-<span class="line" data-line-number="6"><span style="color:#24292E">  participant SW as ["SGLang Worker\n(http_server.py + TokenizerManager)"]</span></span>
-<span class="line" data-line-number="7"><span style="color:#24292E">  participant SCH as ["Scheduler\n(sglang.srt.managers.scheduler.Scheduler)"]</span></span>
-<span class="line" data-line-number="8"> </span>
-<span class="line" data-line-number="9"><span style="color:#24292E">  M->>RF: ["call_rollout_fn(generate_rollout, ...)\n(slime/rollout/base_types.py:19-26)"]</span></span>
-<span class="line" data-line-number="10"><span style="color:#24292E">  loop ["直到收集到 target_data_size"]</span></span>
-<span class="line" data-line-number="11"><span style="color:#24292E">    RF->>DS: ["get_samples(over_sampling_batch_size)\n优先 buffer 再 dataset"]</span></span>
-<span class="line" data-line-number="12"><span style="color:#24292E">    RF->>GS: ["submit_generate_tasks(groups)\ncreate_task(generate_and_rm_group)"]</span></span>
-<span class="line" data-line-number="13"><span style="color:#24292E">    GS->>SW: ["POST /generate\n(slime.generate -> http_server.generate_request)"]</span></span>
-<span class="line" data-line-number="14"><span style="color:#24292E">    SW->>SW: ["tokenizer_manager.generate_request(...).__anext__()\n(http_server.py:675-680)"]</span></span>
-<span class="line" data-line-number="15"><span style="color:#24292E">    SW->>SCH: ["scheduler runs decoding loop\n(内部调度/队列)"]</span></span>
-<span class="line" data-line-number="16"><span style="color:#24292E">    SCH-->>SW: ["partial/full output"]</span></span>
-<span class="line" data-line-number="17"><span style="color:#24292E">    SW-->>GS: ["return text + meta_info\n(logprobs etc.)"]</span></span>
-<span class="line" data-line-number="18"><span style="color:#24292E">    GS-->>RF: ["task.result() => group(list[Sample])\nasyncio.wait(FIRST_COMPLETED)"]</span></span>
-<span class="line" data-line-number="19"><span style="color:#24292E">    RF->>RF: ["dynamic_filter(group)\nkeep? then append to data"]</span></span>
-<span class="line" data-line-number="20"><span style="color:#24292E">  end</span></span>
-<span class="line" data-line-number="21"> </span>
-<span class="line" data-line-number="22"><span style="color:#24292E">  RF->>RF: ["Early stop reached\nlen(data)=rollout_batch_size"]</span></span>
-<span class="line" data-line-number="23"><span style="color:#24292E">  RF->>SW: ["POST /abort_request abort_all=true\n(slime.abort:304-306)"]</span></span>
-<span class="line" data-line-number="24"><span style="color:#24292E">  SW->>SW: ["tokenizer_manager.abort_request\n(tokenizer_manager.py:1315-1324)"]</span></span>
-<span class="line" data-line-number="25"><span style="color:#24292E">  SW->>SCH: ["send AbortReq to scheduler\n(tokenizer_manager.py:1318-1319)"]</span></span>
-<span class="line" data-line-number="26"><span style="color:#24292E">  SCH->>SCH: ["abort_request\n(scheduler.py:2738-2779...)"]</span></span>
-<span class="line" data-line-number="27"> </span>
-<span class="line" data-line-number="28"><span style="color:#24292E">  loop ["drain pendings"]</span></span>
-<span class="line" data-line-number="29"><span style="color:#24292E">    RF->>GS: ["wait pending tasks to finish\nasyncio.wait(FIRST_COMPLETED)"]</span></span>
-<span class="line" data-line-number="30"><span style="color:#24292E">    RF->>RF: ["if partial_rollout:\ncollect group where sample.response non-empty\nadd start_rollout_id\n(sglang_rollout.py:312-321)"]</span></span>
-<span class="line" data-line-number="31"><span style="color:#24292E">  end</span></span>
-<span class="line" data-line-number="32"> </span>
-<span class="line" data-line-number="33"><span style="color:#24292E">  RF->>DS: ["add_samples(aborted_samples)\nrecycle partial groups\n(sglang_rollout.py:561-562)"]</span></span>
-<span class="line" data-line-number="34"><span style="color:#24292E">  RF-->>M: ["RolloutFnTrainOutput(samples=data, ...)\n+ partials buffered"]</span></span></code></pre><pre class="code-block__pre" tabindex="0" data-theme="dark" data-language="mermaid"><code data-language="mermaid"><span class="line" data-line-number="1"><span style="color:#D4D4D4">sequenceDiagram</span></span>
-<span class="line" data-line-number="2"><span style="color:#D4D4D4">  participant M as ["RolloutManager\n(slime.ray.rollout.RolloutManager)"]</span></span>
-<span class="line" data-line-number="3"><span style="color:#D4D4D4">  participant RF as ["generate_rollout\n(slime.rollout.sglang_rollout.generate_rollout)"]</span></span>
-<span class="line" data-line-number="4"><span style="color:#D4D4D4">  participant DS as ["DataSourceWithBuffer\n(slime.rollout.data_source.RolloutDataSourceWithBuffer)"]</span></span>
-<span class="line" data-line-number="5"><span style="color:#D4D4D4">  participant GS as ["GenerateState\n(slime.rollout.sglang_rollout.GenerateState)"]</span></span>
-<span class="line" data-line-number="6"><span style="color:#D4D4D4">  participant SW as ["SGLang Worker\n(http_server.py + TokenizerManager)"]</span></span>
-<span class="line" data-line-number="7"><span style="color:#D4D4D4">  participant SCH as ["Scheduler\n(sglang.srt.managers.scheduler.Scheduler)"]</span></span>
-<span class="line" data-line-number="8"> </span>
-<span class="line" data-line-number="9"><span style="color:#D4D4D4">  M->>RF: ["call_rollout_fn(generate_rollout, ...)\n(slime/rollout/base_types.py:19-26)"]</span></span>
-<span class="line" data-line-number="10"><span style="color:#D4D4D4">  loop ["直到收集到 target_data_size"]</span></span>
-<span class="line" data-line-number="11"><span style="color:#D4D4D4">    RF->>DS: ["get_samples(over_sampling_batch_size)\n优先 buffer 再 dataset"]</span></span>
-<span class="line" data-line-number="12"><span style="color:#D4D4D4">    RF->>GS: ["submit_generate_tasks(groups)\ncreate_task(generate_and_rm_group)"]</span></span>
-<span class="line" data-line-number="13"><span style="color:#D4D4D4">    GS->>SW: ["POST /generate\n(slime.generate -> http_server.generate_request)"]</span></span>
-<span class="line" data-line-number="14"><span style="color:#D4D4D4">    SW->>SW: ["tokenizer_manager.generate_request(...).__anext__()\n(http_server.py:675-680)"]</span></span>
-<span class="line" data-line-number="15"><span style="color:#D4D4D4">    SW->>SCH: ["scheduler runs decoding loop\n(内部调度/队列)"]</span></span>
-<span class="line" data-line-number="16"><span style="color:#D4D4D4">    SCH-->>SW: ["partial/full output"]</span></span>
-<span class="line" data-line-number="17"><span style="color:#D4D4D4">    SW-->>GS: ["return text + meta_info\n(logprobs etc.)"]</span></span>
-<span class="line" data-line-number="18"><span style="color:#D4D4D4">    GS-->>RF: ["task.result() => group(list[Sample])\nasyncio.wait(FIRST_COMPLETED)"]</span></span>
-<span class="line" data-line-number="19"><span style="color:#D4D4D4">    RF->>RF: ["dynamic_filter(group)\nkeep? then append to data"]</span></span>
-<span class="line" data-line-number="20"><span style="color:#D4D4D4">  end</span></span>
-<span class="line" data-line-number="21"> </span>
-<span class="line" data-line-number="22"><span style="color:#D4D4D4">  RF->>RF: ["Early stop reached\nlen(data)=rollout_batch_size"]</span></span>
-<span class="line" data-line-number="23"><span style="color:#D4D4D4">  RF->>SW: ["POST /abort_request abort_all=true\n(slime.abort:304-306)"]</span></span>
-<span class="line" data-line-number="24"><span style="color:#D4D4D4">  SW->>SW: ["tokenizer_manager.abort_request\n(tokenizer_manager.py:1315-1324)"]</span></span>
-<span class="line" data-line-number="25"><span style="color:#D4D4D4">  SW->>SCH: ["send AbortReq to scheduler\n(tokenizer_manager.py:1318-1319)"]</span></span>
-<span class="line" data-line-number="26"><span style="color:#D4D4D4">  SCH->>SCH: ["abort_request\n(scheduler.py:2738-2779...)"]</span></span>
-<span class="line" data-line-number="27"> </span>
-<span class="line" data-line-number="28"><span style="color:#D4D4D4">  loop ["drain pendings"]</span></span>
-<span class="line" data-line-number="29"><span style="color:#D4D4D4">    RF->>GS: ["wait pending tasks to finish\nasyncio.wait(FIRST_COMPLETED)"]</span></span>
-<span class="line" data-line-number="30"><span style="color:#D4D4D4">    RF->>RF: ["if partial_rollout:\ncollect group where sample.response non-empty\nadd start_rollout_id\n(sglang_rollout.py:312-321)"]</span></span>
-<span class="line" data-line-number="31"><span style="color:#D4D4D4">  end</span></span>
-<span class="line" data-line-number="32"> </span>
-<span class="line" data-line-number="33"><span style="color:#D4D4D4">  RF->>DS: ["add_samples(aborted_samples)\nrecycle partial groups\n(sglang_rollout.py:561-562)"]</span></span>
-<span class="line" data-line-number="34"><span style="color:#D4D4D4">  RF-->>M: ["RolloutFnTrainOutput(samples=data, ...)\n+ partials buffered"]</span></span></code></pre></figure>
+<span class="mermaid-dual-image"><img src="/blog-preview/previews/pr-426/generated/mermaid/notion/e62f4fb7edb8.light.svg" alt="Mermaid Diagram" loading="lazy" decoding="async" data-theme="light" class="mermaid-dual-image__img mermaid-dual-image__img--light"><img src="/blog-preview/previews/pr-426/generated/mermaid/notion/e62f4fb7edb8.dark.svg" alt="Mermaid Diagram" loading="lazy" decoding="async" data-theme="dark" class="mermaid-dual-image__img mermaid-dual-image__img--dark"></span>
 <hr>
 <h2 id="四rollpacker不改请求生命周期改轮次组成tail-batching">四、RollPacker：不改请求生命周期，改“轮次组成”——Tail Batching<a href="#四rollpacker不改请求生命周期改轮次组成tail-batching" class="heading-anchor" aria-label="Link to 四、RollPacker：不改请求生命周期，改“轮次组成”——Tail Batching">¶</a></h2>
 <p>如果说 APRIL 是把长尾拆碎并跨 step 摊销，那么 RollPacker 的思路更像调度学：<strong>长尾请求本来就会慢，那就不要让它们污染每一轮</strong>，而是把它们集中放进少数几轮“长轮次”。这就是 Tail Batching：</p>
