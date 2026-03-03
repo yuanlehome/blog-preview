@@ -1,0 +1,239 @@
+<!DOCTYPE html><html lang="en" data-astro-cid-sckkx6r4> <head><script>(() => {
+  const storageKey = 'theme';
+  const className = 'dark';
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  const validThemes = ['light', 'dark'];
+  let currentPreference = (() => {
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored && validThemes.includes(stored)) return stored;
+    } catch (error) {
+      console.warn('Unable to access localStorage for theme:', error);
+    }
+    return mediaQuery.matches ? 'dark' : 'light';
+  })();
+
+  const resolveTheme = (preference) => (preference === 'dark' ? 'dark' : 'light');
+
+  const applyTheme = (preference) => {
+    const effectiveTheme = resolveTheme(preference);
+    document.documentElement.classList.toggle(className, effectiveTheme === 'dark');
+    document.documentElement.dataset.theme = effectiveTheme;
+    return effectiveTheme;
+  };
+
+  const dispatchChange = (preference) => {
+    const resolved = document.documentElement.classList.contains(className) ? 'dark' : 'light';
+    window.dispatchEvent(
+      new CustomEvent('themechange', {
+        detail: { theme: preference, resolved },
+      }),
+    );
+  };
+
+  applyTheme(currentPreference);
+
+  window.__setTheme = (next) => {
+    const preference = validThemes.includes(String(next)) ? String(next) : resolveTheme(currentPreference);
+    currentPreference = preference;
+    try {
+      localStorage.setItem(storageKey, preference);
+    } catch (error) {
+      console.warn('Unable to persist theme selection:', error);
+    }
+    applyTheme(preference);
+    dispatchChange(preference);
+  };
+})();</script><meta charset="UTF-8"><meta name="description" content="Browse all tags on Yuanle Liu. Explore articles by topic."><meta name="viewport" content="width=device-width"><link rel="icon" type="image/x-icon" href="/blog-preview/previews/pr-432/favicon.ico"><link rel="icon" type="image/png" sizes="32x32" href="/blog-preview/previews/pr-432/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/blog-preview/previews/pr-432/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/blog-preview/previews/pr-432/apple-touch-icon.png"><meta name="generator" content="Astro v5.16.6"><link rel="canonical" href="https://yuanlehome.github.io/blog-preview/previews/pr-432/tags/"><meta property="og:title" content="Tags | Yuanle Liu"><meta property="og:description" content="Browse all tags on Yuanle Liu. Explore articles by topic."><meta property="og:image" content="/blog-preview/previews/pr-432/placeholder-social.jpg"><meta property="og:type" content="article"><meta property="og:url" content="https://yuanlehome.github.io/blog-preview/previews/pr-432/tags/"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Tags | Yuanle Liu"><meta name="twitter:description" content="Browse all tags on Yuanle Liu. Explore articles by topic."><meta name="twitter:image" content="/blog-preview/previews/pr-432/placeholder-social.jpg"><title>Tags | Yuanle Liu</title><style>:root {
+  /* Typography */
+  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial, Noto Sans SC, PingFang SC, Microsoft YaHei, sans-serif;
+  --font-serif: ui-serif, Georgia, Cambria, Times New Roman, Times, serif;
+  --font-mono: JetBrains Mono, Fira Code, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  --font-size-4xl: 2.25rem;
+  --line-height-body: 1.75;
+  --line-height-heading: 1.3;
+  --line-height-code: 1.65;
+  --line-height-tight: 1.25;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Components */
+  --radius-sm: 0.35rem;
+  --radius-md: 0.65rem;
+  --radius-lg: 0.9rem;
+  --radius-xl: 0.75rem;
+  --shadow-card: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-code-block: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-header: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --border-style: solid;
+  --border-width: 1px;
+  --motion-duration: 160ms;
+  --motion-easing: ease;
+  --spacing-multiplier: 1;
+
+  /* Light Mode Colors */
+  --color-brand: #0284c7;
+  --color-accent: #0284c7;
+  --color-background: #fafafa;
+  --color-foreground: #18181b;
+  --color-muted: #71717a;
+  --color-border: #e4e4e7;
+  --color-card: #f4f4f5;
+  --color-code-background: #f4f4f5;
+  --color-code-foreground: #18181b;
+  --color-code-border: #e4e4e7;
+  --color-code-keyword: #0284c7;
+  --color-code-string: #059669;
+  --color-code-comment: #a1a1aa;
+  --color-code-function: #0284c7;
+
+  /* Code block specific (legacy support) */
+  --code-font: var(--font-mono);
+  --code-radius: 0.9rem;
+  --code-border: 1px solid var(--color-code-border);
+  --code-bg: var(--color-code-background);
+  --code-fg: var(--color-code-foreground);
+  --code-scrollbar: rgb(203 213 225 / 0.75);
+  --code-highlight-bg: rgb(59 130 246 / 0.12);
+  --code-highlight-accent: rgb(59 130 246);
+
+  /* Header specific (legacy support) */
+  --header-bg: rgb(248 250 252 / 0.92);
+  --header-bg-scrolled: rgb(248 250 252 / 0.98);
+  --header-border: rgb(226 232 240 / 0.9);
+  --header-shadow: var(--shadow-header);
+  --header-shadow-strong: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+.dark {
+  /* Dark Mode Colors */
+  --color-brand: #38bdf8;
+  --color-accent: #38bdf8;
+  --color-background: #18181b;
+  --color-foreground: #fafafa;
+  --color-muted: #a1a1aa;
+  --color-border: #3f3f46;
+  --color-card: #27272a;
+  --color-code-background: #1f1f23;
+  --color-code-foreground: #e4e4e7;
+  --color-code-border: #3f3f46;
+  --color-code-keyword: #38bdf8;
+  --color-code-string: #34d399;
+  --color-code-comment: #71717a;
+  --color-code-function: #38bdf8;
+
+  /* Dark mode shadows */
+  --shadow-card: 0 10px 30px rgb(0 0 0 / 0.28);
+  --shadow-code-block: 0 10px 30px rgb(0 0 0 / 0.28);
+  --shadow-header: 0 10px 30px rgb(0 0 0 / 0.28);
+
+  /* Code block specific (legacy support) */
+  --code-border: 1px solid var(--color-code-border);
+  --code-bg: var(--color-code-background);
+  --code-fg: var(--color-code-foreground);
+  --code-scrollbar: rgb(71 85 105 / 0.8);
+  --code-highlight-bg: rgb(59 130 246 / 0.2);
+  --code-highlight-accent: rgb(96 165 250);
+
+  /* Header specific (legacy support) */
+  --header-bg: rgb(15 23 42 / 0.72);
+  --header-bg-scrolled: rgb(15 23 42 / 0.8400000000000001);
+  --header-border: rgb(71 85 105 / 0.8);
+  --header-shadow: var(--shadow-header);
+  --header-shadow-strong: 0 20px 40px rgb(0 0 0 / 0.35);
+}
+</style><link rel="stylesheet" href="/blog-preview/previews/pr-432/_astro/_slug_.DaVhO4T3.css"></head> <body class="bg-neutral-50 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 transition-colors duration-300 min-h-screen flex flex-col" data-astro-cid-sckkx6r4>  <header class="site-header header-variant-frosted" data-header data-site-header> <div class="container mx-auto px-5 py-3 sm:py-4 flex justify-between items-start max-w-5xl"> <a href="/blog-preview/previews/pr-432/" class="text-xl font-bold hover:text-sky-600 dark:hover:text-sky-400 flex items-center gap-2"> <img src="/blog-preview/previews/pr-432/placeholder-social.jpg" alt="Yuanle Liu" width="32" height="32" class="h-8 w-8 rounded"> <span class="hidden sm:inline">Yuanle Liu</span> </a> <nav class="flex items-start gap-3 items-center"> <a href="/blog-preview/previews/pr-432/" class="hover:underline inline-flex items-center "> Home </a><a href="/blog-preview/previews/pr-432/archive/" class="hover:underline inline-flex items-center "> Archive </a><a href="/blog-preview/previews/pr-432/tags/" class="hover:underline inline-flex items-center text-sky-600 dark:text-sky-400 font-semibold" aria-current="page"> Tags </a><a href="/blog-preview/previews/pr-432/about/" class="hover:underline inline-flex items-center "> About </a> <button id="theme-toggle" class="inline-flex items-center gap-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 px-1" aria-label="Toggle theme"> 🖥️ ☀️ </button> </nav> </div> </header> <script type="module">const u="theme",d=["light","dark"];const g=()=>{try{const e=localStorage.getItem(u);if(e==="light"||e==="dark")return e}catch(e){console.warn("Unable to read theme preference:",e)}return window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"},f=()=>document.documentElement.classList.contains("dark")?"dark":"light",p=e=>e==="dark"?"🌙":"☀️",T=e=>e==="dark"?"Dark":"Light",c=(e,n)=>{const t=document.getElementById("theme-toggle");if(!t)return;const o=n??f(),i=p(o),a=T(o);t.dataset.theme=e,t.textContent="";const s=document.createElement("span");s.className="inline-flex items-center justify-center",s.style.lineHeight="1",s.textContent=i,t.appendChild(s),t.appendChild(document.createTextNode(" "+a)),t.setAttribute("aria-label",`Toggle theme (current: ${a})`)},l=e=>{if(typeof window.__setTheme=="function"){window.__setTheme?.(e);return}const n=e==="dark"?"dark":"light";document.documentElement.classList.toggle("dark",n==="dark");try{localStorage.setItem(u,e)}catch(t){console.warn("Unable to persist theme preference:",t)}window.dispatchEvent(new CustomEvent("themechange",{detail:{theme:e,resolved:n}}))},k=(e,n)=>{const t=n.getBoundingClientRect(),o=e instanceof MouseEvent,i=o&&e.detail>0&&(e.clientX!==0||e.clientY!==0),a=i&&o?e.clientX:t.left+t.width/2,s=i&&o?e.clientY:t.top+t.height/2,r=Math.max(Math.hypot(a,s),Math.hypot(window.innerWidth-a,s),Math.hypot(a,window.innerHeight-s),Math.hypot(window.innerWidth-a,window.innerHeight-s));return{x:a,y:s,r}},E=({x:e,y:n,r:t})=>{const o=document.documentElement;o.style.setProperty("--theme-toggle-x",`${e}px`),o.style.setProperty("--theme-toggle-y",`${n}px`),o.style.setProperty("--theme-toggle-r",`${t}px`)},L=async(e,n,t)=>{if(t){l(e),c(e);return}E(n),document.documentElement.classList.add("theme-toggle-transitioning");const o=document;try{if(typeof o.startViewTransition=="function"){await o.startViewTransition(()=>{l(e),c(e)}).finished.catch(s=>{console.warn("Theme view transition failed:",s)});return}const i=document.createElement("div");i.className="theme-toggle-overlay",e==="dark"&&i.classList.add("dark"),document.body.appendChild(i);try{i.getBoundingClientRect(),i.classList.add("is-animating"),await new Promise(a=>{let s=!1;const r=()=>{s||(s=!0,a())};i.addEventListener("animationend",r,{once:!0}),i.addEventListener("animationcancel",r,{once:!0}),window.setTimeout(r,550)}),l(e),c(e)}finally{i.remove()}}finally{document.documentElement.classList.remove("theme-toggle-transitioning")}};let m=!1;const M=async e=>{if(m)return;const n=e.currentTarget instanceof HTMLElement?e.currentTarget:null;if(!n)return;m=!0,n.setAttribute("disabled","true");const t=g(),o=d[(d.indexOf(t)+1)%d.length];try{const i=k(e,n);await L(o,i,w.matches)}finally{window.setTimeout(()=>{n.removeAttribute("disabled"),m=!1},500)}},h=document.querySelector("[data-header]"),w=window.matchMedia("(prefers-reduced-motion: reduce)"),v=w.matches,y=()=>{if(!h)return;const e=window.scrollY>6;h.classList.toggle("is-scrolled",e)};document.getElementById("theme-toggle")?.addEventListener("click",M);c(g());window.addEventListener("themechange",e=>{const n=e.detail,t=n?.theme??g(),o=n?.resolved;c(t,o)});y();const b=()=>y();window.addEventListener("scroll",b,{passive:!0});v&&h?.classList.add("reduce-motion");</script> <main class="container mx-auto px-4 py-8 max-w-4xl"> <div class="mb-8"> <h1 class="text-4xl font-bold mb-4">Tags</h1> <p class="text-zinc-600 dark:text-zinc-400"> 共 23 个标签 </p> </div>  <div class="mb-6"> <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-4"> <input type="search" placeholder="搜索标签..." class="w-full sm:w-64 px-4 py-2 rounded-lg border border-zinc-300 bg-white text-zinc-900 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-400" id="tag-search" data-testid="tag-search"> <select class="px-4 py-2 rounded-lg border border-zinc-300 bg-white text-zinc-900 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100" id="tag-sort" data-testid="tag-sort"> <option value="count">按数量排序</option> <option value="name">按字母排序</option> <option value="recent">按最近使用</option> </select> </div> </div> <div class="flex flex-wrap gap-3" id="tags-container" data-testid="tags-container"> <a href="/blog-preview/previews/pr-432/tags/cuda/" class="tag-chip inline-flex items-center gap-1.5 rounded-full border transition-colors duration-200 font-medium cursor-pointer text-sm px-3 py-1.5 
+    border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 
+    dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 dark:hover:border-sky-700
+    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-tag-slug="cuda" data-testid="tag-cuda"> <span class="tag-name pointer-events-none">CUDA</span> <span class="tag-count inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full text-[0.7rem] font-semibold bg-sky-200/50 text-sky-800 dark:bg-sky-800/50 dark:text-sky-200 pointer-events-none"> 6 </span> </a><a href="/blog-preview/previews/pr-432/tags/rl-infra/" class="tag-chip inline-flex items-center gap-1.5 rounded-full border transition-colors duration-200 font-medium cursor-pointer text-sm px-3 py-1.5 
+    border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 
+    dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 dark:hover:border-sky-700
+    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-tag-slug="rl-infra" data-testid="tag-rl-infra"> <span class="tag-name pointer-events-none">RL Infra</span> <span class="tag-count inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full text-[0.7rem] font-semibold bg-sky-200/50 text-sky-800 dark:bg-sky-800/50 dark:text-sky-200 pointer-events-none"> 4 </span> </a><a href="/blog-preview/previews/pr-432/tags/distributed-parallel/" class="tag-chip inline-flex items-center gap-1.5 rounded-full border transition-colors duration-200 font-medium cursor-pointer text-sm px-3 py-1.5 
+    border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 
+    dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 dark:hover:border-sky-700
+    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-tag-slug="distributed-parallel" data-testid="tag-distributed-parallel"> <span class="tag-name pointer-events-none">Distributed Parallel</span> <span class="tag-count inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full text-[0.7rem] font-semibold bg-sky-200/50 text-sky-800 dark:bg-sky-800/50 dark:text-sky-200 pointer-events-none"> 3 </span> </a><a href="/blog-preview/previews/pr-432/tags/flashattention/" class="tag-chip inline-flex items-center gap-1.5 rounded-full border transition-colors duration-200 font-medium cursor-pointer text-sm px-3 py-1.5 
+    border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 
+    dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 dark:hover:border-sky-700
+    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-tag-slug="flashattention" data-testid="tag-flashattention"> <span class="tag-name pointer-events-none">FlashAttention</span> <span class="tag-count inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full text-[0.7rem] font-semibold bg-sky-200/50 text-sky-800 dark:bg-sky-800/50 dark:text-sky-200 pointer-events-none"> 2 </span> </a><a href="/blog-preview/previews/pr-432/tags/long-context-optimization/" class="tag-chip inline-flex items-center gap-1.5 rounded-full border transition-colors duration-200 font-medium cursor-pointer text-sm px-3 py-1.5 
+    border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 
+    dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 dark:hover:border-sky-700
+    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-tag-slug="long-context-optimization" data-testid="tag-long-context-optimization"> <span class="tag-name pointer-events-none">Long Context Optimization</span> <span class="tag-count inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full text-[0.7rem] font-semibold bg-sky-200/50 text-sky-800 dark:bg-sky-800/50 dark:text-sky-200 pointer-events-none"> 2 </span> </a><a href="/blog-preview/previews/pr-432/tags/nccl/" class="tag-chip inline-flex items-center gap-1.5 rounded-full border transition-colors duration-200 font-medium cursor-pointer text-sm px-3 py-1.5 
+    border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 
+    dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 dark:hover:border-sky-700
+    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-tag-slug="nccl" data-testid="tag-nccl"> <span class="tag-name pointer-events-none">NCCL</span> <span class="tag-count inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full text-[0.7rem] font-semibold bg-sky-200/50 text-sky-800 dark:bg-sky-800/50 dark:text-sky-200 pointer-events-none"> 2 </span> </a><a href="/blog-preview/previews/pr-432/tags/performance/" class="tag-chip inline-flex items-center gap-1.5 rounded-full border transition-colors duration-200 font-medium cursor-pointer text-sm px-3 py-1.5 
+    border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 
+    dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 dark:hover:border-sky-700
+    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-tag-slug="performance" data-testid="tag-performance"> <span class="tag-name pointer-events-none">Performance</span> <span class="tag-count inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full text-[0.7rem] font-semibold bg-sky-200/50 text-sky-800 dark:bg-sky-800/50 dark:text-sky-200 pointer-events-none"> 2 </span> </a><a href="/blog-preview/previews/pr-432/tags/soft-skills/" class="tag-chip inline-flex items-center gap-1.5 rounded-full border transition-colors duration-200 font-medium cursor-pointer text-sm px-3 py-1.5 
+    border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 
+    dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 dark:hover:border-sky-700
+    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-tag-slug="soft-skills" data-testid="tag-soft-skills"> <span class="tag-name pointer-events-none">Soft Skills</span> <span class="tag-count inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full text-[0.7rem] font-semibold bg-sky-200/50 text-sky-800 dark:bg-sky-800/50 dark:text-sky-200 pointer-events-none"> 2 </span> </a><a href="/blog-preview/previews/pr-432/tags/architecture-design/" class="tag-chip inline-flex items-center gap-1.5 rounded-full border transition-colors duration-200 font-medium cursor-pointer text-sm px-3 py-1.5 
+    border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 
+    dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 dark:hover:border-sky-700
+    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-tag-slug="architecture-design" data-testid="tag-architecture-design"> <span class="tag-name pointer-events-none">Architecture Design</span> <span class="tag-count inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full text-[0.7rem] font-semibold bg-sky-200/50 text-sky-800 dark:bg-sky-800/50 dark:text-sky-200 pointer-events-none"> 1 </span> </a><a href="/blog-preview/previews/pr-432/tags/attention/" class="tag-chip inline-flex items-center gap-1.5 rounded-full border transition-colors duration-200 font-medium cursor-pointer text-sm px-3 py-1.5 
+    border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 
+    dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 dark:hover:border-sky-700
+    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-tag-slug="attention" data-testid="tag-attention"> <span class="tag-name pointer-events-none">Attention</span> <span class="tag-count inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full text-[0.7rem] font-semibold bg-sky-200/50 text-sky-800 dark:bg-sky-800/50 dark:text-sky-200 pointer-events-none"> 1 </span> </a><a href="/blog-preview/previews/pr-432/tags/context-parallel/" class="tag-chip inline-flex items-center gap-1.5 rounded-full border transition-colors duration-200 font-medium cursor-pointer text-sm px-3 py-1.5 
+    border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 
+    dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 dark:hover:border-sky-700
+    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-tag-slug="context-parallel" data-testid="tag-context-parallel"> <span class="tag-name pointer-events-none">Context Parallel</span> <span class="tag-count inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full text-[0.7rem] font-semibold bg-sky-200/50 text-sky-800 dark:bg-sky-800/50 dark:text-sky-200 pointer-events-none"> 1 </span> </a><a href="/blog-preview/previews/pr-432/tags/cuda-graphs/" class="tag-chip inline-flex items-center gap-1.5 rounded-full border transition-colors duration-200 font-medium cursor-pointer text-sm px-3 py-1.5 
+    border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 
+    dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 dark:hover:border-sky-700
+    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-tag-slug="cuda-graphs" data-testid="tag-cuda-graphs"> <span class="tag-name pointer-events-none">CUDA Graphs</span> <span class="tag-count inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full text-[0.7rem] font-semibold bg-sky-200/50 text-sky-800 dark:bg-sky-800/50 dark:text-sky-200 pointer-events-none"> 1 </span> </a><a href="/blog-preview/previews/pr-432/tags/deepgemm/" class="tag-chip inline-flex items-center gap-1.5 rounded-full border transition-colors duration-200 font-medium cursor-pointer text-sm px-3 py-1.5 
+    border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 
+    dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 dark:hover:border-sky-700
+    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-tag-slug="deepgemm" data-testid="tag-deepgemm"> <span class="tag-name pointer-events-none">DeepGEMM</span> <span class="tag-count inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full text-[0.7rem] font-semibold bg-sky-200/50 text-sky-800 dark:bg-sky-800/50 dark:text-sky-200 pointer-events-none"> 1 </span> </a><a href="/blog-preview/previews/pr-432/tags/fp8/" class="tag-chip inline-flex items-center gap-1.5 rounded-full border transition-colors duration-200 font-medium cursor-pointer text-sm px-3 py-1.5 
+    border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 
+    dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 dark:hover:border-sky-700
+    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-tag-slug="fp8" data-testid="tag-fp8"> <span class="tag-name pointer-events-none">FP8</span> <span class="tag-count inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full text-[0.7rem] font-semibold bg-sky-200/50 text-sky-800 dark:bg-sky-800/50 dark:text-sky-200 pointer-events-none"> 1 </span> </a><a href="/blog-preview/previews/pr-432/tags/interviews-with-experts/" class="tag-chip inline-flex items-center gap-1.5 rounded-full border transition-colors duration-200 font-medium cursor-pointer text-sm px-3 py-1.5 
+    border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 
+    dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 dark:hover:border-sky-700
+    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-tag-slug="interviews-with-experts" data-testid="tag-interviews-with-experts"> <span class="tag-name pointer-events-none">Interviews with Experts</span> <span class="tag-count inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full text-[0.7rem] font-semibold bg-sky-200/50 text-sky-800 dark:bg-sky-800/50 dark:text-sky-200 pointer-events-none"> 1 </span> </a><a href="/blog-preview/previews/pr-432/tags/paper/" class="tag-chip inline-flex items-center gap-1.5 rounded-full border transition-colors duration-200 font-medium cursor-pointer text-sm px-3 py-1.5 
+    border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 
+    dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 dark:hover:border-sky-700
+    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-tag-slug="paper" data-testid="tag-paper"> <span class="tag-name pointer-events-none">Paper</span> <span class="tag-count inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full text-[0.7rem] font-semibold bg-sky-200/50 text-sky-800 dark:bg-sky-800/50 dark:text-sky-200 pointer-events-none"> 1 </span> </a><a href="/blog-preview/previews/pr-432/tags/pytorch/" class="tag-chip inline-flex items-center gap-1.5 rounded-full border transition-colors duration-200 font-medium cursor-pointer text-sm px-3 py-1.5 
+    border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 
+    dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 dark:hover:border-sky-700
+    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-tag-slug="pytorch" data-testid="tag-pytorch"> <span class="tag-name pointer-events-none">PyTorch</span> <span class="tag-count inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full text-[0.7rem] font-semibold bg-sky-200/50 text-sky-800 dark:bg-sky-800/50 dark:text-sky-200 pointer-events-none"> 1 </span> </a><a href="/blog-preview/previews/pr-432/tags/quantization/" class="tag-chip inline-flex items-center gap-1.5 rounded-full border transition-colors duration-200 font-medium cursor-pointer text-sm px-3 py-1.5 
+    border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 
+    dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 dark:hover:border-sky-700
+    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-tag-slug="quantization" data-testid="tag-quantization"> <span class="tag-name pointer-events-none">Quantization</span> <span class="tag-count inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full text-[0.7rem] font-semibold bg-sky-200/50 text-sky-800 dark:bg-sky-800/50 dark:text-sky-200 pointer-events-none"> 1 </span> </a><a href="/blog-preview/previews/pr-432/tags/rdma/" class="tag-chip inline-flex items-center gap-1.5 rounded-full border transition-colors duration-200 font-medium cursor-pointer text-sm px-3 py-1.5 
+    border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 
+    dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 dark:hover:border-sky-700
+    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-tag-slug="rdma" data-testid="tag-rdma"> <span class="tag-name pointer-events-none">RDMA</span> <span class="tag-count inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full text-[0.7rem] font-semibold bg-sky-200/50 text-sky-800 dark:bg-sky-800/50 dark:text-sky-200 pointer-events-none"> 1 </span> </a><a href="/blog-preview/previews/pr-432/tags/rope/" class="tag-chip inline-flex items-center gap-1.5 rounded-full border transition-colors duration-200 font-medium cursor-pointer text-sm px-3 py-1.5 
+    border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 
+    dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 dark:hover:border-sky-700
+    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-tag-slug="rope" data-testid="tag-rope"> <span class="tag-name pointer-events-none">RoPE</span> <span class="tag-count inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full text-[0.7rem] font-semibold bg-sky-200/50 text-sky-800 dark:bg-sky-800/50 dark:text-sky-200 pointer-events-none"> 1 </span> </a><a href="/blog-preview/previews/pr-432/tags/sequence-parallel/" class="tag-chip inline-flex items-center gap-1.5 rounded-full border transition-colors duration-200 font-medium cursor-pointer text-sm px-3 py-1.5 
+    border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 
+    dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 dark:hover:border-sky-700
+    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-tag-slug="sequence-parallel" data-testid="tag-sequence-parallel"> <span class="tag-name pointer-events-none">Sequence Parallel</span> <span class="tag-count inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full text-[0.7rem] font-semibold bg-sky-200/50 text-sky-800 dark:bg-sky-800/50 dark:text-sky-200 pointer-events-none"> 1 </span> </a><a href="/blog-preview/previews/pr-432/tags/source-code-analysis/" class="tag-chip inline-flex items-center gap-1.5 rounded-full border transition-colors duration-200 font-medium cursor-pointer text-sm px-3 py-1.5 
+    border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 
+    dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 dark:hover:border-sky-700
+    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-tag-slug="source-code-analysis" data-testid="tag-source-code-analysis"> <span class="tag-name pointer-events-none">Source Code Analysis</span> <span class="tag-count inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full text-[0.7rem] font-semibold bg-sky-200/50 text-sky-800 dark:bg-sky-800/50 dark:text-sky-200 pointer-events-none"> 1 </span> </a><a href="/blog-preview/previews/pr-432/tags/speculative-decoding/" class="tag-chip inline-flex items-center gap-1.5 rounded-full border transition-colors duration-200 font-medium cursor-pointer text-sm px-3 py-1.5 
+    border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 
+    dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 dark:hover:border-sky-700
+    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-tag-slug="speculative-decoding" data-testid="tag-speculative-decoding"> <span class="tag-name pointer-events-none">Speculative Decoding</span> <span class="tag-count inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full text-[0.7rem] font-semibold bg-sky-200/50 text-sky-800 dark:bg-sky-800/50 dark:text-sky-200 pointer-events-none"> 1 </span> </a> </div> <script id="tags-data" type="application/json">[{"name":"CUDA","slug":"cuda","count":6,"latestDate":"2026-02-26T00:00:00.000Z"},{"name":"RL Infra","slug":"rl-infra","count":4,"latestDate":"2026-03-02T00:00:00.000Z"},{"name":"Distributed Parallel","slug":"distributed-parallel","count":3,"latestDate":"2026-02-05T00:00:00.000Z"},{"name":"FlashAttention","slug":"flashattention","count":2,"latestDate":"2026-01-27T00:00:00.000Z"},{"name":"Long Context Optimization","slug":"long-context-optimization","count":2,"latestDate":"2026-01-27T00:00:00.000Z"},{"name":"NCCL","slug":"nccl","count":2,"latestDate":"2026-02-05T00:00:00.000Z"},{"name":"Performance","slug":"performance","count":2,"latestDate":"2025-12-29T00:00:00.000Z"},{"name":"Soft Skills","slug":"soft-skills","count":2,"latestDate":"2025-12-26T00:00:00.000Z"},{"name":"Architecture Design","slug":"architecture-design","count":1,"latestDate":"2025-12-29T00:00:00.000Z"},{"name":"Attention","slug":"attention","count":1,"latestDate":"2026-01-27T00:00:00.000Z"},{"name":"Context Parallel","slug":"context-parallel","count":1,"latestDate":"2026-01-27T00:00:00.000Z"},{"name":"CUDA Graphs","slug":"cuda-graphs","count":1,"latestDate":"2025-12-27T00:00:00.000Z"},{"name":"DeepGEMM","slug":"deepgemm","count":1,"latestDate":"2026-01-06T00:00:00.000Z"},{"name":"FP8","slug":"fp8","count":1,"latestDate":"2026-01-06T00:00:00.000Z"},{"name":"Interviews with Experts","slug":"interviews-with-experts","count":1,"latestDate":"2026-01-18T00:00:00.000Z"},{"name":"Paper","slug":"paper","count":1,"latestDate":"2026-01-29T00:00:00.000Z"},{"name":"PyTorch","slug":"pytorch","count":1,"latestDate":"2026-02-07T00:00:00.000Z"},{"name":"Quantization","slug":"quantization","count":1,"latestDate":"2026-01-29T00:00:00.000Z"},{"name":"RDMA","slug":"rdma","count":1,"latestDate":"2026-01-13T00:00:00.000Z"},{"name":"RoPE","slug":"rope","count":1,"latestDate":"2026-01-30T00:00:00.000Z"},{"name":"Sequence Parallel","slug":"sequence-parallel","count":1,"latestDate":"2026-01-04T00:00:00.000Z"},{"name":"Source Code Analysis","slug":"source-code-analysis","count":1,"latestDate":"2025-12-29T00:00:00.000Z"},{"name":"Speculative Decoding","slug":"speculative-decoding","count":1,"latestDate":"2026-01-06T00:00:00.000Z"}]</script>  </main> <footer class="py-8 mt-auto border-t border-zinc-200 dark:border-zinc-800"> <div class="container mx-auto px-4 text-center text-zinc-500 max-w-4xl">
+&copy; 2026 Yuanle Liu. All rights reserved. </div> </footer> <script type="module">(function(){const c=document.getElementById("tags-data");if(!c)return;const d=JSON.parse(c.textContent||"[]"),r=document.getElementById("tag-search"),a=document.getElementById("tag-sort"),o=document.getElementById("tags-container");if(!r||!a||!o)return;function u(s){if(s.length===0){o.innerHTML='<p class="text-zinc-500 dark:text-zinc-400">未找到匹配的标签</p>';return}const i=window.location.pathname.replace(/\/tags\/$/,"");o.innerHTML=s.map(e=>`
+        <a
+          href="${i}/tags/${e.slug}/"
+          class="tag-chip inline-flex items-center gap-1.5 rounded-full border transition-colors duration-200 font-medium text-sm px-3 py-1.5 cursor-pointer
+            border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 
+            dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 dark:hover:border-sky-700
+            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900"
+          data-tag-slug="${e.slug}"
+          data-testid="tag-${e.slug}"
+        >
+          <span class="tag-name pointer-events-none">${e.name}</span>
+          <span class="tag-count inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full text-[0.7rem] font-semibold bg-sky-200/50 text-sky-800 dark:bg-sky-800/50 dark:text-sky-200 pointer-events-none">
+            ${e.count}
+          </span>
+        </a>
+      `).join("")}function l(){const s=r.value.toLowerCase().trim(),i=a.value;let e=d.filter(t=>t.name.toLowerCase().includes(s));switch(i){case"name":e.sort((t,n)=>t.name.localeCompare(n.name));break;case"recent":e.sort((t,n)=>new Date(n.latestDate).getTime()-new Date(t.latestDate).getTime());break;case"count":default:e.sort((t,n)=>n.count!==t.count?n.count-t.count:t.name.localeCompare(n.name))}u(e)}r.addEventListener("input",l),a.addEventListener("change",l)})();</script>  <script type="module" src="/blog-preview/previews/pr-432/_astro/Layout.astro_astro_type_script_index_0_lang.CHdTa9Ed.js"></script> <script type="module">const i=new WeakMap,c=(e,t)=>{e.dataset.state=t,t==="copied"?e.textContent="Copied":t==="error"?e.textContent="Failed":e.textContent="Copy";const o=i.get(e);if(o&&window.clearTimeout(o),t!=="idle"){const r=window.setTimeout(()=>c(e,"idle"),2e3);i.set(e,r)}},n=async e=>{const t=e.closest(".code-block");if(!t)return;const o=t.getAttribute("data-raw-code")??"";try{await navigator.clipboard.writeText(o),c(e,"copied")}catch(r){console.error("Copy failed",r),c(e,"error")}},s=()=>{document.addEventListener("click",e=>{const o=e.target?.closest("button.code-block__copy");o&&(e.preventDefault(),n(o))})},a=()=>{typeof document>"u"||s()};a();</script> <script type="module">function d(){const n=document.querySelector("[data-site-header]");if(!n){document.documentElement.style.setProperty("--site-header-height","0px");return}let i=0;const t=()=>{const e=n.getBoundingClientRect().height;Math.abs(e-i)>.5&&(i=e,document.documentElement.style.setProperty("--site-header-height",`${e}px`),window.dispatchEvent(new CustomEvent("headerheightchange",{detail:{height:e}})))};t(),"ResizeObserver"in window&&new ResizeObserver(()=>{t()}).observe(n),window.addEventListener("resize",t,{passive:!0}),window.addEventListener("load",t,{once:!0})}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",d):d();</script> </body> </html>
