@@ -1,0 +1,676 @@
+<!DOCTYPE html><html lang="en" data-astro-cid-sckkx6r4> <head><script>(() => {
+  const storageKey = 'theme';
+  const className = 'dark';
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  const validThemes = ['light', 'dark'];
+  let currentPreference = (() => {
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored && validThemes.includes(stored)) return stored;
+    } catch (error) {
+      console.warn('Unable to access localStorage for theme:', error);
+    }
+    return mediaQuery.matches ? 'dark' : 'light';
+  })();
+
+  const resolveTheme = (preference) => (preference === 'dark' ? 'dark' : 'light');
+
+  const applyTheme = (preference) => {
+    const effectiveTheme = resolveTheme(preference);
+    document.documentElement.classList.toggle(className, effectiveTheme === 'dark');
+    document.documentElement.dataset.theme = effectiveTheme;
+    return effectiveTheme;
+  };
+
+  const dispatchChange = (preference) => {
+    const resolved = document.documentElement.classList.contains(className) ? 'dark' : 'light';
+    window.dispatchEvent(
+      new CustomEvent('themechange', {
+        detail: { theme: preference, resolved },
+      }),
+    );
+  };
+
+  applyTheme(currentPreference);
+
+  window.__setTheme = (next) => {
+    const preference = validThemes.includes(String(next)) ? String(next) : resolveTheme(currentPreference);
+    currentPreference = preference;
+    try {
+      localStorage.setItem(storageKey, preference);
+    } catch (error) {
+      console.warn('Unable to persist theme selection:', error);
+    }
+    applyTheme(preference);
+    dispatchChange(preference);
+  };
+})();</script><meta charset="UTF-8"><meta name="description" content="A minimal Astro blog"><meta name="viewport" content="width=device-width"><link rel="icon" type="image/x-icon" href="/blog-preview/previews/pr-426/favicon.ico"><link rel="icon" type="image/png" sizes="32x32" href="/blog-preview/previews/pr-426/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/blog-preview/previews/pr-426/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/blog-preview/previews/pr-426/apple-touch-icon.png"><meta name="generator" content="Astro v5.16.6"><link rel="canonical" href="https://yuanlehome.github.io/blog-preview/previews/pr-426/april-rollpacker-rl-long-tail-rollouts/"><meta property="og:title" content="从 APRIL 到 RollPacker：如何在 RL 里处理 Long-tail Rollouts"><meta property="og:description" content="A minimal Astro blog"><meta property="og:image" content="/blog-preview/previews/pr-426/placeholder-social.jpg"><meta property="og:type" content="article"><meta property="og:url" content="https://yuanlehome.github.io/blog-preview/previews/pr-426/april-rollpacker-rl-long-tail-rollouts/"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="从 APRIL 到 RollPacker：如何在 RL 里处理 Long-tail Rollouts"><meta name="twitter:description" content="A minimal Astro blog"><meta name="twitter:image" content="/blog-preview/previews/pr-426/placeholder-social.jpg"><title>从 APRIL 到 RollPacker：如何在 RL 里处理 Long-tail Rollouts</title><style>:root {
+  /* Typography */
+  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial, Noto Sans SC, PingFang SC, Microsoft YaHei, sans-serif;
+  --font-serif: ui-serif, Georgia, Cambria, Times New Roman, Times, serif;
+  --font-mono: JetBrains Mono, Fira Code, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  --font-size-4xl: 2.25rem;
+  --line-height-body: 1.75;
+  --line-height-heading: 1.3;
+  --line-height-code: 1.65;
+  --line-height-tight: 1.25;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Components */
+  --radius-sm: 0.35rem;
+  --radius-md: 0.65rem;
+  --radius-lg: 0.9rem;
+  --radius-xl: 0.75rem;
+  --shadow-card: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-code-block: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-header: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --border-style: solid;
+  --border-width: 1px;
+  --motion-duration: 160ms;
+  --motion-easing: ease;
+  --spacing-multiplier: 1;
+
+  /* Light Mode Colors */
+  --color-brand: #0284c7;
+  --color-accent: #0284c7;
+  --color-background: #fafafa;
+  --color-foreground: #18181b;
+  --color-muted: #71717a;
+  --color-border: #e4e4e7;
+  --color-card: #f4f4f5;
+  --color-code-background: #f4f4f5;
+  --color-code-foreground: #18181b;
+  --color-code-border: #e4e4e7;
+  --color-code-keyword: #0284c7;
+  --color-code-string: #059669;
+  --color-code-comment: #a1a1aa;
+  --color-code-function: #0284c7;
+
+  /* Code block specific (legacy support) */
+  --code-font: var(--font-mono);
+  --code-radius: 0.9rem;
+  --code-border: 1px solid var(--color-code-border);
+  --code-bg: var(--color-code-background);
+  --code-fg: var(--color-code-foreground);
+  --code-scrollbar: rgb(203 213 225 / 0.75);
+  --code-highlight-bg: rgb(59 130 246 / 0.12);
+  --code-highlight-accent: rgb(59 130 246);
+
+  /* Header specific (legacy support) */
+  --header-bg: rgb(248 250 252 / 0.92);
+  --header-bg-scrolled: rgb(248 250 252 / 0.98);
+  --header-border: rgb(226 232 240 / 0.9);
+  --header-shadow: var(--shadow-header);
+  --header-shadow-strong: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+.dark {
+  /* Dark Mode Colors */
+  --color-brand: #38bdf8;
+  --color-accent: #38bdf8;
+  --color-background: #18181b;
+  --color-foreground: #fafafa;
+  --color-muted: #a1a1aa;
+  --color-border: #3f3f46;
+  --color-card: #27272a;
+  --color-code-background: #1f1f23;
+  --color-code-foreground: #e4e4e7;
+  --color-code-border: #3f3f46;
+  --color-code-keyword: #38bdf8;
+  --color-code-string: #34d399;
+  --color-code-comment: #71717a;
+  --color-code-function: #38bdf8;
+
+  /* Dark mode shadows */
+  --shadow-card: 0 10px 30px rgb(0 0 0 / 0.28);
+  --shadow-code-block: 0 10px 30px rgb(0 0 0 / 0.28);
+  --shadow-header: 0 10px 30px rgb(0 0 0 / 0.28);
+
+  /* Code block specific (legacy support) */
+  --code-border: 1px solid var(--color-code-border);
+  --code-bg: var(--color-code-background);
+  --code-fg: var(--color-code-foreground);
+  --code-scrollbar: rgb(71 85 105 / 0.8);
+  --code-highlight-bg: rgb(59 130 246 / 0.2);
+  --code-highlight-accent: rgb(96 165 250);
+
+  /* Header specific (legacy support) */
+  --header-bg: rgb(15 23 42 / 0.72);
+  --header-bg-scrolled: rgb(15 23 42 / 0.8400000000000001);
+  --header-border: rgb(71 85 105 / 0.8);
+  --header-shadow: var(--shadow-header);
+  --header-shadow-strong: 0 20px 40px rgb(0 0 0 / 0.35);
+}
+</style><link rel="stylesheet" href="/blog-preview/previews/pr-426/_astro/_slug_.Bp3xMSww.css">
+<style>.reading-progress[data-astro-cid-mu6cnre2]{position:fixed;inset:0 0 auto;height:3px;width:100%;background:transparent;z-index:50;pointer-events:none}.reading-progress__bar[data-astro-cid-mu6cnre2]{display:block;height:100%;width:100%;transform:scaleX(var(--progress-value, 0));transform-origin:left center;background:linear-gradient(90deg,var(--progress-color-start),var(--progress-color-end));transition:transform .1s linear}:root{--progress-color-start: #2563eb;--progress-color-end: #22d3ee}:root.dark{--progress-color-start: #38bdf8;--progress-color-end: #a855f7}@media(prefers-reduced-motion:reduce){.reading-progress__bar[data-astro-cid-mu6cnre2]{transition:none}}
+</style></head> <body class="bg-neutral-50 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 transition-colors duration-300 min-h-screen flex flex-col" data-astro-cid-sckkx6r4>  <div class="reading-progress" data-reading-progress data-target-selector="[data-article]" data-astro-cid-mu6cnre2> <span class="reading-progress__bar" data-reading-progress-bar data-astro-cid-mu6cnre2></span> </div>  <script type="module">const s=document.querySelector("[data-reading-progress]"),p=s?.dataset?.targetSelector||"[data-article]",g=s?.querySelector("[data-reading-progress-bar]"),o=document.querySelector(p);if(s&&g&&o){let n=0,a=0,t=!1;const u=(e,r,w)=>Math.min(Math.max(e,r),w),c=()=>{n=o.getBoundingClientRect().top+window.scrollY,a=o.scrollHeight},i=()=>{const e=Math.max(a-window.innerHeight,1),r=u((window.scrollY-n)/e,0,1);g.style.setProperty("--progress-value",r.toString()),t=!1},l=()=>{t||(t=!0,requestAnimationFrame(i))},d=()=>{c(),l()};c(),i(),window.addEventListener("scroll",l,{passive:!0}),window.addEventListener("resize",d),window.addEventListener("load",d,{once:!0})}</script> <header class="site-header header-variant-frosted" data-header data-site-header> <div class="container mx-auto px-5 py-3 sm:py-4 flex justify-between items-start max-w-5xl"> <a href="/blog-preview/previews/pr-426/" class="text-xl font-bold hover:text-sky-600 dark:hover:text-sky-400 flex items-center gap-2"> <img src="/blog-preview/previews/pr-426/placeholder-social.jpg" alt="Yuanle Liu" width="32" height="32" class="h-8 w-8 rounded"> <span class="hidden sm:inline">Yuanle Liu</span> </a> <nav class="flex items-start gap-3 items-center"> <a href="/blog-preview/previews/pr-426/" class="hover:underline inline-flex items-center "> Home </a><a href="/blog-preview/previews/pr-426/archive/" class="hover:underline inline-flex items-center "> Archive </a><a href="/blog-preview/previews/pr-426/tags/" class="hover:underline inline-flex items-center "> Tags </a><a href="/blog-preview/previews/pr-426/about/" class="hover:underline inline-flex items-center "> About </a> <button id="theme-toggle" class="inline-flex items-center gap-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 px-1" aria-label="Toggle theme"> 🖥️ ☀️ </button> </nav> </div> </header> <script type="module">const u="theme",d=["light","dark"];const g=()=>{try{const e=localStorage.getItem(u);if(e==="light"||e==="dark")return e}catch(e){console.warn("Unable to read theme preference:",e)}return window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"},f=()=>document.documentElement.classList.contains("dark")?"dark":"light",p=e=>e==="dark"?"🌙":"☀️",T=e=>e==="dark"?"Dark":"Light",c=(e,n)=>{const t=document.getElementById("theme-toggle");if(!t)return;const o=n??f(),i=p(o),a=T(o);t.dataset.theme=e,t.textContent="";const s=document.createElement("span");s.className="inline-flex items-center justify-center",s.style.lineHeight="1",s.textContent=i,t.appendChild(s),t.appendChild(document.createTextNode(" "+a)),t.setAttribute("aria-label",`Toggle theme (current: ${a})`)},l=e=>{if(typeof window.__setTheme=="function"){window.__setTheme?.(e);return}const n=e==="dark"?"dark":"light";document.documentElement.classList.toggle("dark",n==="dark");try{localStorage.setItem(u,e)}catch(t){console.warn("Unable to persist theme preference:",t)}window.dispatchEvent(new CustomEvent("themechange",{detail:{theme:e,resolved:n}}))},k=(e,n)=>{const t=n.getBoundingClientRect(),o=e instanceof MouseEvent,i=o&&e.detail>0&&(e.clientX!==0||e.clientY!==0),a=i&&o?e.clientX:t.left+t.width/2,s=i&&o?e.clientY:t.top+t.height/2,r=Math.max(Math.hypot(a,s),Math.hypot(window.innerWidth-a,s),Math.hypot(a,window.innerHeight-s),Math.hypot(window.innerWidth-a,window.innerHeight-s));return{x:a,y:s,r}},E=({x:e,y:n,r:t})=>{const o=document.documentElement;o.style.setProperty("--theme-toggle-x",`${e}px`),o.style.setProperty("--theme-toggle-y",`${n}px`),o.style.setProperty("--theme-toggle-r",`${t}px`)},L=async(e,n,t)=>{if(t){l(e),c(e);return}E(n),document.documentElement.classList.add("theme-toggle-transitioning");const o=document;try{if(typeof o.startViewTransition=="function"){await o.startViewTransition(()=>{l(e),c(e)}).finished.catch(s=>{console.warn("Theme view transition failed:",s)});return}const i=document.createElement("div");i.className="theme-toggle-overlay",e==="dark"&&i.classList.add("dark"),document.body.appendChild(i);try{i.getBoundingClientRect(),i.classList.add("is-animating"),await new Promise(a=>{let s=!1;const r=()=>{s||(s=!0,a())};i.addEventListener("animationend",r,{once:!0}),i.addEventListener("animationcancel",r,{once:!0}),window.setTimeout(r,550)}),l(e),c(e)}finally{i.remove()}}finally{document.documentElement.classList.remove("theme-toggle-transitioning")}};let m=!1;const M=async e=>{if(m)return;const n=e.currentTarget instanceof HTMLElement?e.currentTarget:null;if(!n)return;m=!0,n.setAttribute("disabled","true");const t=g(),o=d[(d.indexOf(t)+1)%d.length];try{const i=k(e,n);await L(o,i,w.matches)}finally{window.setTimeout(()=>{n.removeAttribute("disabled"),m=!1},500)}},h=document.querySelector("[data-header]"),w=window.matchMedia("(prefers-reduced-motion: reduce)"),v=w.matches,y=()=>{if(!h)return;const e=window.scrollY>6;h.classList.toggle("is-scrolled",e)};document.getElementById("theme-toggle")?.addEventListener("click",M);c(g());window.addEventListener("themechange",e=>{const n=e.detail,t=n?.theme??g(),o=n?.resolved;c(t,o)});y();const b=()=>y();window.addEventListener("scroll",b,{passive:!0});v&&h?.classList.add("reduce-motion");</script> <main class="container mx-auto px-4 py-8 max-w-6xl"> <div class="flex flex-col gap-6 lg:grid lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start lg:gap-12" data-post-layout> <div class="w-full" data-toc-shell> <aside class="hidden lg:block h-full"> <div class="flex h-full w-full flex-col gap-3 overflow-hidden rounded-xl border border-zinc-200 bg-neutral-50/80 p-4 shadow-md backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-900/50 lg:sticky lg:top-[var(--site-header-height)] lg:max-h-[calc(100vh-var(--site-header-height)-16px)] lg:h-[calc(100vh-var(--site-header-height)-16px)]" data-toc-container> <div class="space-y-1"> <p class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">文章目录</p> <p class="text-xs text-zinc-500 dark:text-zinc-400">快速跳转到你关心的章节</p> </div> <nav aria-label="文章目录" class="flex-1 min-h-0 overflow-y-auto pr-1" data-toc-scroll> <ol class="space-y-3 text-sm"> <li><a href="#一long-tail-rollouts同步-rl-的-makespan-被尾巴决定" data-toc-link data-mobile-toc-link data-target="一long-tail-rollouts同步-rl-的-makespan-被尾巴决定" title="一、Long-tail rollouts：同步 RL 的 makespan 被尾巴决定¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>一、Long-tail rollouts：同步 RL 的 makespan 被尾巴决定¶</span></a></li><li><a href="#二april把长尾时间从每一步的尾巴摊薄到多步" data-toc-link data-mobile-toc-link data-target="二april把长尾时间从每一步的尾巴摊薄到多步" title="二、APRIL：把“长尾时间”从每一步的尾巴摊薄到多步¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>二、APRIL：把“长尾时间”从每一步的尾巴摊薄到多步¶</span></a><ol class="mt-1 space-y-1"><li><a href="#21-over-provision超额提交请求" data-toc-link data-mobile-toc-link data-target="21-over-provision超额提交请求" title="2.1 Over-provision：超额提交请求¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>2.1 Over-provision：超额提交请求¶</span></a></li><li><a href="#22-early-stop达标就立刻结束本轮" data-toc-link data-mobile-toc-link data-target="22-early-stop达标就立刻结束本轮" title="2.2 Early stop：达标就立刻结束本轮¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>2.2 Early stop：达标就立刻结束本轮¶</span></a></li><li><a href="#23-recycle-partials被打断的请求不丢续写回收" data-toc-link data-mobile-toc-link data-target="23-recycle-partials被打断的请求不丢续写回收" title="2.3 Recycle partials：被打断的请求不丢，续写回收¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>2.3 Recycle partials：被打断的请求不丢，续写回收¶</span></a></li></ol></li><li><a href="#三slime-中的-partial-rollouts-实现" data-toc-link data-mobile-toc-link data-target="三slime-中的-partial-rollouts-实现" title="三、slime 中的 Partial Rollouts 实现¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>三、slime 中的 Partial Rollouts 实现¶</span></a></li><li><a href="#四rollpacker不改请求生命周期改轮次组成tail-batching" data-toc-link data-mobile-toc-link data-target="四rollpacker不改请求生命周期改轮次组成tail-batching" title="四、RollPacker：不改请求生命周期，改“轮次组成”——Tail Batching¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>四、RollPacker：不改请求生命周期，改“轮次组成”——Tail Batching¶</span></a><ol class="mt-1 space-y-1"><li><a href="#41-tail-batching-的隐含前提同步边界要抬高" data-toc-link data-mobile-toc-link data-target="41-tail-batching-的隐含前提同步边界要抬高" title="4.1 Tail Batching 的隐含前提：同步边界要“抬高”¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>4.1 Tail Batching 的隐含前提：同步边界要“抬高”¶</span></a></li></ol></li><li><a href="#结语" data-toc-link data-mobile-toc-link data-target="结语" title="结语¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>结语¶</span></a></li> </ol> </nav> </div> </aside> </div> <script type="module">const p=Array.from(document.querySelectorAll("[data-toc-link]")),e=document.querySelector("[data-toc-container]"),i=document.querySelector("[data-toc-shell]"),l=()=>{const t=getComputedStyle(document.documentElement).getPropertyValue("--site-header-height");return parseFloat(t)||0},r=window.matchMedia("(min-width: 1024px)"),g=p.map(t=>document.getElementById(t.dataset.target||"")).filter(t=>!!t),m=()=>{const t=l();g.forEach(n=>{n.style.scrollMarginTop=`${t+12}px`})},w=t=>`#${encodeURIComponent(t)}`,v=t=>decodeURIComponent(t.replace(/^#/,"")),f=t=>{p.forEach(n=>{const o=n.dataset.target===t;n.dataset.active=o?"true":"false",n.setAttribute("aria-current",o?"true":"false")})},u=(t,n=!1)=>{const o=document.getElementById(t);if(!o)return;const a=l(),c=window.scrollY+o.getBoundingClientRect().top-a-12;n?history.replaceState(null,"",w(t)):history.pushState(null,"",w(t)),window.scrollTo({top:c,behavior:"smooth"}),f(t)};p.forEach(t=>t.addEventListener("click",n=>{const o=t.dataset.target;o&&(n.preventDefault(),u(o))}));const y=()=>{e&&(e.dataset.fixed="false",e.style.position="",e.style.left="",e.style.width="",e.style.height="",e.style.maxHeight="",e.style.top="",i&&(i.style.minHeight=""))},x=()=>{if(!e||!i)return;const t=i.getBoundingClientRect(),n=l(),o=`calc(100vh - ${n}px - 16px)`;e.dataset.fixed="true",i.style.minHeight=`${e.offsetHeight}px`,e.style.position="fixed",e.style.top=`${n}px`,e.style.left=`${t.left}px`,e.style.width=`${t.width}px`,e.style.height=o,e.style.maxHeight=o},d=()=>{if(!e||e.dataset.fixed==="true"||!r.matches)return;const t=parseFloat(getComputedStyle(e).top||"0"),n=e.offsetTop-t;if(Number.isNaN(t)||window.scrollY<n)return;const o=e.getBoundingClientRect().top;Math.abs(o-t)>2&&x()},E=()=>{if(!r.matches){y();return}e?.dataset.fixed==="true"&&x()};if(g.length>0){m();const t=new IntersectionObserver(o=>{const a=o.filter(s=>s.isIntersecting).sort((s,h)=>s.target.getBoundingClientRect().top-h.target.getBoundingClientRect().top);if(a[0]){f(a[0].target.id);return}const c=o.filter(s=>s.boundingClientRect.top<0).sort((s,h)=>h.target.getBoundingClientRect().top-s.target.getBoundingClientRect().top);c[0]&&f(c[0].target.id)},{rootMargin:`-${l()}px 0% -55% 0%`,threshold:[0,.25,.5,1]});g.forEach(o=>t.observe(o));const n=v(location.hash||"");n&&requestAnimationFrame(()=>u(n,!0)),window.addEventListener("hashchange",()=>{const o=v(location.hash||"");o&&u(o,!0)})}y();r.matches&&d();r.addEventListener("change",()=>{y(),requestAnimationFrame(()=>{r.matches&&d()})});window.addEventListener("scroll",d,{passive:!0});window.addEventListener("resize",E);window.addEventListener("load",()=>{d(),m()},{once:!0});window.addEventListener("headerheightchange",()=>{m()});</script> <article class="prose dark:prose-invert max-w-none prose-img:rounded-xl prose-img:cursor-zoom-in min-w-0" data-article> <header class="mb-8 not-prose"> <div class="flex flex-col gap-6 md:grid md:grid-cols-1"> <div class="flex flex-col gap-4 "> <h1 class="text-3xl md:text-4xl font-bold leading-tight text-left"> 从 APRIL 到 RollPacker：如何在 RL 里处理 Long-tail Rollouts </h1> <div class="text-zinc-500 text-sm flex items-start justify-start gap-3 flex-wrap "> <time class="flex items-center gap-1" datetime="2026-03-02T00:00:00.000Z" title="发布于 2026-03-02"> <span aria-hidden="true">📅</span> <span>
+发布于 <span class="font-medium">2026-03-02</span> </span> </time> <span aria-hidden="true">·</span> <time class="flex items-center gap-1" datetime="2026-03-03T06:12:00.000Z" title="更新于 2026-03-03"> <span aria-hidden="true">🔄</span> <span>
+更新于 <span class="font-medium">2026-03-03</span> </span> </time> <div class="flex items-center gap-1"> <span aria-hidden="true">✍️</span> 2695 字
+</div> <div class="flex items-center gap-1" title="2695 words"> <span aria-hidden="true">⏱️</span> 6 min read </div> </div> <div class="flex flex-wrap gap-2 items-center" data-testid="post-tags"> <span class="text-zinc-500 text-sm flex items-center gap-1"> <span aria-hidden="true">🏷️</span> <span>标签：</span> </span> <a href="/blog-preview/previews/pr-426/tags/rl-infra/" class="tag-chip inline-flex items-center gap-1.5 rounded-full border transition-colors duration-200 font-medium cursor-pointer text-xs px-2 py-1 
+    border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 
+    dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 dark:hover:border-sky-700
+    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-tag-slug="rl-infra" data-testid="tag-rl-infra"> <span class="tag-name pointer-events-none">RL Infra</span>  </a> </div> </div>   </div> </header> <p>在 LLM 的 RL post-training（PPO / GRPO / DAPO / GSPO 等）里，工程团队经常会遇到一个“看起来像算法问题，实际上是系统瓶颈”的现象：<strong>rollout 占掉 90%+ 的端到端时间</strong>，而且<strong>同步 rollout 的每一步会被极少数超长样本拖死</strong>。<a href="https://arxiv.org/pdf/2509.18521" target="_blank" rel="noopener noreferrer">APRIL</a> 和 <a href="https://arxiv.org/pdf/2509.21009" target="_blank" rel="noopener noreferrer">RollPacker</a> 可以看作对同一类瓶颈的两条路线：前者从“请求生命周期”切入做 <strong>Partial Rollouts</strong>，后者从“轮次调度”切入做 <strong>Tail Batching</strong>。两者共同目标都是：<strong>减少 GPU bubbles（空转）</strong>，提高吞吐，但尽量不牺牲同步 on-policy 的训练属性与最终效果。</p>
+<hr>
+<h2 id="一long-tail-rollouts同步-rl-的-makespan-被尾巴决定">一、Long-tail rollouts：同步 RL 的 makespan 被尾巴决定<a href="#一long-tail-rollouts同步-rl-的-makespan-被尾巴决定" class="heading-anchor" aria-label="Link to 一、Long-tail rollouts：同步 RL 的 makespan 被尾巴决定">¶</a></h2>
+<p>把一个同步 rollout step 抽象成三段：</p>
+<ol>
+<li>Actor 用当前 policy 批量生成 responses</li>
+<li>Reward / advantage 计算</li>
+<li>Learner 反向更新 policy</li>
+</ol>
+<p>在大型模型场景里，<strong>第 1 段（生成）通常是最重的</strong>，而生成长度呈长尾分布：同一个 batch 里大部分请求很快结束，但少数请求会因为“输出更长、采样更慢、遇到更复杂推理链”等原因拖很久。同步系统里，rollout step 的结束时间（makespan）由最长的那几个请求决定——这就是 bubble 的来源：多数 GPU/worker 已经无事可做，但仍被同步栅栏卡住。</p>
+<blockquote>
+<p>关键点：这不是“把长样本删掉”就能解决的，因为删样本会改变训练分布；很多任务里长输出恰恰包含关键信号（推理链、代码、长格式答案等）。</p>
+</blockquote>
+<hr>
+<h2 id="二april把长尾时间从每一步的尾巴摊薄到多步">二、APRIL：把“长尾时间”从每一步的尾巴摊薄到多步<a href="#二april把长尾时间从每一步的尾巴摊薄到多步" class="heading-anchor" aria-label="Link to 二、APRIL：把“长尾时间”从每一步的尾巴摊薄到多步">¶</a></h2>
+<p>APRIL（Active Partial Rollouts in Reinforcement Learning）的视角非常系统：既然长尾不可避免，那就不要让每个 step 都等到“最慢请求完全结束”。它提出三件事，组合起来就是 <strong>Partial Rollouts</strong>：</p>
+<h3 id="21-over-provision超额提交请求">2.1 Over-provision：超额提交请求<a href="#21-over-provision超额提交请求" class="heading-anchor" aria-label="Link to 2.1 Over-provision：超额提交请求">¶</a></h3>
+<p>目标需要 K 条有效样本，但每轮实际提交 <strong>K + Δ</strong> 条 rollout 请求。这样做的直觉是：batch 内总会有一部分请求更快完成，<strong>更容易尽早凑齐 K 条“完成样本”</strong>。</p>
+<h3 id="22-early-stop达标就立刻结束本轮">2.2 Early stop：达标就立刻结束本轮<a href="#22-early-stop达标就立刻结束本轮" class="heading-anchor" aria-label="Link to 2.2 Early stop：达标就立刻结束本轮">¶</a></h3>
+<p>当已经收集到 K 条完成样本（或满足过滤条件的样本）时，<strong>立刻停止本轮 rollout step</strong>，不再等待剩余请求自然跑完。</p>
+<h3 id="23-recycle-partials被打断的请求不丢续写回收">2.3 Recycle partials：被打断的请求不丢，续写回收<a href="#23-recycle-partials被打断的请求不丢续写回收" class="heading-anchor" aria-label="Link to 2.3 Recycle partials：被打断的请求不丢，续写回收">¶</a></h3>
+<p>Early stop 会打断一些正在生成的请求。APRIL 的关键在于：<strong>不丢这些被打断的样本</strong>，而是把它们当前已经生成的 token 作为 partial response 存起来，下一轮继续从这些 token 位置接着生成，直到最终也以“完整样本”的形式进入训练分布。</p>
+<blockquote>
+<p>这相当于把长尾的那部分计算，从“每个 step 都要等一次”变成“在后续多个 step 里分期支付”。宏观上 makespan 下降，吞吐上升，而训练分布不被粗暴篡改。APRIL 报告在多种 RL 算法上提升 rollout 吞吐（最高到 44%）并且不但不降精度，某些任务上还有更高的最终准确率。</p>
+</blockquote>
+<hr>
+<h2 id="三slime-中的-partial-rollouts-实现">三、slime 中的 Partial Rollouts 实现<a href="#三slime-中的-partial-rollouts-实现" class="heading-anchor" aria-label="Link to 三、slime 中的 Partial Rollouts 实现">¶</a></h2>
+<p>在工程层面，APRIL 的“三板斧”真正难点不在概念，而在于<strong>要把请求的生命周期、缓存、续写、以及训练的 on/off-policy 边界处理干净</strong>。slime(0.2.2) 在 SGLang router/worker 的 rollout 链路上，把这套机制落到了可运行的实现里。</p>
+<ol>
+<li>
+<p>Over-provision：多取样本、多提交任务</p>
+<p>rollout 主循环会从 data_source 里用 <code>over_sampling_batch_size</code> 拉取样本，并把 sample groups 以 async task 形式提交到 pending 队列。</p>
+</li>
+<li>
+<p>Early stop：凑齐 target_data_size 就 abort</p>
+<p>当 <code>len(data) == rollout_batch_size</code> 时，不等待所有 pending task 完成，直接触发 abort，把剩余未完成请求停掉，结束本轮 step。</p>
+</li>
+<li>
+<p>Recycle partials：收集 abort 时已生成的部分并存入 buffer</p>
+<p>abort 过程中，如果开启 <code>partial_rollout</code>，会把已生成出部分 response 的样本收集起来，写入 metadata（例如 <code>start_rollout_id</code>），再存入 data_source 的 buffer。下一轮优先从 buffer 取这些 partial 样本继续生成。</p>
+</li>
+<li>
+<p>“续写”如何实现：用已有 tokens 续写 + 可选 loss mask</p>
+<p>续写的工程要点通常有两个：</p>
+<ul>
+<li><strong>请求侧续写</strong>：如果 sample 已有 <code>response/tokens</code>，则下次生成时把 <code>input_ids</code> 直接设成已有 tokens，并扣减 <code>max_new_tokens</code>，避免越写越超长。</li>
+<li><strong>训练侧边界</strong>：partial rollout 可能引入“跨 step 的 token”，严格意义上会出现 off-policy 风险。slime 提供了 <code>mask_offpolicy_in_partial_rollout</code> ：把旧 token 的 loss 标 0，只对新续写出来的 token 计算 loss，从而把“跨 step 的历史生成部分”从梯度里剔除（是否启用取决于工程对 on-policy 严格程度的要求）。</li>
+</ul>
+</li>
+</ol>
+<blockquote>
+<p>直观理解：<strong>APRIL 在系统层面把“请求完成”拆分；loss mask 在学习层面把“哪些 token 归属当前 step 的 policy”重新画边界。</strong></p>
+</blockquote>
+<p>APRIL/Partial Rollouts 要成立，abort 必须是真正意义上的“停止正在跑的请求”。SGLang 提供了明确的 HTTP 链路（<code>/generate</code> + <code>/abort_request</code>），并把 abort 传递到 tokenizer manager 和调度器里进行队列清理与状态回收。工程上这非常关键：如果 abort 只是“上层不等结果”，而底层推理还在继续烧 GPU，那 bubble 依然存在，只是被隐藏了。Rollout 系统能否吃到 APRIL 的收益，很大程度取决于 serving 引擎是否具备这种“可抢占/可中止”的能力。</p>
+<p><u><em>数据流图</em></u></p>
+<figure class="code-block not-prose" data-language="mermaid" data-raw-code="flowchart TD
+  A[&#x22;Prompt Dataset\n(slime.utils.data.Dataset)&#x22;] -->|&#x22;get_samples(num)\n从全局数据集取 prompt&#x22;| B[&#x22;RolloutDataSourceWithBuffer\n(slime.rollout.data_source.RolloutDataSourceWithBuffer)&#x22;]
+  B -->|&#x22;优先从 buffer 弹出 partial\nbuffer_filter(...)&#x22;| C[&#x22;Sample Groups\nlist[list[Sample]]&#x22;]
+  B -->|&#x22;不足部分从 dataset 生成新样本\nsuper().get_samples&#x22;| C
+
+  C -->|&#x22;submit_generate_tasks(groups)\nasyncio.create_task(...)&#x22;| D[&#x22;Pending Tasks\nGenerateState.pendings\n(slime.rollout.sglang_rollout.GenerateState)&#x22;]
+
+  D -->|&#x22;task 完成: group=task.result()\nasyncio.wait(FIRST_COMPLETED)&#x22;| E[&#x22;Generated Groups\n(list[Sample])&#x22;]
+
+  E -->|&#x22;dynamic_filter(group)\ncall_dynamic_filter&#x22;| F[&#x22;Keep?&#x22;]
+  F -->|keep=true| G[&#x22;Accepted Data\nlen(data)++\n(用于本轮训练)&#x22;]
+  F -->|keep=false| H[&#x22;Dropped\nmetric_gatherer.on_dynamic_filter_drop&#x22;]
+
+  G -->|&#x22;达到 target_data_size\n(args.rollout_batch_size)&#x22;| I[&#x22;Early Stop Trigger\n(本轮结束)&#x22;]
+  I -->|&#x22;abort(args, rollout_id)\nPOST /abort_request abort_all=true&#x22;| J[&#x22;Abort Remaining Requests\n(未完成的 pendings)&#x22;]
+
+  J -->|&#x22;收集 partial groups:\nif sample.response non-empty\nmetadata.start_rollout_id=...&#x22;| K[&#x22;aborted_samples\n(partial groups)&#x22;]
+
+  K -->|&#x22;data_source.add_samples(aborted_samples)\n回灌 buffer&#x22;| B
+
+  G -->|&#x22;RolloutFnTrainOutput\nsamples=data&#x22;| L[&#x22;Training Pipeline\n(Ray RolloutManager -> Learner)&#x22;]" data-line-numbers="true"><div class="code-block__header"><div class="code-block__title">mermaid</div><button type="button" class="code-block__copy" aria-label="复制代码">Copy</button></div><pre class="code-block__pre" tabindex="0" data-theme="light" data-language="mermaid"><code data-language="mermaid"><span class="line" data-line-number="1"><span style="color:#24292E">flowchart TD</span></span>
+<span class="line" data-line-number="2"><span style="color:#24292E">  A["Prompt Dataset\n(slime.utils.data.Dataset)"] -->|"get_samples(num)\n从全局数据集取 prompt"| B["RolloutDataSourceWithBuffer\n(slime.rollout.data_source.RolloutDataSourceWithBuffer)"]</span></span>
+<span class="line" data-line-number="3"><span style="color:#24292E">  B -->|"优先从 buffer 弹出 partial\nbuffer_filter(...)"| C["Sample Groups\nlist[list[Sample]]"]</span></span>
+<span class="line" data-line-number="4"><span style="color:#24292E">  B -->|"不足部分从 dataset 生成新样本\nsuper().get_samples"| C</span></span>
+<span class="line" data-line-number="5"> </span>
+<span class="line" data-line-number="6"><span style="color:#24292E">  C -->|"submit_generate_tasks(groups)\nasyncio.create_task(...)"| D["Pending Tasks\nGenerateState.pendings\n(slime.rollout.sglang_rollout.GenerateState)"]</span></span>
+<span class="line" data-line-number="7"> </span>
+<span class="line" data-line-number="8"><span style="color:#24292E">  D -->|"task 完成: group=task.result()\nasyncio.wait(FIRST_COMPLETED)"| E["Generated Groups\n(list[Sample])"]</span></span>
+<span class="line" data-line-number="9"> </span>
+<span class="line" data-line-number="10"><span style="color:#24292E">  E -->|"dynamic_filter(group)\ncall_dynamic_filter"| F["Keep?"]</span></span>
+<span class="line" data-line-number="11"><span style="color:#24292E">  F -->|keep=true| G["Accepted Data\nlen(data)++\n(用于本轮训练)"]</span></span>
+<span class="line" data-line-number="12"><span style="color:#24292E">  F -->|keep=false| H["Dropped\nmetric_gatherer.on_dynamic_filter_drop"]</span></span>
+<span class="line" data-line-number="13"> </span>
+<span class="line" data-line-number="14"><span style="color:#24292E">  G -->|"达到 target_data_size\n(args.rollout_batch_size)"| I["Early Stop Trigger\n(本轮结束)"]</span></span>
+<span class="line" data-line-number="15"><span style="color:#24292E">  I -->|"abort(args, rollout_id)\nPOST /abort_request abort_all=true"| J["Abort Remaining Requests\n(未完成的 pendings)"]</span></span>
+<span class="line" data-line-number="16"> </span>
+<span class="line" data-line-number="17"><span style="color:#24292E">  J -->|"收集 partial groups:\nif sample.response non-empty\nmetadata.start_rollout_id=..."| K["aborted_samples\n(partial groups)"]</span></span>
+<span class="line" data-line-number="18"> </span>
+<span class="line" data-line-number="19"><span style="color:#24292E">  K -->|"data_source.add_samples(aborted_samples)\n回灌 buffer"| B</span></span>
+<span class="line" data-line-number="20"> </span>
+<span class="line" data-line-number="21"><span style="color:#24292E">  G -->|"RolloutFnTrainOutput\nsamples=data"| L["Training Pipeline\n(Ray RolloutManager -> Learner)"]</span></span></code></pre><pre class="code-block__pre" tabindex="0" data-theme="dark" data-language="mermaid"><code data-language="mermaid"><span class="line" data-line-number="1"><span style="color:#D4D4D4">flowchart TD</span></span>
+<span class="line" data-line-number="2"><span style="color:#D4D4D4">  A["Prompt Dataset\n(slime.utils.data.Dataset)"] -->|"get_samples(num)\n从全局数据集取 prompt"| B["RolloutDataSourceWithBuffer\n(slime.rollout.data_source.RolloutDataSourceWithBuffer)"]</span></span>
+<span class="line" data-line-number="3"><span style="color:#D4D4D4">  B -->|"优先从 buffer 弹出 partial\nbuffer_filter(...)"| C["Sample Groups\nlist[list[Sample]]"]</span></span>
+<span class="line" data-line-number="4"><span style="color:#D4D4D4">  B -->|"不足部分从 dataset 生成新样本\nsuper().get_samples"| C</span></span>
+<span class="line" data-line-number="5"> </span>
+<span class="line" data-line-number="6"><span style="color:#D4D4D4">  C -->|"submit_generate_tasks(groups)\nasyncio.create_task(...)"| D["Pending Tasks\nGenerateState.pendings\n(slime.rollout.sglang_rollout.GenerateState)"]</span></span>
+<span class="line" data-line-number="7"> </span>
+<span class="line" data-line-number="8"><span style="color:#D4D4D4">  D -->|"task 完成: group=task.result()\nasyncio.wait(FIRST_COMPLETED)"| E["Generated Groups\n(list[Sample])"]</span></span>
+<span class="line" data-line-number="9"> </span>
+<span class="line" data-line-number="10"><span style="color:#D4D4D4">  E -->|"dynamic_filter(group)\ncall_dynamic_filter"| F["Keep?"]</span></span>
+<span class="line" data-line-number="11"><span style="color:#D4D4D4">  F -->|keep=true| G["Accepted Data\nlen(data)++\n(用于本轮训练)"]</span></span>
+<span class="line" data-line-number="12"><span style="color:#D4D4D4">  F -->|keep=false| H["Dropped\nmetric_gatherer.on_dynamic_filter_drop"]</span></span>
+<span class="line" data-line-number="13"> </span>
+<span class="line" data-line-number="14"><span style="color:#D4D4D4">  G -->|"达到 target_data_size\n(args.rollout_batch_size)"| I["Early Stop Trigger\n(本轮结束)"]</span></span>
+<span class="line" data-line-number="15"><span style="color:#D4D4D4">  I -->|"abort(args, rollout_id)\nPOST /abort_request abort_all=true"| J["Abort Remaining Requests\n(未完成的 pendings)"]</span></span>
+<span class="line" data-line-number="16"> </span>
+<span class="line" data-line-number="17"><span style="color:#D4D4D4">  J -->|"收集 partial groups:\nif sample.response non-empty\nmetadata.start_rollout_id=..."| K["aborted_samples\n(partial groups)"]</span></span>
+<span class="line" data-line-number="18"> </span>
+<span class="line" data-line-number="19"><span style="color:#D4D4D4">  K -->|"data_source.add_samples(aborted_samples)\n回灌 buffer"| B</span></span>
+<span class="line" data-line-number="20"> </span>
+<span class="line" data-line-number="21"><span style="color:#D4D4D4">  G -->|"RolloutFnTrainOutput\nsamples=data"| L["Training Pipeline\n(Ray RolloutManager -> Learner)"]</span></span></code></pre></figure>
+<p><u><em>架构图</em></u></p>
+<figure class="code-block not-prose" data-language="mermaid" data-raw-code="flowchart LR
+  subgraph R[&#x22;RL Driver / Orchestrator\n(train.py / train_async.py + Ray)&#x22;]
+    RMGR[&#x22;RolloutManager Actor\n(slime.ray.rollout.RolloutManager)&#x22;]
+    DS[&#x22;DataSource\n(RolloutDataSourceWithBuffer)&#x22;]
+  end
+
+  subgraph SG[&#x22;SGLang Serving Side&#x22;]
+    ROUTER[&#x22;Router / Frontend\n(HTTP)&#x22;]
+    WORKER[&#x22;Workers\n(http_server.py + TokenizerManager + Scheduler)&#x22;]
+  end
+
+  subgraph RLALG[&#x22;RL Logic&#x22;]
+    ROLLOUT_FN[&#x22;Rollout Fn\n(slime.rollout.sglang_rollout.generate_rollout)&#x22;]
+    GEN_STATE[&#x22;GenerateState\n(semaphore + pendings)&#x22;]
+    RMFN[&#x22;Reward Model Call\n(async_rm / batched_async_rm)&#x22;]
+  end
+
+  RMGR -->|&#x22;call_rollout_fn(...)\nslime.rollout.base_types.call_rollout_fn&#x22;| ROLLOUT_FN
+  ROLLOUT_FN -->|&#x22;data_source.get_samples()\n+ add_samples(partials)&#x22;| DS
+  ROLLOUT_FN -->|&#x22;submit_generate_tasks\nwait FIRST_COMPLETED&#x22;| GEN_STATE
+
+  GEN_STATE -->|&#x22;POST /generate\npayload.input_ids=prompt_ids or sample.tokens&#x22;| ROUTER
+  ROUTER -->|&#x22;forward to worker&#x22;| WORKER
+  WORKER -->|&#x22;return text + meta_info\n(logprobs, etc.)&#x22;| GEN_STATE
+
+  GEN_STATE -->|&#x22;reward compute\nasync_rm/batched_async_rm&#x22;| RMFN
+  RMFN -->|&#x22;reward attached to Sample&#x22;| GEN_STATE
+
+  ROLLOUT_FN -->|&#x22;POST /abort_request\nabort_all=true&#x22;| WORKER
+  ROLLOUT_FN -->|&#x22;collect partial samples\naborted_samples -> buffer&#x22;| DS" data-line-numbers="true"><div class="code-block__header"><div class="code-block__title">mermaid</div><button type="button" class="code-block__copy" aria-label="复制代码">Copy</button></div><pre class="code-block__pre" tabindex="0" data-theme="light" data-language="mermaid"><code data-language="mermaid"><span class="line" data-line-number="1"><span style="color:#24292E">flowchart LR</span></span>
+<span class="line" data-line-number="2"><span style="color:#24292E">  subgraph R["RL Driver / Orchestrator\n(train.py / train_async.py + Ray)"]</span></span>
+<span class="line" data-line-number="3"><span style="color:#24292E">    RMGR["RolloutManager Actor\n(slime.ray.rollout.RolloutManager)"]</span></span>
+<span class="line" data-line-number="4"><span style="color:#24292E">    DS["DataSource\n(RolloutDataSourceWithBuffer)"]</span></span>
+<span class="line" data-line-number="5"><span style="color:#24292E">  end</span></span>
+<span class="line" data-line-number="6"> </span>
+<span class="line" data-line-number="7"><span style="color:#24292E">  subgraph SG["SGLang Serving Side"]</span></span>
+<span class="line" data-line-number="8"><span style="color:#24292E">    ROUTER["Router / Frontend\n(HTTP)"]</span></span>
+<span class="line" data-line-number="9"><span style="color:#24292E">    WORKER["Workers\n(http_server.py + TokenizerManager + Scheduler)"]</span></span>
+<span class="line" data-line-number="10"><span style="color:#24292E">  end</span></span>
+<span class="line" data-line-number="11"> </span>
+<span class="line" data-line-number="12"><span style="color:#24292E">  subgraph RLALG["RL Logic"]</span></span>
+<span class="line" data-line-number="13"><span style="color:#24292E">    ROLLOUT_FN["Rollout Fn\n(slime.rollout.sglang_rollout.generate_rollout)"]</span></span>
+<span class="line" data-line-number="14"><span style="color:#24292E">    GEN_STATE["GenerateState\n(semaphore + pendings)"]</span></span>
+<span class="line" data-line-number="15"><span style="color:#24292E">    RMFN["Reward Model Call\n(async_rm / batched_async_rm)"]</span></span>
+<span class="line" data-line-number="16"><span style="color:#24292E">  end</span></span>
+<span class="line" data-line-number="17"> </span>
+<span class="line" data-line-number="18"><span style="color:#24292E">  RMGR -->|"call_rollout_fn(...)\nslime.rollout.base_types.call_rollout_fn"| ROLLOUT_FN</span></span>
+<span class="line" data-line-number="19"><span style="color:#24292E">  ROLLOUT_FN -->|"data_source.get_samples()\n+ add_samples(partials)"| DS</span></span>
+<span class="line" data-line-number="20"><span style="color:#24292E">  ROLLOUT_FN -->|"submit_generate_tasks\nwait FIRST_COMPLETED"| GEN_STATE</span></span>
+<span class="line" data-line-number="21"> </span>
+<span class="line" data-line-number="22"><span style="color:#24292E">  GEN_STATE -->|"POST /generate\npayload.input_ids=prompt_ids or sample.tokens"| ROUTER</span></span>
+<span class="line" data-line-number="23"><span style="color:#24292E">  ROUTER -->|"forward to worker"| WORKER</span></span>
+<span class="line" data-line-number="24"><span style="color:#24292E">  WORKER -->|"return text + meta_info\n(logprobs, etc.)"| GEN_STATE</span></span>
+<span class="line" data-line-number="25"> </span>
+<span class="line" data-line-number="26"><span style="color:#24292E">  GEN_STATE -->|"reward compute\nasync_rm/batched_async_rm"| RMFN</span></span>
+<span class="line" data-line-number="27"><span style="color:#24292E">  RMFN -->|"reward attached to Sample"| GEN_STATE</span></span>
+<span class="line" data-line-number="28"> </span>
+<span class="line" data-line-number="29"><span style="color:#24292E">  ROLLOUT_FN -->|"POST /abort_request\nabort_all=true"| WORKER</span></span>
+<span class="line" data-line-number="30"><span style="color:#24292E">  ROLLOUT_FN -->|"collect partial samples\naborted_samples -> buffer"| DS</span></span></code></pre><pre class="code-block__pre" tabindex="0" data-theme="dark" data-language="mermaid"><code data-language="mermaid"><span class="line" data-line-number="1"><span style="color:#D4D4D4">flowchart LR</span></span>
+<span class="line" data-line-number="2"><span style="color:#D4D4D4">  subgraph R["RL Driver / Orchestrator\n(train.py / train_async.py + Ray)"]</span></span>
+<span class="line" data-line-number="3"><span style="color:#D4D4D4">    RMGR["RolloutManager Actor\n(slime.ray.rollout.RolloutManager)"]</span></span>
+<span class="line" data-line-number="4"><span style="color:#D4D4D4">    DS["DataSource\n(RolloutDataSourceWithBuffer)"]</span></span>
+<span class="line" data-line-number="5"><span style="color:#D4D4D4">  end</span></span>
+<span class="line" data-line-number="6"> </span>
+<span class="line" data-line-number="7"><span style="color:#D4D4D4">  subgraph SG["SGLang Serving Side"]</span></span>
+<span class="line" data-line-number="8"><span style="color:#D4D4D4">    ROUTER["Router / Frontend\n(HTTP)"]</span></span>
+<span class="line" data-line-number="9"><span style="color:#D4D4D4">    WORKER["Workers\n(http_server.py + TokenizerManager + Scheduler)"]</span></span>
+<span class="line" data-line-number="10"><span style="color:#D4D4D4">  end</span></span>
+<span class="line" data-line-number="11"> </span>
+<span class="line" data-line-number="12"><span style="color:#D4D4D4">  subgraph RLALG["RL Logic"]</span></span>
+<span class="line" data-line-number="13"><span style="color:#D4D4D4">    ROLLOUT_FN["Rollout Fn\n(slime.rollout.sglang_rollout.generate_rollout)"]</span></span>
+<span class="line" data-line-number="14"><span style="color:#D4D4D4">    GEN_STATE["GenerateState\n(semaphore + pendings)"]</span></span>
+<span class="line" data-line-number="15"><span style="color:#D4D4D4">    RMFN["Reward Model Call\n(async_rm / batched_async_rm)"]</span></span>
+<span class="line" data-line-number="16"><span style="color:#D4D4D4">  end</span></span>
+<span class="line" data-line-number="17"> </span>
+<span class="line" data-line-number="18"><span style="color:#D4D4D4">  RMGR -->|"call_rollout_fn(...)\nslime.rollout.base_types.call_rollout_fn"| ROLLOUT_FN</span></span>
+<span class="line" data-line-number="19"><span style="color:#D4D4D4">  ROLLOUT_FN -->|"data_source.get_samples()\n+ add_samples(partials)"| DS</span></span>
+<span class="line" data-line-number="20"><span style="color:#D4D4D4">  ROLLOUT_FN -->|"submit_generate_tasks\nwait FIRST_COMPLETED"| GEN_STATE</span></span>
+<span class="line" data-line-number="21"> </span>
+<span class="line" data-line-number="22"><span style="color:#D4D4D4">  GEN_STATE -->|"POST /generate\npayload.input_ids=prompt_ids or sample.tokens"| ROUTER</span></span>
+<span class="line" data-line-number="23"><span style="color:#D4D4D4">  ROUTER -->|"forward to worker"| WORKER</span></span>
+<span class="line" data-line-number="24"><span style="color:#D4D4D4">  WORKER -->|"return text + meta_info\n(logprobs, etc.)"| GEN_STATE</span></span>
+<span class="line" data-line-number="25"> </span>
+<span class="line" data-line-number="26"><span style="color:#D4D4D4">  GEN_STATE -->|"reward compute\nasync_rm/batched_async_rm"| RMFN</span></span>
+<span class="line" data-line-number="27"><span style="color:#D4D4D4">  RMFN -->|"reward attached to Sample"| GEN_STATE</span></span>
+<span class="line" data-line-number="28"> </span>
+<span class="line" data-line-number="29"><span style="color:#D4D4D4">  ROLLOUT_FN -->|"POST /abort_request\nabort_all=true"| WORKER</span></span>
+<span class="line" data-line-number="30"><span style="color:#D4D4D4">  ROLLOUT_FN -->|"collect partial samples\naborted_samples -> buffer"| DS</span></span></code></pre></figure>
+<p><u><em>时序图</em></u></p>
+<figure class="code-block not-prose" data-language="mermaid" data-raw-code="sequenceDiagram
+  participant M as [&#x22;RolloutManager\n(slime.ray.rollout.RolloutManager)&#x22;]
+  participant RF as [&#x22;generate_rollout\n(slime.rollout.sglang_rollout.generate_rollout)&#x22;]
+  participant DS as [&#x22;DataSourceWithBuffer\n(slime.rollout.data_source.RolloutDataSourceWithBuffer)&#x22;]
+  participant GS as [&#x22;GenerateState\n(slime.rollout.sglang_rollout.GenerateState)&#x22;]
+  participant SW as [&#x22;SGLang Worker\n(http_server.py + TokenizerManager)&#x22;]
+  participant SCH as [&#x22;Scheduler\n(sglang.srt.managers.scheduler.Scheduler)&#x22;]
+
+  M->>RF: [&#x22;call_rollout_fn(generate_rollout, ...)\n(slime/rollout/base_types.py:19-26)&#x22;]
+  loop [&#x22;直到收集到 target_data_size&#x22;]
+    RF->>DS: [&#x22;get_samples(over_sampling_batch_size)\n优先 buffer 再 dataset&#x22;]
+    RF->>GS: [&#x22;submit_generate_tasks(groups)\ncreate_task(generate_and_rm_group)&#x22;]
+    GS->>SW: [&#x22;POST /generate\n(slime.generate -> http_server.generate_request)&#x22;]
+    SW->>SW: [&#x22;tokenizer_manager.generate_request(...).__anext__()\n(http_server.py:675-680)&#x22;]
+    SW->>SCH: [&#x22;scheduler runs decoding loop\n(内部调度/队列)&#x22;]
+    SCH-->>SW: [&#x22;partial/full output&#x22;]
+    SW-->>GS: [&#x22;return text + meta_info\n(logprobs etc.)&#x22;]
+    GS-->>RF: [&#x22;task.result() => group(list[Sample])\nasyncio.wait(FIRST_COMPLETED)&#x22;]
+    RF->>RF: [&#x22;dynamic_filter(group)\nkeep? then append to data&#x22;]
+  end
+
+  RF->>RF: [&#x22;Early stop reached\nlen(data)=rollout_batch_size&#x22;]
+  RF->>SW: [&#x22;POST /abort_request abort_all=true\n(slime.abort:304-306)&#x22;]
+  SW->>SW: [&#x22;tokenizer_manager.abort_request\n(tokenizer_manager.py:1315-1324)&#x22;]
+  SW->>SCH: [&#x22;send AbortReq to scheduler\n(tokenizer_manager.py:1318-1319)&#x22;]
+  SCH->>SCH: [&#x22;abort_request\n(scheduler.py:2738-2779...)&#x22;]
+
+  loop [&#x22;drain pendings&#x22;]
+    RF->>GS: [&#x22;wait pending tasks to finish\nasyncio.wait(FIRST_COMPLETED)&#x22;]
+    RF->>RF: [&#x22;if partial_rollout:\ncollect group where sample.response non-empty\nadd start_rollout_id\n(sglang_rollout.py:312-321)&#x22;]
+  end
+
+  RF->>DS: [&#x22;add_samples(aborted_samples)\nrecycle partial groups\n(sglang_rollout.py:561-562)&#x22;]
+  RF-->>M: [&#x22;RolloutFnTrainOutput(samples=data, ...)\n+ partials buffered&#x22;]" data-line-numbers="true"><div class="code-block__header"><div class="code-block__title">mermaid</div><button type="button" class="code-block__copy" aria-label="复制代码">Copy</button></div><pre class="code-block__pre" tabindex="0" data-theme="light" data-language="mermaid"><code data-language="mermaid"><span class="line" data-line-number="1"><span style="color:#24292E">sequenceDiagram</span></span>
+<span class="line" data-line-number="2"><span style="color:#24292E">  participant M as ["RolloutManager\n(slime.ray.rollout.RolloutManager)"]</span></span>
+<span class="line" data-line-number="3"><span style="color:#24292E">  participant RF as ["generate_rollout\n(slime.rollout.sglang_rollout.generate_rollout)"]</span></span>
+<span class="line" data-line-number="4"><span style="color:#24292E">  participant DS as ["DataSourceWithBuffer\n(slime.rollout.data_source.RolloutDataSourceWithBuffer)"]</span></span>
+<span class="line" data-line-number="5"><span style="color:#24292E">  participant GS as ["GenerateState\n(slime.rollout.sglang_rollout.GenerateState)"]</span></span>
+<span class="line" data-line-number="6"><span style="color:#24292E">  participant SW as ["SGLang Worker\n(http_server.py + TokenizerManager)"]</span></span>
+<span class="line" data-line-number="7"><span style="color:#24292E">  participant SCH as ["Scheduler\n(sglang.srt.managers.scheduler.Scheduler)"]</span></span>
+<span class="line" data-line-number="8"> </span>
+<span class="line" data-line-number="9"><span style="color:#24292E">  M->>RF: ["call_rollout_fn(generate_rollout, ...)\n(slime/rollout/base_types.py:19-26)"]</span></span>
+<span class="line" data-line-number="10"><span style="color:#24292E">  loop ["直到收集到 target_data_size"]</span></span>
+<span class="line" data-line-number="11"><span style="color:#24292E">    RF->>DS: ["get_samples(over_sampling_batch_size)\n优先 buffer 再 dataset"]</span></span>
+<span class="line" data-line-number="12"><span style="color:#24292E">    RF->>GS: ["submit_generate_tasks(groups)\ncreate_task(generate_and_rm_group)"]</span></span>
+<span class="line" data-line-number="13"><span style="color:#24292E">    GS->>SW: ["POST /generate\n(slime.generate -> http_server.generate_request)"]</span></span>
+<span class="line" data-line-number="14"><span style="color:#24292E">    SW->>SW: ["tokenizer_manager.generate_request(...).__anext__()\n(http_server.py:675-680)"]</span></span>
+<span class="line" data-line-number="15"><span style="color:#24292E">    SW->>SCH: ["scheduler runs decoding loop\n(内部调度/队列)"]</span></span>
+<span class="line" data-line-number="16"><span style="color:#24292E">    SCH-->>SW: ["partial/full output"]</span></span>
+<span class="line" data-line-number="17"><span style="color:#24292E">    SW-->>GS: ["return text + meta_info\n(logprobs etc.)"]</span></span>
+<span class="line" data-line-number="18"><span style="color:#24292E">    GS-->>RF: ["task.result() => group(list[Sample])\nasyncio.wait(FIRST_COMPLETED)"]</span></span>
+<span class="line" data-line-number="19"><span style="color:#24292E">    RF->>RF: ["dynamic_filter(group)\nkeep? then append to data"]</span></span>
+<span class="line" data-line-number="20"><span style="color:#24292E">  end</span></span>
+<span class="line" data-line-number="21"> </span>
+<span class="line" data-line-number="22"><span style="color:#24292E">  RF->>RF: ["Early stop reached\nlen(data)=rollout_batch_size"]</span></span>
+<span class="line" data-line-number="23"><span style="color:#24292E">  RF->>SW: ["POST /abort_request abort_all=true\n(slime.abort:304-306)"]</span></span>
+<span class="line" data-line-number="24"><span style="color:#24292E">  SW->>SW: ["tokenizer_manager.abort_request\n(tokenizer_manager.py:1315-1324)"]</span></span>
+<span class="line" data-line-number="25"><span style="color:#24292E">  SW->>SCH: ["send AbortReq to scheduler\n(tokenizer_manager.py:1318-1319)"]</span></span>
+<span class="line" data-line-number="26"><span style="color:#24292E">  SCH->>SCH: ["abort_request\n(scheduler.py:2738-2779...)"]</span></span>
+<span class="line" data-line-number="27"> </span>
+<span class="line" data-line-number="28"><span style="color:#24292E">  loop ["drain pendings"]</span></span>
+<span class="line" data-line-number="29"><span style="color:#24292E">    RF->>GS: ["wait pending tasks to finish\nasyncio.wait(FIRST_COMPLETED)"]</span></span>
+<span class="line" data-line-number="30"><span style="color:#24292E">    RF->>RF: ["if partial_rollout:\ncollect group where sample.response non-empty\nadd start_rollout_id\n(sglang_rollout.py:312-321)"]</span></span>
+<span class="line" data-line-number="31"><span style="color:#24292E">  end</span></span>
+<span class="line" data-line-number="32"> </span>
+<span class="line" data-line-number="33"><span style="color:#24292E">  RF->>DS: ["add_samples(aborted_samples)\nrecycle partial groups\n(sglang_rollout.py:561-562)"]</span></span>
+<span class="line" data-line-number="34"><span style="color:#24292E">  RF-->>M: ["RolloutFnTrainOutput(samples=data, ...)\n+ partials buffered"]</span></span></code></pre><pre class="code-block__pre" tabindex="0" data-theme="dark" data-language="mermaid"><code data-language="mermaid"><span class="line" data-line-number="1"><span style="color:#D4D4D4">sequenceDiagram</span></span>
+<span class="line" data-line-number="2"><span style="color:#D4D4D4">  participant M as ["RolloutManager\n(slime.ray.rollout.RolloutManager)"]</span></span>
+<span class="line" data-line-number="3"><span style="color:#D4D4D4">  participant RF as ["generate_rollout\n(slime.rollout.sglang_rollout.generate_rollout)"]</span></span>
+<span class="line" data-line-number="4"><span style="color:#D4D4D4">  participant DS as ["DataSourceWithBuffer\n(slime.rollout.data_source.RolloutDataSourceWithBuffer)"]</span></span>
+<span class="line" data-line-number="5"><span style="color:#D4D4D4">  participant GS as ["GenerateState\n(slime.rollout.sglang_rollout.GenerateState)"]</span></span>
+<span class="line" data-line-number="6"><span style="color:#D4D4D4">  participant SW as ["SGLang Worker\n(http_server.py + TokenizerManager)"]</span></span>
+<span class="line" data-line-number="7"><span style="color:#D4D4D4">  participant SCH as ["Scheduler\n(sglang.srt.managers.scheduler.Scheduler)"]</span></span>
+<span class="line" data-line-number="8"> </span>
+<span class="line" data-line-number="9"><span style="color:#D4D4D4">  M->>RF: ["call_rollout_fn(generate_rollout, ...)\n(slime/rollout/base_types.py:19-26)"]</span></span>
+<span class="line" data-line-number="10"><span style="color:#D4D4D4">  loop ["直到收集到 target_data_size"]</span></span>
+<span class="line" data-line-number="11"><span style="color:#D4D4D4">    RF->>DS: ["get_samples(over_sampling_batch_size)\n优先 buffer 再 dataset"]</span></span>
+<span class="line" data-line-number="12"><span style="color:#D4D4D4">    RF->>GS: ["submit_generate_tasks(groups)\ncreate_task(generate_and_rm_group)"]</span></span>
+<span class="line" data-line-number="13"><span style="color:#D4D4D4">    GS->>SW: ["POST /generate\n(slime.generate -> http_server.generate_request)"]</span></span>
+<span class="line" data-line-number="14"><span style="color:#D4D4D4">    SW->>SW: ["tokenizer_manager.generate_request(...).__anext__()\n(http_server.py:675-680)"]</span></span>
+<span class="line" data-line-number="15"><span style="color:#D4D4D4">    SW->>SCH: ["scheduler runs decoding loop\n(内部调度/队列)"]</span></span>
+<span class="line" data-line-number="16"><span style="color:#D4D4D4">    SCH-->>SW: ["partial/full output"]</span></span>
+<span class="line" data-line-number="17"><span style="color:#D4D4D4">    SW-->>GS: ["return text + meta_info\n(logprobs etc.)"]</span></span>
+<span class="line" data-line-number="18"><span style="color:#D4D4D4">    GS-->>RF: ["task.result() => group(list[Sample])\nasyncio.wait(FIRST_COMPLETED)"]</span></span>
+<span class="line" data-line-number="19"><span style="color:#D4D4D4">    RF->>RF: ["dynamic_filter(group)\nkeep? then append to data"]</span></span>
+<span class="line" data-line-number="20"><span style="color:#D4D4D4">  end</span></span>
+<span class="line" data-line-number="21"> </span>
+<span class="line" data-line-number="22"><span style="color:#D4D4D4">  RF->>RF: ["Early stop reached\nlen(data)=rollout_batch_size"]</span></span>
+<span class="line" data-line-number="23"><span style="color:#D4D4D4">  RF->>SW: ["POST /abort_request abort_all=true\n(slime.abort:304-306)"]</span></span>
+<span class="line" data-line-number="24"><span style="color:#D4D4D4">  SW->>SW: ["tokenizer_manager.abort_request\n(tokenizer_manager.py:1315-1324)"]</span></span>
+<span class="line" data-line-number="25"><span style="color:#D4D4D4">  SW->>SCH: ["send AbortReq to scheduler\n(tokenizer_manager.py:1318-1319)"]</span></span>
+<span class="line" data-line-number="26"><span style="color:#D4D4D4">  SCH->>SCH: ["abort_request\n(scheduler.py:2738-2779...)"]</span></span>
+<span class="line" data-line-number="27"> </span>
+<span class="line" data-line-number="28"><span style="color:#D4D4D4">  loop ["drain pendings"]</span></span>
+<span class="line" data-line-number="29"><span style="color:#D4D4D4">    RF->>GS: ["wait pending tasks to finish\nasyncio.wait(FIRST_COMPLETED)"]</span></span>
+<span class="line" data-line-number="30"><span style="color:#D4D4D4">    RF->>RF: ["if partial_rollout:\ncollect group where sample.response non-empty\nadd start_rollout_id\n(sglang_rollout.py:312-321)"]</span></span>
+<span class="line" data-line-number="31"><span style="color:#D4D4D4">  end</span></span>
+<span class="line" data-line-number="32"> </span>
+<span class="line" data-line-number="33"><span style="color:#D4D4D4">  RF->>DS: ["add_samples(aborted_samples)\nrecycle partial groups\n(sglang_rollout.py:561-562)"]</span></span>
+<span class="line" data-line-number="34"><span style="color:#D4D4D4">  RF-->>M: ["RolloutFnTrainOutput(samples=data, ...)\n+ partials buffered"]</span></span></code></pre></figure>
+<hr>
+<h2 id="四rollpacker不改请求生命周期改轮次组成tail-batching">四、RollPacker：不改请求生命周期，改“轮次组成”——Tail Batching<a href="#四rollpacker不改请求生命周期改轮次组成tail-batching" class="heading-anchor" aria-label="Link to 四、RollPacker：不改请求生命周期，改“轮次组成”——Tail Batching">¶</a></h2>
+<p>如果说 APRIL 是把长尾拆碎并跨 step 摊销，那么 RollPacker 的思路更像调度学：<strong>长尾请求本来就会慢，那就不要让它们污染每一轮</strong>，而是把它们集中放进少数几轮“长轮次”。这就是 Tail Batching：</p>
+<ul>
+<li>把 prompts 按“是否可能产生长尾输出”分组</li>
+<li>大多数 rollout step（short rounds）只包含短且均衡的请求</li>
+<li>少数 rollout step（long rounds）集中处理长尾请求</li>
+</ul>
+<p>这样做的效果是：<strong>绝大多数 step 的 makespan 变短且稳定</strong>，GPU bubbles 显著下降；长轮次依然慢，但它们被集中成“少数事件”，不会让每一步都被尾巴拖住。RollPacker 报告在大规模 H800 集群上带来可观的端到端训练加速。</p>
+<h3 id="41-tail-batching-的隐含前提同步边界要抬高">4.1 Tail Batching 的隐含前提：同步边界要“抬高”<a href="#41-tail-batching-的隐含前提同步边界要抬高" class="heading-anchor" aria-label="Link to 4.1 Tail Batching 的隐含前提：同步边界要“抬高”">¶</a></h3>
+<p>Tail batching 表面上只是“重排样本顺序”，但同步 on-policy 系统里有个硬约束：</p>
+<blockquote>
+<p>如果某些 prompts 被挪到更后面的 rollout round 才生成，而中间 policy 已更新，那么这些样本将变成 off-policy。</p>
+</blockquote>
+<p>因此，Tail Batching 在同步 RL 里要成立，通常需要把同步边界从“每轮 rollout 都更新”提升到“多个 rollout rounds 组成一个 update step”，在一个 update step 内 actor 权重冻结；等 short rounds + long rounds 都完成后再做一次更新。</p>
+<p>RollPacker 的 short/long rounds 设计，本质上就是在这个更高层级同步边界上做调度优化，并且进一步配合 rollout / reward / training 三阶段的系统化优化（如动态资源分配、训练与 rollout 的流水重叠等）。</p>
+<hr>
+<h2 id="结语">结语<a href="#结语" class="heading-anchor" aria-label="Link to 结语">¶</a></h2>
+<p>APRIL 解决的是“同步 rollout 被最长样本拖死”这一类系统性瓶颈：通过超额提交、达标即停、partial 回收续写，把长尾从“每一步的尾巴”变成“跨多步的可摊销成本”。</p>
+<p>RollPacker 则把问题上升到“轮次调度与同步边界”：用 tail batching 把长尾集中到少数 long rounds，让绝大多数 short rounds 快且稳，并进一步做三阶段系统级协同优化拿到端到端收益。</p>
+<p>对于真实的 RL 工程系统，最实用的落地策略往往不是二选一，而是分层组合：<strong>用 Tail Batching 稳住轮次结构，用 APRIL 清掉轮次内部残余尾巴</strong>，再用指标体系把收益“可观测、可回归、可调参”。</p> <div class="grid md:grid-cols-2 gap-4 mt-10"> <div></div> <a href="/blog-preview/previews/pr-426/cuda-pragma-unroll/" class="block p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-sky-500 text-right"> <div class="text-xs uppercase text-zinc-500">Next</div> <div class="font-semibold">CUDA 性能知识点：#pragma unroll 可能让你更慢</div> </a> </div> <div class="mt-10 border-t border-zinc-200 dark:border-zinc-800 pt-6"><h3 class="text-lg font-semibold mb-4">Related posts</h3><div class="grid md:grid-cols-2 gap-4"><a href="/blog-preview/previews/pr-426/infra/" class="block p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-sky-500 hover:-translate-y-0.5 transition"><div class="text-xs text-zinc-500 mb-1">2/12/2026</div><div class="font-semibold">图解 Infra 视角下的强化学习性能优化</div></a><a href="/blog-preview/previews/pr-426/efficient-rl-training-optimizing-memory-usage-in-verl/" class="block p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-sky-500 hover:-translate-y-0.5 transition"><div class="text-xs text-zinc-500 mb-1">2/5/2026</div><div class="font-semibold">高效强化学习训练 - 优化 verl 中的内存使用</div></a><a href="/blog-preview/previews/pr-426/slime/" class="block p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-sky-500 hover:-translate-y-0.5 transition"><div class="text-xs text-zinc-500 mb-1">2/5/2026</div><div class="font-semibold">高效强化学习训练 - 优化 slime 中的权重同步</div></a></div></div> <section id="comments" class="mt-12" data-comments> <div class="rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 p-6 md:p-8"> <script src="https://giscus.app/client.js" data-repo="yuanlehome/blog" data-repo-id="R_kgDOQu2Jjw" data-category="General" data-category-id="DIC_kwDOQu2Jj84C0QDN" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="bottom" data-theme="light" data-lang="zh-CN" crossorigin="anonymous" async></script> </div> </section> <script>(() => {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return;
+
+  // Theme mapping for Giscus from config
+  const themeMap = {"light":"light","dark":"dark"};
+
+  // Single source of truth: read effective theme from DOM
+  const getEffectiveTheme = () => {
+    const isDark =
+      document.documentElement.dataset.theme === 'dark' ||
+      document.documentElement.classList.contains('dark');
+    return isDark ? 'dark' : 'light';
+  };
+
+  // Track current theme state
+  let currentTheme = getEffectiveTheme();
+
+  // Set initial theme on the script tag before Giscus loads
+  const setInitialTheme = () => {
+    const effectiveTheme = getEffectiveTheme();
+    const giscusTheme = themeMap[effectiveTheme] ?? 'light';
+    const giscusScript = document.querySelector('script[src*="giscus.app/client.js"]');
+    if (giscusScript) {
+      giscusScript.setAttribute('data-theme', giscusTheme);
+    }
+  };
+
+  // Update container data attribute for tracking
+  const setContainerTheme = (theme) => {
+    const container = document.getElementById('comments');
+    if (container) {
+      container.setAttribute('data-giscus-theme', theme);
+    }
+  };
+
+  // Send theme update message to Giscus iframe
+  const postThemeMessage = (resolvedTheme) => {
+    const effective = resolvedTheme ?? currentTheme;
+    const giscusTheme = themeMap[effective] ?? 'light';
+    setContainerTheme(giscusTheme);
+    
+    const iframe = document.querySelector('iframe.giscus-frame');
+    if (iframe && iframe.contentWindow) {
+      iframe.contentWindow.postMessage(
+        { giscus: { setConfig: { theme: giscusTheme } } },
+        'https://giscus.app',
+      );
+    }
+  };
+
+  // Debounce helper to prevent excessive syncs
+  let syncTimeout = null;
+  const debouncedSync = (callback, delay = 50) => {
+    if (syncTimeout) clearTimeout(syncTimeout);
+    syncTimeout = setTimeout(callback, delay);
+  };
+
+  // Main sync function: update theme if changed
+  const syncCommentTheme = (resolvedOverride) => {
+    const detected = resolvedOverride ?? getEffectiveTheme();
+    if (detected !== currentTheme) {
+      currentTheme = detected;
+    }
+    postThemeMessage(detected);
+  };
+
+  // Wait for iframe with improved retry logic
+  let retryCount = 0;
+  const maxRetries = 50; // ~5 seconds with 100ms intervals
+  const waitForIframe = () => {
+    const iframe = document.querySelector('iframe.giscus-frame');
+    if (iframe) {
+      // Found iframe, send theme
+      if (iframe instanceof HTMLIFrameElement) {
+        const sendTheme = () => {
+          postThemeMessage();
+        };
+        
+        // Try to send immediately and also on load event
+        sendTheme();
+        if (!iframe.complete) {
+          iframe.addEventListener('load', sendTheme, { once: true });
+        }
+      }
+      return;
+    }
+
+    // Retry if not found yet
+    retryCount++;
+    if (retryCount < maxRetries) {
+      setTimeout(waitForIframe, 100);
+    }
+  };
+
+  // Set initial theme before Giscus loads
+  setInitialTheme();
+
+  // Listen for DOM changes (class/data-theme attribute)
+  const observer = new MutationObserver(() => {
+    debouncedSync(() => syncCommentTheme());
+  });
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['class', 'data-theme'],
+  });
+
+  // Listen for custom theme change events
+  window.addEventListener('themechange', (event) => {
+    const detail = event?.detail || {};
+    const resolved = detail.resolved || getEffectiveTheme();
+    debouncedSync(() => syncCommentTheme(resolved));
+  });
+
+  // Listen for storage events (cross-tab synchronization)
+  window.addEventListener('storage', (event) => {
+    if (event.key === 'theme' && (event.newValue === 'light' || event.newValue === 'dark')) {
+      debouncedSync(() => syncCommentTheme());
+    }
+  });
+
+  // Listen for system theme changes (if using system preference)
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  const handleSystemThemeChange = () => {
+    // Only sync if theme might be using system preference
+    try {
+      const stored = localStorage.getItem('theme');
+      if (!stored || stored === 'system') {
+        debouncedSync(() => syncCommentTheme());
+      }
+    } catch (e) {
+      // Ignore localStorage errors
+    }
+  };
+  
+  if (mediaQuery.addEventListener) {
+    mediaQuery.addEventListener('change', handleSystemThemeChange);
+  }
+
+  // Initial sync and wait for iframe
+  syncCommentTheme();
+  waitForIframe();
+})();</script> <div id="page-bottom-anchor" aria-hidden="true" style="height: 1px;"></div> </article>  </div> <div class="fixed inset-0 z-50 pointer-events-none data-[open=true]:pointer-events-auto lg:hidden" data-mobile-toc data-open="false" aria-hidden="true"><div class="absolute inset-0 bg-zinc-900/40 opacity-0 transition duration-200 data-[open=true]:opacity-100 dark:bg-black/50" data-mobile-toc-backdrop></div><div id="mobile-toc-drawer" role="dialog" aria-modal="true" aria-label="文章目录" class="absolute inset-x-0 bottom-0 translate-y-full rounded-t-2xl border border-zinc-200 bg-neutral-50/95 shadow-2xl ring-1 ring-black/5 transition duration-200 data-[open=true]:translate-y-0 dark:border-zinc-800 dark:bg-zinc-900/95 dark:ring-white/10" data-mobile-toc-drawer><div class="flex items-center justify-between gap-3 px-4 pt-4 pb-3"><div><p class="text-sm font-semibold text-zinc-900 dark:text-zinc-50">文章目录</p><p class="text-xs text-zinc-500 dark:text-zinc-400">点击条目可跳转</p></div><button type="button" class="rounded-full border border-zinc-200 bg-neutral-50 px-3 py-1 text-sm font-medium text-zinc-800 shadow-sm transition hover:text-sky-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:text-sky-400 dark:focus-visible:ring-offset-zinc-900" data-mobile-toc-close>
+关闭
+</button></div><div class="max-h-[60vh] overflow-y-auto px-4 pb-5" data-mobile-toc-scroll><ol class="space-y-3 text-sm"><li><a href="#一long-tail-rollouts同步-rl-的-makespan-被尾巴决定" data-toc-link data-mobile-toc-link data-target="一long-tail-rollouts同步-rl-的-makespan-被尾巴决定" title="一、Long-tail rollouts：同步 RL 的 makespan 被尾巴决定¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>一、Long-tail rollouts：同步 RL 的 makespan 被尾巴决定¶</span></a></li><li><a href="#二april把长尾时间从每一步的尾巴摊薄到多步" data-toc-link data-mobile-toc-link data-target="二april把长尾时间从每一步的尾巴摊薄到多步" title="二、APRIL：把“长尾时间”从每一步的尾巴摊薄到多步¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>二、APRIL：把“长尾时间”从每一步的尾巴摊薄到多步¶</span></a><ol class="mt-1 space-y-1"><li><a href="#21-over-provision超额提交请求" data-toc-link data-mobile-toc-link data-target="21-over-provision超额提交请求" title="2.1 Over-provision：超额提交请求¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>2.1 Over-provision：超额提交请求¶</span></a></li><li><a href="#22-early-stop达标就立刻结束本轮" data-toc-link data-mobile-toc-link data-target="22-early-stop达标就立刻结束本轮" title="2.2 Early stop：达标就立刻结束本轮¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>2.2 Early stop：达标就立刻结束本轮¶</span></a></li><li><a href="#23-recycle-partials被打断的请求不丢续写回收" data-toc-link data-mobile-toc-link data-target="23-recycle-partials被打断的请求不丢续写回收" title="2.3 Recycle partials：被打断的请求不丢，续写回收¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>2.3 Recycle partials：被打断的请求不丢，续写回收¶</span></a></li></ol></li><li><a href="#三slime-中的-partial-rollouts-实现" data-toc-link data-mobile-toc-link data-target="三slime-中的-partial-rollouts-实现" title="三、slime 中的 Partial Rollouts 实现¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>三、slime 中的 Partial Rollouts 实现¶</span></a></li><li><a href="#四rollpacker不改请求生命周期改轮次组成tail-batching" data-toc-link data-mobile-toc-link data-target="四rollpacker不改请求生命周期改轮次组成tail-batching" title="四、RollPacker：不改请求生命周期，改“轮次组成”——Tail Batching¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>四、RollPacker：不改请求生命周期，改“轮次组成”——Tail Batching¶</span></a><ol class="mt-1 space-y-1"><li><a href="#41-tail-batching-的隐含前提同步边界要抬高" data-toc-link data-mobile-toc-link data-target="41-tail-batching-的隐含前提同步边界要抬高" title="4.1 Tail Batching 的隐含前提：同步边界要“抬高”¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>4.1 Tail Batching 的隐含前提：同步边界要“抬高”¶</span></a></li></ol></li><li><a href="#结语" data-toc-link data-mobile-toc-link data-target="结语" title="结语¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>结语¶</span></a></li></ol></div></div></div><script type="module">const c=document.querySelector("[data-mobile-toc]"),a=document.querySelector("[data-mobile-toc-drawer]"),s=document.querySelector("[data-mobile-toc-backdrop]"),p=()=>Array.from(document.querySelectorAll("[data-mobile-toc-open]")),k=document.querySelector("[data-mobile-toc-close]"),g=()=>Array.from((a??c)?.querySelectorAll("[data-mobile-toc-link]")??[]),o=document.body,S=window.matchMedia("(prefers-reduced-motion: reduce)");S.matches;const h=()=>{const e=getComputedStyle(document.documentElement).getPropertyValue("--site-header-height");return parseFloat(e)||0};let l=0;const v=50,L=e=>window.dispatchEvent(new CustomEvent("mobile-toc:toggle",{detail:{open:e}})),A=e=>{p().forEach(n=>n.setAttribute("aria-expanded",e?"true":"false"))},i=e=>{e.preventDefault(),r(!0)},f=()=>{p().forEach(e=>{e.removeEventListener("click",i),e.addEventListener("click",i)})},T=()=>{l=window.scrollY,o.style.position="fixed",o.style.width="100%",o.style.top=`-${l}px`},B=()=>{o.style.position="",o.style.width="",o.style.top="",window.scrollTo({top:l})},r=e=>{!c||!a||(c.dataset.open=String(e),a.dataset.open=String(e),s?.setAttribute("data-open",String(e)),c.setAttribute("aria-hidden",e?"false":"true"),A(e),L(e),e?T():B())},y=()=>{const e=h();g().map(t=>document.getElementById(t.dataset.target||"")).filter(t=>!!t).forEach(t=>{t.style.scrollMarginTop=`${e+12}px`})},d=e=>`#${encodeURIComponent(e)}`,w=(e,n=!1)=>{const t=document.getElementById(e);if(!t)return;const E=h(),b=window.scrollY+t.getBoundingClientRect().top-E-12;n?history.replaceState(null,"",d(e)):history.pushState(null,"",d(e)),window.scrollTo({top:b,behavior:"auto"})};f();const O=new MutationObserver(f);O.observe(document.body,{subtree:!0,childList:!0,attributes:!0,attributeFilter:["data-mobile-toc-open"]});k?.addEventListener("click",()=>r(!1));s?.addEventListener("click",e=>{e.target===s&&r(!1)});const u=e=>{const t=e.currentTarget?.dataset.target;t&&(e.preventDefault(),e.stopPropagation(),r(!1),setTimeout(()=>w(t),v))};g().forEach(e=>{e.removeEventListener("click",u),e.addEventListener("click",u)});window.addEventListener("keydown",e=>{e.key==="Escape"&&r(!1)});y();window.addEventListener("headerheightchange",y);const m=decodeURIComponent(location.hash.replace(/^#/,""));m&&requestAnimationFrame(()=>w(m,!0));</script> <div class="floating-action-stack fixed z-40 flex flex-col items-end gap-3 lg:hidden pointer-events-auto transition-opacity data-[toc-open=true]:opacity-0 data-[toc-open=true]:pointer-events-none" data-floating-action-stack style="inset-inline-end: calc(env(safe-area-inset-right, 0px) + 1rem); inset-block-start: 50%; transform: translateY(-50%);"><button type="button" class="floating-action-stack__button h-11 w-11 rounded-full border border-gray-200 bg-white/90 text-gray-900 shadow-lg backdrop-blur-sm ring-offset-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 hover:-translate-y-0.5 hover:border-blue-200 hover:text-blue-600 data-[visible=false]:opacity-0 data-[visible=false]:pointer-events-none data-[visible=true]:opacity-100 data-[visible=true]:pointer-events-auto dark:border-gray-800 dark:bg-gray-900/85 dark:text-gray-100 dark:ring-offset-gray-900 dark:hover:border-blue-500/50 dark:hover:text-blue-300" data-floating-action-button data-action="toc" data-visible="true" style="transition-delay: 0ms;" aria-label="打开目录抽屉" data-mobile-toc-open="true"><span class="sr-only">目录</span><span aria-hidden="true" class="text-base">📑</span></button></div><script type="module">const o=document.querySelector("[data-floating-action-stack]"),r=o?.querySelector('[data-action="toc"]'),e=document.querySelector("[data-mobile-toc]"),a=t=>{o&&(o.dataset.tocOpen=t?"true":"false")};a(e?.dataset.open==="true");r?.addEventListener("click",()=>{requestAnimationFrame(()=>r?.blur())});window.addEventListener("mobile-toc:toggle",t=>{const n=t.detail;n&&a(n.open)});e&&new MutationObserver(()=>{a(e.dataset.open==="true")}).observe(e,{attributes:!0,attributeFilter:["data-open"]});</script> <button type="button" class="fixed left-1/2 top-20 z-40 -translate-x-1/2 rounded-full border border-zinc-200 bg-white/95 px-4 py-2 text-sm font-medium text-zinc-900 shadow-lg backdrop-blur-sm transition data-[visible=false]:pointer-events-none data-[visible=false]:-translate-y-2 data-[visible=false]:opacity-0 data-[visible=true]:opacity-100 dark:border-zinc-800 dark:bg-zinc-900/90 dark:text-zinc-100" data-scroll-up-top-button data-target-selector="[data-article]" data-visible="false" aria-label="回到文章顶部">
+回到顶部
+</button> <script type="module">const t=document.querySelector("[data-scroll-up-top-button]"),f=t?.dataset.targetSelector||"[data-article]",d=document.querySelector(f),m=window.matchMedia("(prefers-reduced-motion: reduce)");if(!t||!d)t&&(t.dataset.visible="false");else{let o=0,l=window.scrollY,r=!1;const u=()=>{const e=getComputedStyle(document.documentElement).getPropertyValue("--site-header-height");return parseFloat(e)||0},s=()=>{o=d.getBoundingClientRect().top+window.scrollY},a=e=>{t.dataset.visible=e?"true":"false"},n=()=>{const e=window.scrollY,i=e-l,w=Math.abs(i)>=6;e<=o+140?a(!1):w&&a(i<0),l=e,r=!1},c=()=>{r||(r=!0,requestAnimationFrame(n))},p=()=>{const e=Math.max(0,o-u()-12);window.scrollTo({top:e,behavior:m.matches?"auto":"smooth"})};s(),n(),window.addEventListener("scroll",c,{passive:!0}),window.addEventListener("resize",()=>{s(),c()}),window.addEventListener("load",()=>{s(),n()},{once:!0}),t.addEventListener("click",p)}</script> </main> <footer class="py-8 mt-auto border-t border-zinc-200 dark:border-zinc-800"> <div class="container mx-auto px-4 text-center text-zinc-500 max-w-4xl">
+&copy; 2026 Yuanle Liu. All rights reserved. </div> </footer>  <script type="module">const i=new WeakMap,c=(e,t)=>{e.dataset.state=t,t==="copied"?e.textContent="Copied":t==="error"?e.textContent="Failed":e.textContent="Copy";const o=i.get(e);if(o&&window.clearTimeout(o),t!=="idle"){const r=window.setTimeout(()=>c(e,"idle"),2e3);i.set(e,r)}},n=async e=>{const t=e.closest(".code-block");if(!t)return;const o=t.getAttribute("data-raw-code")??"";try{await navigator.clipboard.writeText(o),c(e,"copied")}catch(r){console.error("Copy failed",r),c(e,"error")}},s=()=>{document.addEventListener("click",e=>{const o=e.target?.closest("button.code-block__copy");o&&(e.preventDefault(),n(o))})},a=()=>{typeof document>"u"||s()};a();</script> <script type="module">function d(){const n=document.querySelector("[data-site-header]");if(!n){document.documentElement.style.setProperty("--site-header-height","0px");return}let i=0;const t=()=>{const e=n.getBoundingClientRect().height;Math.abs(e-i)>.5&&(i=e,document.documentElement.style.setProperty("--site-header-height",`${e}px`),window.dispatchEvent(new CustomEvent("headerheightchange",{detail:{height:e}})))};t(),"ResizeObserver"in window&&new ResizeObserver(()=>{t()}).observe(n),window.addEventListener("resize",t,{passive:!0}),window.addEventListener("load",t,{once:!0})}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",d):d();</script> </body> </html> <dialog id="article-image-zoom-dialog" class="fixed inset-0 m-0 h-screen w-screen max-h-none max-w-none touch-none border-0 bg-black/85 p-0 backdrop:bg-black/85 [&[open]]:grid [&[open]]:place-items-center" aria-label="图片预览"> <button type="button" data-image-zoom-close class="absolute right-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-2xl text-white transition hover:bg-black/70 focus:outline-none focus:ring-2 focus:ring-white" aria-label="关闭预览">
+×
+</button> <img data-image-zoom-preview alt="" class="max-h-[90vh] max-w-[90vw] touch-none select-none object-contain transition-transform duration-150 ease-out will-change-transform" loading="eager" decoding="async"> <div class="pointer-events-none absolute bottom-4 left-1/2 z-10 -translate-x-1/2 rounded-full bg-black/55 px-3 py-2"> <div class="pointer-events-auto flex items-center gap-2 text-sm text-white"> <button type="button" data-image-zoom-out class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/35 hover:bg-white/10" aria-label="缩小">
+−
+</button> <span data-image-zoom-level class="min-w-14 text-center tabular-nums">100%</span> <button type="button" data-image-zoom-in class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/35 hover:bg-white/10" aria-label="放大">
++
+</button> </div> </div> </dialog> <script type="module">const q=document.querySelector("[data-article]"),r=document.querySelector("#article-image-zoom-dialog"),e=r?.querySelector("[data-image-zoom-preview]"),C=r?.querySelector("[data-image-zoom-close]"),w=r?.querySelector("[data-image-zoom-in]"),D=r?.querySelector("[data-image-zoom-out]"),B=r?.querySelector("[data-image-zoom-level]");if(q&&r&&e&&typeof r.showModal=="function"){const T=Array.from(q.querySelectorAll("img")).filter(t=>!t.closest("[data-post-cover]")),c=1,x=4,y=.25,_=2;let o=1,s=0,l=0,d=null,g=0,v=0,E=0,S=c,z=0,I=0;const i=new Map;let k=null;const A=()=>{k===null&&(k=requestAnimationFrame(()=>{k=null,M()}))},R=()=>{const t=Math.max(0,(e.clientWidth*o-e.clientWidth)/2),n=Math.max(0,(e.clientHeight*o-e.clientHeight)/2);return{x:t,y:n}},$=()=>{const t=R();s=Math.max(-t.x,Math.min(t.x,s)),l=Math.max(-t.y,Math.min(t.y,l)),o<=c&&(s=0,l=0)},M=()=>{$(),e.style.transform=`translate(${s}px, ${l}px) scale(${o})`,B&&(B.textContent=`${Math.round(o*100)}%`),D&&(D.disabled=o<=c),w&&(w.disabled=o>=x),i.size===0&&(e.style.cursor=o>c?"grab":"")},u=t=>{o=Math.min(x,Math.max(c,t)),M()},P=(t,n,a)=>{const p=o;if(o=Math.min(x,Math.max(c,t)),n!==void 0&&a!==void 0&&p!==o){const f=e.getBoundingClientRect(),L=f.left+f.width/2,m=f.top+f.height/2,h=o/p;s=(s-(n-L))*h+(n-L),l=(l-(a-m))*h+(a-m)}M()},Z=()=>{r.open&&(r.close(),e.removeAttribute("src"),e.alt="",i.clear(),d=null,s=0,l=0,u(1))};T.forEach(t=>{t.setAttribute("tabindex","0"),t.setAttribute("role","button"),t.setAttribute("aria-label",`点击查看大图：${t.alt||"文章图片"}`);const n=()=>{const a=t.currentSrc||t.src;a&&(e.src=a,e.alt=t.alt||"文章图片预览",s=0,l=0,u(1),r.showModal(),document.body.style.overflow="hidden")};t.addEventListener("click",n),t.addEventListener("keydown",a=>{(a.key==="Enter"||a.key===" ")&&(a.preventDefault(),n())})}),C?.addEventListener("click",Z),w?.addEventListener("click",()=>{u(o+y)}),D?.addEventListener("click",()=>{u(o-y)}),e.addEventListener("wheel",t=>{t.preventDefault();const n=t.deltaY<0?1:-1;P(o+n*y,t.clientX,t.clientY)},{passive:!1}),e.addEventListener("dblclick",t=>{t.preventDefault(),P(o>c?c:_,t.clientX,t.clientY)}),e.addEventListener("pointerdown",t=>{if(r.open&&(e.setPointerCapture(t.pointerId),i.set(t.pointerId,{x:t.clientX,y:t.clientY}),e.style.transition="none",i.size===1&&o>c&&(d=t.pointerId,g=t.clientX-s,v=t.clientY-l,e.style.cursor="grabbing"),i.size===2)){const n=Array.from(i.values()),a=n[0].x-n[1].x,p=n[0].y-n[1].y;E=Math.hypot(a,p),S=o,z=(n[0].x+n[1].x)/2,I=(n[0].y+n[1].y)/2,d=null,e.style.cursor="grabbing"}}),e.addEventListener("pointermove",t=>{if(!(!r.open||!i.has(t.pointerId))){if(i.set(t.pointerId,{x:t.clientX,y:t.clientY}),i.size===2){t.preventDefault();const n=Array.from(i.values()),a=n[0].x-n[1].x,p=n[0].y-n[1].y,f=Math.hypot(a,p);if(E>0){const L=f/E,m=o;if(o=Math.min(x,Math.max(c,S*L)),m!==o){const h=o/m,b=e.getBoundingClientRect(),X=b.left+b.width/2,Y=b.top+b.height/2;s=(s-(z-X))*h+(z-X),l=(l-(I-Y))*h+(I-Y)}A()}return}d===t.pointerId&&o>c&&(t.preventDefault(),s=t.clientX-g,l=t.clientY-v,A())}});const O=t=>{if(e.hasPointerCapture(t.pointerId)&&e.releasePointerCapture(t.pointerId),i.delete(t.pointerId),d===t.pointerId&&(d=null),i.size===0&&(e.style.transition="",e.style.cursor=o>c?"grab":""),i.size===1&&o>c){const[n,a]=Array.from(i.entries())[0];d=n,g=a.x-s,v=a.y-l,e.style.cursor="grabbing"}};e.addEventListener("pointerup",O),e.addEventListener("pointercancel",O),r.addEventListener("click",t=>{t.target===r&&Z()}),r.addEventListener("keydown",t=>{r.open&&((t.key==="+"||t.key==="=")&&(t.preventDefault(),u(o+y)),(t.key==="-"||t.key==="_")&&(t.preventDefault(),u(o-y)),t.key==="0"&&(t.preventDefault(),u(1)))}),r.addEventListener("cancel",()=>{e.removeAttribute("src"),e.alt="",i.clear(),d=null,s=0,l=0,u(1)}),r.addEventListener("close",()=>{document.body.style.overflow="",e.style.transition="",e.style.cursor=""}),r.addEventListener("wheel",t=>{t.preventDefault()},{passive:!1}),r.addEventListener("touchmove",t=>{t.target===r&&t.preventDefault()},{passive:!1}),M()}</script>
