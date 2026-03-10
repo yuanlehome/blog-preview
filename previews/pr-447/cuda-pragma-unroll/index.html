@@ -1,0 +1,415 @@
+<!DOCTYPE html><html lang="en" data-astro-cid-sckkx6r4> <head><script>(() => {
+  const storageKey = 'theme';
+  const className = 'dark';
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  const validThemes = ['light', 'dark'];
+  let currentPreference = (() => {
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored && validThemes.includes(stored)) return stored;
+    } catch (error) {
+      console.warn('Unable to access localStorage for theme:', error);
+    }
+    return mediaQuery.matches ? 'dark' : 'light';
+  })();
+
+  const resolveTheme = (preference) => (preference === 'dark' ? 'dark' : 'light');
+
+  const applyTheme = (preference) => {
+    const effectiveTheme = resolveTheme(preference);
+    document.documentElement.classList.toggle(className, effectiveTheme === 'dark');
+    document.documentElement.dataset.theme = effectiveTheme;
+    return effectiveTheme;
+  };
+
+  const dispatchChange = (preference) => {
+    const resolved = document.documentElement.classList.contains(className) ? 'dark' : 'light';
+    window.dispatchEvent(
+      new CustomEvent('themechange', {
+        detail: { theme: preference, resolved },
+      }),
+    );
+  };
+
+  applyTheme(currentPreference);
+
+  window.__setTheme = (next) => {
+    const preference = validThemes.includes(String(next)) ? String(next) : resolveTheme(currentPreference);
+    currentPreference = preference;
+    try {
+      localStorage.setItem(storageKey, preference);
+    } catch (error) {
+      console.warn('Unable to persist theme selection:', error);
+    }
+    applyTheme(preference);
+    dispatchChange(preference);
+  };
+})();</script><meta charset="UTF-8"><meta name="description" content="A minimal Astro blog"><meta name="viewport" content="width=device-width"><link rel="icon" type="image/x-icon" href="/blog-preview/previews/pr-447/favicon.ico"><link rel="icon" type="image/png" sizes="32x32" href="/blog-preview/previews/pr-447/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/blog-preview/previews/pr-447/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/blog-preview/previews/pr-447/apple-touch-icon.png"><meta name="generator" content="Astro v5.16.6"><link rel="canonical" href="https://yuanlehome.github.io/blog-preview/previews/pr-447/cuda-pragma-unroll/"><meta property="og:title" content="CUDA 性能知识点：#pragma unroll 可能让你更慢"><meta property="og:description" content="A minimal Astro blog"><meta property="og:image" content="/blog-preview/previews/pr-447/images/notion/cuda-pragma-unroll/31422dca-4210-8077-90a4-dd78efb2762f.png"><meta property="og:type" content="article"><meta property="og:url" content="https://yuanlehome.github.io/blog-preview/previews/pr-447/cuda-pragma-unroll/"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="CUDA 性能知识点：#pragma unroll 可能让你更慢"><meta name="twitter:description" content="A minimal Astro blog"><meta name="twitter:image" content="/blog-preview/previews/pr-447/images/notion/cuda-pragma-unroll/31422dca-4210-8077-90a4-dd78efb2762f.png"><title>CUDA 性能知识点：#pragma unroll 可能让你更慢</title><style>:root {
+  /* Typography */
+  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial, Noto Sans SC, PingFang SC, Microsoft YaHei, sans-serif;
+  --font-serif: ui-serif, Georgia, Cambria, Times New Roman, Times, serif;
+  --font-mono: JetBrains Mono, Fira Code, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  --font-size-4xl: 2.25rem;
+  --line-height-body: 1.75;
+  --line-height-heading: 1.3;
+  --line-height-code: 1.65;
+  --line-height-tight: 1.25;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Components */
+  --radius-sm: 0.35rem;
+  --radius-md: 0.65rem;
+  --radius-lg: 0.9rem;
+  --radius-xl: 0.75rem;
+  --shadow-card: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-code-block: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-header: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --border-style: solid;
+  --border-width: 1px;
+  --motion-duration: 160ms;
+  --motion-easing: ease;
+  --spacing-multiplier: 1;
+
+  /* Light Mode Colors */
+  --color-brand: #0284c7;
+  --color-accent: #0284c7;
+  --color-background: #fafafa;
+  --color-foreground: #18181b;
+  --color-muted: #71717a;
+  --color-border: #e4e4e7;
+  --color-card: #f4f4f5;
+  --color-code-background: #f4f4f5;
+  --color-code-foreground: #18181b;
+  --color-code-border: #e4e4e7;
+  --color-code-keyword: #0284c7;
+  --color-code-string: #059669;
+  --color-code-comment: #a1a1aa;
+  --color-code-function: #0284c7;
+
+  /* Code block specific (legacy support) */
+  --code-font: var(--font-mono);
+  --code-radius: 0.9rem;
+  --code-border: 1px solid var(--color-code-border);
+  --code-bg: var(--color-code-background);
+  --code-fg: var(--color-code-foreground);
+  --code-scrollbar: rgb(203 213 225 / 0.75);
+  --code-highlight-bg: rgb(59 130 246 / 0.12);
+  --code-highlight-accent: rgb(59 130 246);
+
+  /* Header specific (legacy support) */
+  --header-bg: rgb(248 250 252 / 0.92);
+  --header-bg-scrolled: rgb(248 250 252 / 0.98);
+  --header-border: rgb(226 232 240 / 0.9);
+  --header-shadow: var(--shadow-header);
+  --header-shadow-strong: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+.dark {
+  /* Dark Mode Colors */
+  --color-brand: #38bdf8;
+  --color-accent: #38bdf8;
+  --color-background: #18181b;
+  --color-foreground: #fafafa;
+  --color-muted: #a1a1aa;
+  --color-border: #3f3f46;
+  --color-card: #27272a;
+  --color-code-background: #1f1f23;
+  --color-code-foreground: #e4e4e7;
+  --color-code-border: #3f3f46;
+  --color-code-keyword: #38bdf8;
+  --color-code-string: #34d399;
+  --color-code-comment: #71717a;
+  --color-code-function: #38bdf8;
+
+  /* Dark mode shadows */
+  --shadow-card: 0 10px 30px rgb(0 0 0 / 0.28);
+  --shadow-code-block: 0 10px 30px rgb(0 0 0 / 0.28);
+  --shadow-header: 0 10px 30px rgb(0 0 0 / 0.28);
+
+  /* Code block specific (legacy support) */
+  --code-border: 1px solid var(--color-code-border);
+  --code-bg: var(--color-code-background);
+  --code-fg: var(--color-code-foreground);
+  --code-scrollbar: rgb(71 85 105 / 0.8);
+  --code-highlight-bg: rgb(59 130 246 / 0.2);
+  --code-highlight-accent: rgb(96 165 250);
+
+  /* Header specific (legacy support) */
+  --header-bg: rgb(15 23 42 / 0.72);
+  --header-bg-scrolled: rgb(15 23 42 / 0.8400000000000001);
+  --header-border: rgb(71 85 105 / 0.8);
+  --header-shadow: var(--shadow-header);
+  --header-shadow-strong: 0 20px 40px rgb(0 0 0 / 0.35);
+}
+</style><link rel="stylesheet" href="/blog-preview/previews/pr-447/_astro/_slug_.l3mfVCU0.css">
+<style>.reading-progress[data-astro-cid-mu6cnre2]{position:fixed;inset:0 0 auto;height:3px;width:100%;background:transparent;z-index:50;pointer-events:none}.reading-progress__bar[data-astro-cid-mu6cnre2]{display:block;height:100%;width:100%;transform:scaleX(var(--progress-value, 0));transform-origin:left center;background:linear-gradient(90deg,var(--progress-color-start),var(--progress-color-end));transition:transform .1s linear}:root{--progress-color-start: #2563eb;--progress-color-end: #22d3ee}:root.dark{--progress-color-start: #38bdf8;--progress-color-end: #a855f7}@media(prefers-reduced-motion:reduce){.reading-progress__bar[data-astro-cid-mu6cnre2]{transition:none}}
+</style></head> <body class="bg-neutral-50 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 transition-colors duration-300 min-h-screen flex flex-col" data-astro-cid-sckkx6r4>  <div class="reading-progress" data-reading-progress data-target-selector="[data-article]" data-astro-cid-mu6cnre2> <span class="reading-progress__bar" data-reading-progress-bar data-astro-cid-mu6cnre2></span> </div>  <script type="module">const s=document.querySelector("[data-reading-progress]"),p=s?.dataset?.targetSelector||"[data-article]",g=s?.querySelector("[data-reading-progress-bar]"),o=document.querySelector(p);if(s&&g&&o){let n=0,a=0,t=!1;const u=(e,r,w)=>Math.min(Math.max(e,r),w),c=()=>{n=o.getBoundingClientRect().top+window.scrollY,a=o.scrollHeight},i=()=>{const e=Math.max(a-window.innerHeight,1),r=u((window.scrollY-n)/e,0,1);g.style.setProperty("--progress-value",r.toString()),t=!1},l=()=>{t||(t=!0,requestAnimationFrame(i))},d=()=>{c(),l()};c(),i(),window.addEventListener("scroll",l,{passive:!0}),window.addEventListener("resize",d),window.addEventListener("load",d,{once:!0})}</script> <header class="site-header header-variant-frosted" data-header data-site-header> <div class="container mx-auto px-5 py-3 sm:py-4 flex justify-between items-start max-w-5xl"> <a href="/blog-preview/previews/pr-447/" class="text-xl font-bold hover:text-sky-600 dark:hover:text-sky-400 flex items-center gap-2"> <img src="/blog-preview/previews/pr-447/placeholder-social.jpg" alt="Yuanle Liu" width="32" height="32" class="h-8 w-8 rounded"> <span class="hidden sm:inline">Yuanle Liu</span> </a> <nav class="flex items-start gap-3 items-center"> <a href="/blog-preview/previews/pr-447/" class="hover:underline inline-flex items-center "> Home </a><a href="/blog-preview/previews/pr-447/archive/" class="hover:underline inline-flex items-center "> Archive </a><a href="/blog-preview/previews/pr-447/tags/" class="hover:underline inline-flex items-center "> Tags </a><a href="/blog-preview/previews/pr-447/about/" class="hover:underline inline-flex items-center "> About </a> <button id="theme-toggle" class="inline-flex items-center gap-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 px-1" aria-label="Toggle theme"> 🖥️ ☀️ </button> </nav> </div> </header> <script type="module">const u="theme",d=["light","dark"];const g=()=>{try{const e=localStorage.getItem(u);if(e==="light"||e==="dark")return e}catch(e){console.warn("Unable to read theme preference:",e)}return window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"},f=()=>document.documentElement.classList.contains("dark")?"dark":"light",p=e=>e==="dark"?"🌙":"☀️",T=e=>e==="dark"?"Dark":"Light",c=(e,n)=>{const t=document.getElementById("theme-toggle");if(!t)return;const o=n??f(),i=p(o),a=T(o);t.dataset.theme=e,t.textContent="";const s=document.createElement("span");s.className="inline-flex items-center justify-center",s.style.lineHeight="1",s.textContent=i,t.appendChild(s),t.appendChild(document.createTextNode(" "+a)),t.setAttribute("aria-label",`Toggle theme (current: ${a})`)},l=e=>{if(typeof window.__setTheme=="function"){window.__setTheme?.(e);return}const n=e==="dark"?"dark":"light";document.documentElement.classList.toggle("dark",n==="dark");try{localStorage.setItem(u,e)}catch(t){console.warn("Unable to persist theme preference:",t)}window.dispatchEvent(new CustomEvent("themechange",{detail:{theme:e,resolved:n}}))},k=(e,n)=>{const t=n.getBoundingClientRect(),o=e instanceof MouseEvent,i=o&&e.detail>0&&(e.clientX!==0||e.clientY!==0),a=i&&o?e.clientX:t.left+t.width/2,s=i&&o?e.clientY:t.top+t.height/2,r=Math.max(Math.hypot(a,s),Math.hypot(window.innerWidth-a,s),Math.hypot(a,window.innerHeight-s),Math.hypot(window.innerWidth-a,window.innerHeight-s));return{x:a,y:s,r}},E=({x:e,y:n,r:t})=>{const o=document.documentElement;o.style.setProperty("--theme-toggle-x",`${e}px`),o.style.setProperty("--theme-toggle-y",`${n}px`),o.style.setProperty("--theme-toggle-r",`${t}px`)},L=async(e,n,t)=>{if(t){l(e),c(e);return}E(n),document.documentElement.classList.add("theme-toggle-transitioning");const o=document;try{if(typeof o.startViewTransition=="function"){await o.startViewTransition(()=>{l(e),c(e)}).finished.catch(s=>{console.warn("Theme view transition failed:",s)});return}const i=document.createElement("div");i.className="theme-toggle-overlay",e==="dark"&&i.classList.add("dark"),document.body.appendChild(i);try{i.getBoundingClientRect(),i.classList.add("is-animating"),await new Promise(a=>{let s=!1;const r=()=>{s||(s=!0,a())};i.addEventListener("animationend",r,{once:!0}),i.addEventListener("animationcancel",r,{once:!0}),window.setTimeout(r,550)}),l(e),c(e)}finally{i.remove()}}finally{document.documentElement.classList.remove("theme-toggle-transitioning")}};let m=!1;const M=async e=>{if(m)return;const n=e.currentTarget instanceof HTMLElement?e.currentTarget:null;if(!n)return;m=!0,n.setAttribute("disabled","true");const t=g(),o=d[(d.indexOf(t)+1)%d.length];try{const i=k(e,n);await L(o,i,w.matches)}finally{window.setTimeout(()=>{n.removeAttribute("disabled"),m=!1},500)}},h=document.querySelector("[data-header]"),w=window.matchMedia("(prefers-reduced-motion: reduce)"),v=w.matches,y=()=>{if(!h)return;const e=window.scrollY>6;h.classList.toggle("is-scrolled",e)};document.getElementById("theme-toggle")?.addEventListener("click",M);c(g());window.addEventListener("themechange",e=>{const n=e.detail,t=n?.theme??g(),o=n?.resolved;c(t,o)});y();const b=()=>y();window.addEventListener("scroll",b,{passive:!0});v&&h?.classList.add("reduce-motion");</script> <main class="container mx-auto px-4 py-8 max-w-6xl"> <div class="flex flex-col gap-6 lg:grid lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start lg:gap-12" data-post-layout> <div class="w-full" data-toc-shell> <aside class="hidden lg:block h-full"> <div class="flex h-full w-full flex-col gap-3 overflow-hidden rounded-xl border border-zinc-200 bg-neutral-50/80 p-4 shadow-md backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-900/50 lg:sticky lg:top-[var(--site-header-height)] lg:max-h-[calc(100vh-var(--site-header-height)-16px)] lg:h-[calc(100vh-var(--site-header-height)-16px)]" data-toc-container> <div class="space-y-1"> <p class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">文章目录</p> <p class="text-xs text-zinc-500 dark:text-zinc-400">快速跳转到你关心的章节</p> </div> <nav aria-label="文章目录" class="flex-1 min-h-0 overflow-y-auto pr-1" data-toc-scroll> <ol class="space-y-3 text-sm"> <li><a href="#一-pragma-unroll--的隐性成本regsthread-上升" data-toc-link data-mobile-toc-link data-target="一-pragma-unroll--的隐性成本regsthread-上升" title="一、#pragma unroll 的隐性成本：regs/thread 上升¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>一、#pragma unroll 的隐性成本：regs/thread 上升¶</span></a></li><li><a href="#二寄存器超限的两种典型塌方方式" data-toc-link data-mobile-toc-link data-target="二寄存器超限的两种典型塌方方式" title="二、寄存器超限的两种典型“塌方方式”¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>二、寄存器超限的两种典型“塌方方式”¶</span></a><ol class="mt-1 space-y-1"><li><a href="#21-spill寄存器溢出到-local-memory" data-toc-link data-mobile-toc-link data-target="21-spill寄存器溢出到-local-memory" title="2.1 Spill：寄存器溢出到 local memory¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>2.1 Spill：寄存器溢出到 local memory¶</span></a></li><li><a href="#22-occupancy-被寄存器卡死" data-toc-link data-mobile-toc-link data-target="22-occupancy-被寄存器卡死" title="2.2 Occupancy 被寄存器卡死¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>2.2 Occupancy 被寄存器卡死¶</span></a></li></ol></li><li><a href="#三如何快速判断是不是-unroll-把你坑了" data-toc-link data-mobile-toc-link data-target="三如何快速判断是不是-unroll-把你坑了" title="三、如何快速判断“是不是 unroll 把你坑了”¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>三、如何快速判断“是不是 unroll 把你坑了”¶</span></a><ol class="mt-1 space-y-1"><li><a href="#31-看-ptxas-报告" data-toc-link data-mobile-toc-link data-target="31-看-ptxas-报告" title="3.1 看 ptxas 报告¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>3.1 看 ptxas 报告¶</span></a></li><li><a href="#32-用-nsight-compute-验证" data-toc-link data-mobile-toc-link data-target="32-用-nsight-compute-验证" title="3.2 用 Nsight Compute 验证¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>3.2 用 Nsight Compute 验证¶</span></a></li></ol></li><li><a href="#四实战处理" data-toc-link data-mobile-toc-link data-target="四实战处理" title="四、实战处理¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>四、实战处理¶</span></a></li><li><a href="#总结" data-toc-link data-mobile-toc-link data-target="总结" title="总结¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>总结¶</span></a></li> </ol> </nav> </div> </aside> </div> <script type="module">const p=Array.from(document.querySelectorAll("[data-toc-link]")),e=document.querySelector("[data-toc-container]"),i=document.querySelector("[data-toc-shell]"),l=()=>{const t=getComputedStyle(document.documentElement).getPropertyValue("--site-header-height");return parseFloat(t)||0},r=window.matchMedia("(min-width: 1024px)"),g=p.map(t=>document.getElementById(t.dataset.target||"")).filter(t=>!!t),m=()=>{const t=l();g.forEach(n=>{n.style.scrollMarginTop=`${t+12}px`})},w=t=>`#${encodeURIComponent(t)}`,v=t=>decodeURIComponent(t.replace(/^#/,"")),f=t=>{p.forEach(n=>{const o=n.dataset.target===t;n.dataset.active=o?"true":"false",n.setAttribute("aria-current",o?"true":"false")})},u=(t,n=!1)=>{const o=document.getElementById(t);if(!o)return;const a=l(),c=window.scrollY+o.getBoundingClientRect().top-a-12;n?history.replaceState(null,"",w(t)):history.pushState(null,"",w(t)),window.scrollTo({top:c,behavior:"smooth"}),f(t)};p.forEach(t=>t.addEventListener("click",n=>{const o=t.dataset.target;o&&(n.preventDefault(),u(o))}));const y=()=>{e&&(e.dataset.fixed="false",e.style.position="",e.style.left="",e.style.width="",e.style.height="",e.style.maxHeight="",e.style.top="",i&&(i.style.minHeight=""))},x=()=>{if(!e||!i)return;const t=i.getBoundingClientRect(),n=l(),o=`calc(100vh - ${n}px - 16px)`;e.dataset.fixed="true",i.style.minHeight=`${e.offsetHeight}px`,e.style.position="fixed",e.style.top=`${n}px`,e.style.left=`${t.left}px`,e.style.width=`${t.width}px`,e.style.height=o,e.style.maxHeight=o},d=()=>{if(!e||e.dataset.fixed==="true"||!r.matches)return;const t=parseFloat(getComputedStyle(e).top||"0"),n=e.offsetTop-t;if(Number.isNaN(t)||window.scrollY<n)return;const o=e.getBoundingClientRect().top;Math.abs(o-t)>2&&x()},E=()=>{if(!r.matches){y();return}e?.dataset.fixed==="true"&&x()};if(g.length>0){m();const t=new IntersectionObserver(o=>{const a=o.filter(s=>s.isIntersecting).sort((s,h)=>s.target.getBoundingClientRect().top-h.target.getBoundingClientRect().top);if(a[0]){f(a[0].target.id);return}const c=o.filter(s=>s.boundingClientRect.top<0).sort((s,h)=>h.target.getBoundingClientRect().top-s.target.getBoundingClientRect().top);c[0]&&f(c[0].target.id)},{rootMargin:`-${l()}px 0% -55% 0%`,threshold:[0,.25,.5,1]});g.forEach(o=>t.observe(o));const n=v(location.hash||"");n&&requestAnimationFrame(()=>u(n,!0)),window.addEventListener("hashchange",()=>{const o=v(location.hash||"");o&&u(o,!0)})}y();r.matches&&d();r.addEventListener("change",()=>{y(),requestAnimationFrame(()=>{r.matches&&d()})});window.addEventListener("scroll",d,{passive:!0});window.addEventListener("resize",E);window.addEventListener("load",()=>{d(),m()},{once:!0});window.addEventListener("headerheightchange",()=>{m()});</script> <article class="prose dark:prose-invert max-w-none prose-img:rounded-xl prose-img:cursor-zoom-in min-w-0" data-article> <header class="mb-8 not-prose"> <div class="flex flex-col gap-6 md:grid md:grid-cols-[minmax(0,1fr)_220px] md:items-start md:gap-8"> <div class="flex flex-col gap-4 md:h-full"> <h1 class="text-3xl md:text-4xl font-bold leading-tight text-left"> CUDA 性能知识点：#pragma unroll 可能让你更慢 </h1> <div class="text-zinc-500 text-sm flex items-start justify-start gap-3 flex-wrap md:mt-auto"> <time class="flex items-center gap-1" datetime="2026-02-26T00:00:00.000Z" title="发布于 2026-02-26"> <span aria-hidden="true">📅</span> <span>
+发布于 <span class="font-medium">2026-02-26</span> </span> </time> <span aria-hidden="true">·</span> <time class="flex items-center gap-1" datetime="2026-02-27T04:52:00.000Z" title="更新于 2026-02-27"> <span aria-hidden="true">🔄</span> <span>
+更新于 <span class="font-medium">2026-02-27</span> </span> </time> <div class="flex items-center gap-1"> <span aria-hidden="true">✍️</span> 531 字
+</div> <div class="flex items-center gap-1" title="531 words"> <span aria-hidden="true">⏱️</span> 2 min read </div> </div> <div class="flex flex-wrap items-center gap-2" data-testid="post-share-tags-row"> <div class="flex flex-wrap gap-2 items-center" data-testid="post-tags"> <span class="text-zinc-500 text-sm flex items-center gap-1"> <span aria-hidden="true">🏷️</span> <span>标签：</span> </span> <a href="/blog-preview/previews/pr-447/tags/cuda/" class="tag-chip inline-flex items-center gap-1.5 rounded-full border transition-colors duration-200 font-medium cursor-pointer text-xs px-2 py-1 
+    border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 
+    dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 dark:hover:border-sky-700
+    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-tag-slug="cuda" data-testid="tag-cuda"> <span class="tag-name pointer-events-none">CUDA</span>  </a> </div> <div class="inline-flex items-center gap-2" data-testid="post-share-action"> <span class="text-zinc-500 text-sm" aria-hidden="true"> 📤 </span> <button type="button" class="inline-flex items-center rounded-full border border-pink-200 bg-pink-50 px-2 py-1 text-xs font-medium text-pink-700 transition-colors duration-200 hover:border-pink-300 hover:bg-pink-100 dark:border-pink-900 dark:bg-pink-950 dark:text-pink-300 dark:hover:border-pink-700 dark:hover:bg-pink-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-share-open aria-haspopup="dialog" aria-controls="article-share-dialog">
+分享文章
+</button> </div> </div> </div> <figure class="hidden md:block md:justify-self-end overflow-hidden rounded-xl border border-zinc-200/80 shadow-md dark:border-zinc-800/80 w-full max-w-[320px] md:max-w-[220px] md:min-w-[160px]" data-post-cover> <img src="/blog-preview/previews/pr-447/images/notion/cuda-pragma-unroll/31422dca-4210-8077-90a4-dd78efb2762f.png" alt="CUDA 性能知识点：#pragma unroll 可能让你更慢" class="aspect-[4/3] w-full object-cover transition duration-200" loading="eager" decoding="async"> </figure>  </div> </header> <p>很多 CUDA kernel 不是“算不动”，而是被资源卡死。最常见的罪魁祸首之一就是：循环展开把寄存器用量顶到临界点，然后性能直接塌。</p>
+<p><img src="/blog-preview/previews/pr-447/images/notion/cuda-pragma-unroll/31422dca-4210-8077-90a4-dd78efb2762f.png" alt=""></p>
+<hr>
+<h2 id="一-pragma-unroll--的隐性成本regsthread-上升">一、<code>#pragma unroll</code> 的隐性成本：regs/thread 上升<a href="#一-pragma-unroll--的隐性成本regsthread-上升" class="heading-anchor" aria-label="Link to 一、 #pragma unroll  的隐性成本：regs/thread 上升">¶</a></h2>
+<p>循环展开的本质是把 loop body 复制多份。对于 GEMM/FlashAttention/pipeline 类 kernel，loop body 里往往有大量临时变量（fragment、pointer、mask、pipeline state），展开后会导致：</p>
+<ul>
+<li>live range 变长（变量活得更久）</li>
+<li>同时活跃变量变多</li>
+<li>regs/thread 增加</li>
+</ul>
+<p>regs/thread 一旦跨过某个阈值，后果就不是“慢一点”，而是“形态变了”。</p>
+<hr>
+<h2 id="二寄存器超限的两种典型塌方方式">二、寄存器超限的两种典型“塌方方式”<a href="#二寄存器超限的两种典型塌方方式" class="heading-anchor" aria-label="Link to 二、寄存器超限的两种典型“塌方方式”">¶</a></h2>
+<h3 id="21-spill寄存器溢出到-local-memory">2.1 Spill：寄存器溢出到 local memory<a href="#21-spill寄存器溢出到-local-memory" class="heading-anchor" aria-label="Link to 2.1 Spill：寄存器溢出到 local memory">¶</a></h3>
+<p>寄存器放不下 → 编译器把部分值 spill 到 local memory（物理上走 global/L2）：</p>
+<ul>
+<li>指令数上升（额外 load/store）</li>
+<li>访存延迟变大</li>
+<li>带宽浪费严重</li>
+</ul>
+<p>表现：kernel time 大幅上升。</p>
+<h3 id="22-occupancy-被寄存器卡死">2.2 Occupancy 被寄存器卡死<a href="#22-occupancy-被寄存器卡死" class="heading-anchor" aria-label="Link to 2.2 Occupancy 被寄存器卡死">¶</a></h3>
+<p>regs/thread 太高 → 同一个 SM 能驻留的 warps/blocks 变少：</p>
+<ul>
+<li>latency hiding 变差</li>
+<li>pipeline 断断续续</li>
+</ul>
+<p>表现：SM 吃不满、stall 增多、吞吐下降。</p>
+<hr>
+<h2 id="三如何快速判断是不是-unroll-把你坑了">三、如何快速判断“是不是 unroll 把你坑了”<a href="#三如何快速判断是不是-unroll-把你坑了" class="heading-anchor" aria-label="Link to 三、如何快速判断“是不是 unroll 把你坑了”">¶</a></h2>
+<h3 id="31-看-ptxas-报告">3.1 看 ptxas 报告<a href="#31-看-ptxas-报告" class="heading-anchor" aria-label="Link to 3.1 看 ptxas 报告">¶</a></h3>
+<p>编译时加 <code>Xptxas=-v</code>：</p>
+<figure class="code-block not-prose" data-language="bash" data-raw-code="nvcc -O3 -lineinfo -Xptxas=-v your_kernel.cu -o your_bin" data-line-numbers="true"><div class="code-block__header"><div class="code-block__title">bash</div><button type="button" class="code-block__copy" aria-label="复制代码">Copy</button></div><pre class="code-block__pre" tabindex="0" data-theme="light" data-language="bash"><code data-language="bash"><span class="line" data-line-number="1"><span style="color:#6F42C1">nvcc</span><span style="color:#005CC5"> -O3</span><span style="color:#005CC5"> -lineinfo</span><span style="color:#005CC5"> -Xptxas=-v</span><span style="color:#032F62"> your_kernel.cu</span><span style="color:#005CC5"> -o</span><span style="color:#032F62"> your_bin</span></span></code></pre><pre class="code-block__pre" tabindex="0" data-theme="dark" data-language="bash"><code data-language="bash"><span class="line" data-line-number="1"><span style="color:#DCDCAA">nvcc</span><span style="color:#569CD6"> -O3</span><span style="color:#569CD6"> -lineinfo</span><span style="color:#569CD6"> -Xptxas=-v</span><span style="color:#CE9178"> your_kernel.cu</span><span style="color:#569CD6"> -o</span><span style="color:#CE9178"> your_bin</span></span></code></pre></figure>
+<p>重点看：</p>
+<ul>
+<li>reg（每线程寄存器数）</li>
+<li>spill stores / spill loads：是否发生 spill（以及数量）</li>
+</ul>
+<p>对比 unroll 前后：regs 是否明显下降、spill 是否消失/减少。</p>
+<h3 id="32-用-nsight-compute-验证">3.2 用 Nsight Compute 验证<a href="#32-用-nsight-compute-验证" class="heading-anchor" aria-label="Link to 3.2 用 Nsight Compute 验证">¶</a></h3>
+<p>只看最小集合指标：</p>
+<ul>
+<li>regs/thread（或相关编译信息）</li>
+<li>achieved occupancy</li>
+<li>local memory / spill 相关指标</li>
+<li>kernel time</li>
+</ul>
+<p>如果 regs↓ 且 spill↓ 或 occupancy↑，并且 time↓，结论基本坐实。</p>
+<hr>
+<h2 id="四实战处理">四、实战处理<a href="#四实战处理" class="heading-anchor" aria-label="Link to 四、实战处理">¶</a></h2>
+<ol>
+<li>把 <code>#pragma unroll N</code> 降到 1（或直接去掉）。</li>
+<li>缩短 live range：用 <code>{}</code> 限制作用域、拆分长 basic block、避免大临时对象跨迭代存活。</li>
+<li>资源硬约束（谨慎）：<code>maxrregcount</code>、<code>__launch_bounds__</code>（可能把问题从 occupancy 换成 spill）。</li>
+</ol>
+<hr>
+<h2 id="总结">总结<a href="#总结" class="heading-anchor" aria-label="Link to 总结">¶</a></h2>
+<p>当 kernel 是 register-bound 时，<code>#pragma unroll</code> 很可能是负优化：它把 regs/thread 推过阈值，触发 spill 或 occupancy 崩塌，于是“展开更多”反而更慢。</p> <div class="grid md:grid-cols-2 gap-4 mt-10"> <a href="/blog-preview/previews/pr-447/april-rollpacker-rl-long-tail-rollouts/" class="block p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-sky-500"> <div class="text-xs uppercase text-zinc-500">Previous</div> <div class="font-semibold">从 APRIL 到 RollPacker：如何在 RL 里处理 Long-tail Rollouts</div> </a> <a href="/blog-preview/previews/pr-447/cuda-compute-sanitizer/" class="block p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-sky-500 text-right"> <div class="text-xs uppercase text-zinc-500">Next</div> <div class="font-semibold">CUDA 非法内存访问的“隐式报错”机制与 compute-sanitizer 实战</div> </a> </div> <div class="mt-10 border-t border-zinc-200 dark:border-zinc-800 pt-6"><h3 class="text-lg font-semibold mb-4">Related posts</h3><div class="grid md:grid-cols-2 gap-4"><a href="/blog-preview/previews/pr-447/cuda-compute-sanitizer/" class="block p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-sky-500 hover:-translate-y-0.5 transition"><div class="text-xs text-zinc-500 mb-1">2/26/2026</div><div class="font-semibold">CUDA 非法内存访问的“隐式报错”机制与 compute-sanitizer 实战</div></a><a href="/blog-preview/previews/pr-447/inside-nvidia-gpus-anatomy-of-high-performance-matmul-kernels/" class="block p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-sky-500 hover:-translate-y-0.5 transition"><div class="text-xs text-zinc-500 mb-1">12/29/2025</div><div class="font-semibold">Inside NVIDIA GPUs: Anatomy of high performance matmul kernels</div></a><a href="/blog-preview/previews/pr-447/my-first-multi-gpu-kernel-writing-all-to-all-for-amd-mi300x/" class="block p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-sky-500 hover:-translate-y-0.5 transition"><div class="text-xs text-zinc-500 mb-1">11/2/2025</div><div class="font-semibold">My first Multi-GPU kernel: Writing All-to-all for AMD MI300X</div></a><a href="/blog-preview/previews/pr-447/writing-speed-of-light-flash-attention-for-5090-in-cuda-c/" class="block p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-sky-500 hover:-translate-y-0.5 transition"><div class="text-xs text-zinc-500 mb-1">8/23/2025</div><div class="font-semibold">Writing Speed-of-Light Flash Attention for 5090 in CUDA C++</div></a></div></div> <section id="comments" class="mt-12" data-comments> <div class="rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 p-6 md:p-8"> <script src="https://giscus.app/client.js" data-repo="yuanlehome/blog" data-repo-id="R_kgDOQu2Jjw" data-category="General" data-category-id="DIC_kwDOQu2Jj84C0QDN" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="bottom" data-theme="light" data-lang="zh-CN" crossorigin="anonymous" async></script> </div> </section> <script>(() => {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return;
+
+  // Theme mapping for Giscus from config
+  const themeMap = {"light":"light","dark":"dark"};
+
+  // Single source of truth: read effective theme from DOM
+  const getEffectiveTheme = () => {
+    const isDark =
+      document.documentElement.dataset.theme === 'dark' ||
+      document.documentElement.classList.contains('dark');
+    return isDark ? 'dark' : 'light';
+  };
+
+  // Track current theme state
+  let currentTheme = getEffectiveTheme();
+
+  // Set initial theme on the script tag before Giscus loads
+  const setInitialTheme = () => {
+    const effectiveTheme = getEffectiveTheme();
+    const giscusTheme = themeMap[effectiveTheme] ?? 'light';
+    const giscusScript = document.querySelector('script[src*="giscus.app/client.js"]');
+    if (giscusScript) {
+      giscusScript.setAttribute('data-theme', giscusTheme);
+    }
+  };
+
+  // Update container data attribute for tracking
+  const setContainerTheme = (theme) => {
+    const container = document.getElementById('comments');
+    if (container) {
+      container.setAttribute('data-giscus-theme', theme);
+    }
+  };
+
+  // Send theme update message to Giscus iframe
+  const postThemeMessage = (resolvedTheme) => {
+    const effective = resolvedTheme ?? currentTheme;
+    const giscusTheme = themeMap[effective] ?? 'light';
+    setContainerTheme(giscusTheme);
+    
+    const iframe = document.querySelector('iframe.giscus-frame');
+    if (iframe && iframe.contentWindow) {
+      iframe.contentWindow.postMessage(
+        { giscus: { setConfig: { theme: giscusTheme } } },
+        'https://giscus.app',
+      );
+    }
+  };
+
+  // Debounce helper to prevent excessive syncs
+  let syncTimeout = null;
+  const debouncedSync = (callback, delay = 50) => {
+    if (syncTimeout) clearTimeout(syncTimeout);
+    syncTimeout = setTimeout(callback, delay);
+  };
+
+  // Main sync function: update theme if changed
+  const syncCommentTheme = (resolvedOverride) => {
+    const detected = resolvedOverride ?? getEffectiveTheme();
+    if (detected !== currentTheme) {
+      currentTheme = detected;
+    }
+    postThemeMessage(detected);
+  };
+
+  // Wait for iframe with improved retry logic
+  let retryCount = 0;
+  const maxRetries = 50; // ~5 seconds with 100ms intervals
+  const waitForIframe = () => {
+    const iframe = document.querySelector('iframe.giscus-frame');
+    if (iframe) {
+      // Found iframe, send theme
+      if (iframe instanceof HTMLIFrameElement) {
+        const sendTheme = () => {
+          postThemeMessage();
+        };
+        
+        // Try to send immediately and also on load event
+        sendTheme();
+        if (!iframe.complete) {
+          iframe.addEventListener('load', sendTheme, { once: true });
+        }
+      }
+      return;
+    }
+
+    // Retry if not found yet
+    retryCount++;
+    if (retryCount < maxRetries) {
+      setTimeout(waitForIframe, 100);
+    }
+  };
+
+  // Set initial theme before Giscus loads
+  setInitialTheme();
+
+  // Listen for DOM changes (class/data-theme attribute)
+  const observer = new MutationObserver(() => {
+    debouncedSync(() => syncCommentTheme());
+  });
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['class', 'data-theme'],
+  });
+
+  // Listen for custom theme change events
+  window.addEventListener('themechange', (event) => {
+    const detail = event?.detail || {};
+    const resolved = detail.resolved || getEffectiveTheme();
+    debouncedSync(() => syncCommentTheme(resolved));
+  });
+
+  // Listen for storage events (cross-tab synchronization)
+  window.addEventListener('storage', (event) => {
+    if (event.key === 'theme' && (event.newValue === 'light' || event.newValue === 'dark')) {
+      debouncedSync(() => syncCommentTheme());
+    }
+  });
+
+  // Listen for system theme changes (if using system preference)
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  const handleSystemThemeChange = () => {
+    // Only sync if theme might be using system preference
+    try {
+      const stored = localStorage.getItem('theme');
+      if (!stored || stored === 'system') {
+        debouncedSync(() => syncCommentTheme());
+      }
+    } catch (e) {
+      // Ignore localStorage errors
+    }
+  };
+  
+  if (mediaQuery.addEventListener) {
+    mediaQuery.addEventListener('change', handleSystemThemeChange);
+  }
+
+  // Initial sync and wait for iframe
+  syncCommentTheme();
+  waitForIframe();
+})();</script> <div id="page-bottom-anchor" aria-hidden="true" style="height: 1px;"></div> </article>  </div> <div class="fixed inset-0 z-50 pointer-events-none data-[open=true]:pointer-events-auto lg:hidden" data-mobile-toc data-open="false" aria-hidden="true"><div class="absolute inset-0 bg-zinc-900/40 opacity-0 transition duration-200 data-[open=true]:opacity-100 dark:bg-black/50" data-mobile-toc-backdrop></div><div id="mobile-toc-drawer" role="dialog" aria-modal="true" aria-label="文章目录" class="absolute inset-x-0 bottom-0 translate-y-full rounded-t-2xl border border-zinc-200 bg-neutral-50/95 shadow-2xl ring-1 ring-black/5 transition duration-200 data-[open=true]:translate-y-0 dark:border-zinc-800 dark:bg-zinc-900/95 dark:ring-white/10" data-mobile-toc-drawer><div class="flex items-center justify-between gap-3 px-4 pt-4 pb-3"><div><p class="text-sm font-semibold text-zinc-900 dark:text-zinc-50">文章目录</p><p class="text-xs text-zinc-500 dark:text-zinc-400">点击条目可跳转</p></div><button type="button" class="rounded-full border border-zinc-200 bg-neutral-50 px-3 py-1 text-sm font-medium text-zinc-800 shadow-sm transition hover:text-sky-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:text-sky-400 dark:focus-visible:ring-offset-zinc-900" data-mobile-toc-close>
+关闭
+</button></div><div class="max-h-[60vh] overflow-y-auto px-4 pb-5" data-mobile-toc-scroll><ol class="space-y-3 text-sm"><li><a href="#一-pragma-unroll--的隐性成本regsthread-上升" data-toc-link data-mobile-toc-link data-target="一-pragma-unroll--的隐性成本regsthread-上升" title="一、#pragma unroll 的隐性成本：regs/thread 上升¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>一、#pragma unroll 的隐性成本：regs/thread 上升¶</span></a></li><li><a href="#二寄存器超限的两种典型塌方方式" data-toc-link data-mobile-toc-link data-target="二寄存器超限的两种典型塌方方式" title="二、寄存器超限的两种典型“塌方方式”¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>二、寄存器超限的两种典型“塌方方式”¶</span></a><ol class="mt-1 space-y-1"><li><a href="#21-spill寄存器溢出到-local-memory" data-toc-link data-mobile-toc-link data-target="21-spill寄存器溢出到-local-memory" title="2.1 Spill：寄存器溢出到 local memory¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>2.1 Spill：寄存器溢出到 local memory¶</span></a></li><li><a href="#22-occupancy-被寄存器卡死" data-toc-link data-mobile-toc-link data-target="22-occupancy-被寄存器卡死" title="2.2 Occupancy 被寄存器卡死¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>2.2 Occupancy 被寄存器卡死¶</span></a></li></ol></li><li><a href="#三如何快速判断是不是-unroll-把你坑了" data-toc-link data-mobile-toc-link data-target="三如何快速判断是不是-unroll-把你坑了" title="三、如何快速判断“是不是 unroll 把你坑了”¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>三、如何快速判断“是不是 unroll 把你坑了”¶</span></a><ol class="mt-1 space-y-1"><li><a href="#31-看-ptxas-报告" data-toc-link data-mobile-toc-link data-target="31-看-ptxas-报告" title="3.1 看 ptxas 报告¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>3.1 看 ptxas 报告¶</span></a></li><li><a href="#32-用-nsight-compute-验证" data-toc-link data-mobile-toc-link data-target="32-用-nsight-compute-验证" title="3.2 用 Nsight Compute 验证¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>3.2 用 Nsight Compute 验证¶</span></a></li></ol></li><li><a href="#四实战处理" data-toc-link data-mobile-toc-link data-target="四实战处理" title="四、实战处理¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>四、实战处理¶</span></a></li><li><a href="#总结" data-toc-link data-mobile-toc-link data-target="总结" title="总结¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>总结¶</span></a></li></ol></div></div></div><script type="module">const c=document.querySelector("[data-mobile-toc]"),a=document.querySelector("[data-mobile-toc-drawer]"),s=document.querySelector("[data-mobile-toc-backdrop]"),p=()=>Array.from(document.querySelectorAll("[data-mobile-toc-open]")),k=document.querySelector("[data-mobile-toc-close]"),g=()=>Array.from((a??c)?.querySelectorAll("[data-mobile-toc-link]")??[]),o=document.body,S=window.matchMedia("(prefers-reduced-motion: reduce)");S.matches;const h=()=>{const e=getComputedStyle(document.documentElement).getPropertyValue("--site-header-height");return parseFloat(e)||0};let l=0;const v=50,L=e=>window.dispatchEvent(new CustomEvent("mobile-toc:toggle",{detail:{open:e}})),A=e=>{p().forEach(n=>n.setAttribute("aria-expanded",e?"true":"false"))},i=e=>{e.preventDefault(),r(!0)},f=()=>{p().forEach(e=>{e.removeEventListener("click",i),e.addEventListener("click",i)})},T=()=>{l=window.scrollY,o.style.position="fixed",o.style.width="100%",o.style.top=`-${l}px`},B=()=>{o.style.position="",o.style.width="",o.style.top="",window.scrollTo({top:l})},r=e=>{!c||!a||(c.dataset.open=String(e),a.dataset.open=String(e),s?.setAttribute("data-open",String(e)),c.setAttribute("aria-hidden",e?"false":"true"),A(e),L(e),e?T():B())},y=()=>{const e=h();g().map(t=>document.getElementById(t.dataset.target||"")).filter(t=>!!t).forEach(t=>{t.style.scrollMarginTop=`${e+16}px`})},d=e=>`#${encodeURIComponent(e)}`,w=(e,n=!1)=>{const t=document.getElementById(e);if(!t)return;const E=h(),b=window.scrollY+t.getBoundingClientRect().top-E-16;n?history.replaceState(null,"",d(e)):history.pushState(null,"",d(e)),window.scrollTo({top:b,behavior:"auto"})};f();const O=new MutationObserver(f);O.observe(document.body,{subtree:!0,childList:!0,attributes:!0,attributeFilter:["data-mobile-toc-open"]});k?.addEventListener("click",()=>r(!1));s?.addEventListener("click",e=>{e.target===s&&r(!1)});const u=e=>{const t=e.currentTarget?.dataset.target;t&&(e.preventDefault(),e.stopPropagation(),r(!1),setTimeout(()=>w(t),v))};g().forEach(e=>{e.removeEventListener("click",u),e.addEventListener("click",u)});window.addEventListener("keydown",e=>{e.key==="Escape"&&r(!1)});y();window.addEventListener("headerheightchange",y);const m=decodeURIComponent(location.hash.replace(/^#/,""));m&&requestAnimationFrame(()=>w(m,!0));</script> <div class="floating-action-stack fixed z-40 flex flex-col items-end gap-3 lg:hidden pointer-events-auto transition-opacity data-[toc-open=true]:opacity-0 data-[toc-open=true]:pointer-events-none" data-floating-action-stack style="inset-inline-end: calc(env(safe-area-inset-right, 0px) + 1rem); inset-block-start: 50%; transform: translateY(-50%);"><button type="button" class="floating-action-stack__button h-11 w-11 rounded-full border border-gray-200 bg-white/90 text-gray-900 shadow-lg backdrop-blur-sm ring-offset-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 hover:-translate-y-0.5 hover:border-blue-200 hover:text-blue-600 data-[visible=false]:opacity-0 data-[visible=false]:pointer-events-none data-[visible=true]:opacity-100 data-[visible=true]:pointer-events-auto dark:border-gray-800 dark:bg-gray-900/85 dark:text-gray-100 dark:ring-offset-gray-900 dark:hover:border-blue-500/50 dark:hover:text-blue-300" data-floating-action-button data-action="toc" data-visible="true" style="transition-delay: 0ms;" aria-label="打开目录抽屉" data-mobile-toc-open="true"><span class="sr-only">目录</span><span aria-hidden="true" class="text-base">📑</span></button></div><script type="module">const o=document.querySelector("[data-floating-action-stack]"),r=o?.querySelector('[data-action="toc"]'),e=document.querySelector("[data-mobile-toc]"),a=t=>{o&&(o.dataset.tocOpen=t?"true":"false")};a(e?.dataset.open==="true");r?.addEventListener("click",()=>{requestAnimationFrame(()=>r?.blur())});window.addEventListener("mobile-toc:toggle",t=>{const n=t.detail;n&&a(n.open)});e&&new MutationObserver(()=>{a(e.dataset.open==="true")}).observe(e,{attributes:!0,attributeFilter:["data-open"]});</script> <button type="button" class="fixed left-1/2 top-20 z-40 -translate-x-1/2 rounded-full border border-zinc-200 bg-white/95 px-4 py-2 text-sm font-medium text-zinc-900 shadow-lg backdrop-blur-sm transition data-[visible=false]:pointer-events-none data-[visible=false]:-translate-y-2 data-[visible=false]:opacity-0 data-[visible=true]:opacity-100 dark:border-zinc-800 dark:bg-zinc-900/90 dark:text-zinc-100" data-scroll-up-top-button data-target-selector="[data-article]" data-visible="false" aria-label="回到文章顶部">
+回到顶部
+</button> <script type="module">const t=document.querySelector("[data-scroll-up-top-button]"),f=t?.dataset.targetSelector||"[data-article]",d=document.querySelector(f),m=window.matchMedia("(prefers-reduced-motion: reduce)");if(!t||!d)t&&(t.dataset.visible="false");else{let o=0,l=window.scrollY,r=!1;const u=()=>{const e=getComputedStyle(document.documentElement).getPropertyValue("--site-header-height");return parseFloat(e)||0},s=()=>{o=d.getBoundingClientRect().top+window.scrollY},a=e=>{t.dataset.visible=e?"true":"false"},n=()=>{const e=window.scrollY,i=e-l,w=Math.abs(i)>=6;e<=o+140?a(!1):w&&a(i<0),l=e,r=!1},c=()=>{r||(r=!0,requestAnimationFrame(n))},p=()=>{const e=Math.max(0,o-u()-12);window.scrollTo({top:e,behavior:m.matches?"auto":"smooth"})};s(),n(),window.addEventListener("scroll",c,{passive:!0}),window.addEventListener("resize",()=>{s(),c()}),window.addEventListener("load",()=>{s(),n()},{once:!0}),t.addEventListener("click",p)}</script> </main> <footer class="py-8 mt-auto border-t border-zinc-200 dark:border-zinc-800"> <div class="container mx-auto px-4 text-center text-zinc-500 max-w-4xl">
+&copy; 2026 Yuanle Liu. All rights reserved. </div> </footer>  <script type="module" src="/blog-preview/previews/pr-447/_astro/Layout.astro_astro_type_script_index_0_lang.itb4sF4J.js"></script> <script type="module">const i=new WeakMap,c=(e,t)=>{e.dataset.state=t,t==="copied"?e.textContent="Copied":t==="error"?e.textContent="Failed":e.textContent="Copy";const o=i.get(e);if(o&&window.clearTimeout(o),t!=="idle"){const r=window.setTimeout(()=>c(e,"idle"),2e3);i.set(e,r)}},n=async e=>{const t=e.closest(".code-block");if(!t)return;const o=t.getAttribute("data-raw-code")??"";try{await navigator.clipboard.writeText(o),c(e,"copied")}catch(r){console.error("Copy failed",r),c(e,"error")}},s=()=>{document.addEventListener("click",e=>{const o=e.target?.closest("button.code-block__copy");o&&(e.preventDefault(),n(o))})},a=()=>{typeof document>"u"||s()};a();</script> <script type="module">function d(){const n=document.querySelector("[data-site-header]");if(!n){document.documentElement.style.setProperty("--site-header-height","0px");return}let i=0;const t=()=>{const e=n.getBoundingClientRect().height;Math.abs(e-i)>.5&&(i=e,document.documentElement.style.setProperty("--site-header-height",`${e}px`),window.dispatchEvent(new CustomEvent("headerheightchange",{detail:{height:e}})))};t(),"ResizeObserver"in window&&new ResizeObserver(()=>{t()}).observe(n),window.addEventListener("resize",t,{passive:!0}),window.addEventListener("load",t,{once:!0})}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",d):d();</script> </body> </html> <dialog id="article-image-zoom-dialog" class="fixed inset-0 m-0 h-screen w-screen max-h-none max-w-none touch-none border-0 bg-black/85 p-0 backdrop:bg-black/85 [&[open]]:grid [&[open]]:place-items-center" aria-label="图片预览"> <button type="button" data-image-zoom-close class="absolute right-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-2xl text-white transition hover:bg-black/70 focus:outline-none focus:ring-2 focus:ring-white" aria-label="关闭预览">
+×
+</button> <img data-image-zoom-preview alt="" draggable="false" class="max-h-[90vh] max-w-[90vw] touch-none select-none rounded-lg bg-zinc-100 p-2 object-contain shadow-2xl transition-transform duration-150 ease-out will-change-transform dark:bg-zinc-800" loading="eager" decoding="async"> <div class="pointer-events-none absolute bottom-4 left-1/2 z-10 -translate-x-1/2 rounded-full bg-black/55 px-3 py-2"> <div class="pointer-events-auto flex items-center gap-2 text-sm text-white"> <button type="button" data-image-zoom-out class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/35 hover:bg-white/10" aria-label="缩小">
+−
+</button> <span data-image-zoom-level class="min-w-14 text-center tabular-nums">100%</span> <button type="button" data-image-zoom-in class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/35 hover:bg-white/10" aria-label="放大">
++
+</button> </div> </div> </dialog> <dialog id="article-share-dialog" class="w-[min(92vw,640px)] rounded-2xl border border-zinc-200 bg-white p-0 text-zinc-900 shadow-2xl backdrop:bg-black/50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100" aria-label="分享文章"> <div class="flex items-center justify-between border-b border-zinc-200 px-5 py-4 dark:border-zinc-800"> <h2 class="text-lg font-semibold">分享文章</h2> <button type="button" data-share-close class="inline-flex h-9 w-9 items-center justify-center rounded-full text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200" aria-label="关闭分享窗口">
+×
+</button> </div> <div class="space-y-5 px-5 py-4"> <section class="space-y-2"> <div class="flex items-center justify-between gap-3"> <h3 class="text-sm font-medium text-zinc-700 dark:text-zinc-300">Markdown 链接</h3> <button type="button" class="rounded-md border border-zinc-300 px-3 py-1.5 text-sm transition hover:border-zinc-400 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:border-zinc-500 dark:hover:bg-zinc-800" data-share-copy="markdown">
+复制
+</button> </div> <pre class="overflow-x-hidden whitespace-pre-wrap break-all rounded-lg bg-zinc-100 px-3 py-2 text-sm text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200" data-share-text="markdown">      </pre> </section> <section class="space-y-2"> <div class="flex items-center justify-between gap-3"> <h3 class="text-sm font-medium text-zinc-700 dark:text-zinc-300">标题 + 链接</h3> <button type="button" class="rounded-md border border-zinc-300 px-3 py-1.5 text-sm transition hover:border-zinc-400 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:border-zinc-500 dark:hover:bg-zinc-800" data-share-copy="plain">
+复制
+</button> </div> <pre class="overflow-x-hidden whitespace-pre-wrap break-all rounded-lg bg-zinc-100 px-3 py-2 text-sm text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200" data-share-text="plain">      </pre> </section> <p data-share-status class="min-h-5 text-sm text-emerald-600 dark:text-emerald-400" aria-live="polite"></p> </div> </dialog> <script type="module" src="/blog-preview/previews/pr-447/_astro/_...slug_.astro_astro_type_script_index_0_lang.Bbz5kgQv.js"></script>
