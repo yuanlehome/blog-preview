@@ -1,0 +1,492 @@
+<!DOCTYPE html><html lang="en" data-astro-cid-sckkx6r4> <head><script>(() => {
+  const storageKey = 'theme';
+  const className = 'dark';
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  const validThemes = ['light', 'dark'];
+  let currentPreference = (() => {
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored && validThemes.includes(stored)) return stored;
+    } catch (error) {
+      console.warn('Unable to access localStorage for theme:', error);
+    }
+    return mediaQuery.matches ? 'dark' : 'light';
+  })();
+
+  const resolveTheme = (preference) => (preference === 'dark' ? 'dark' : 'light');
+
+  const applyTheme = (preference) => {
+    const effectiveTheme = resolveTheme(preference);
+    document.documentElement.classList.toggle(className, effectiveTheme === 'dark');
+    document.documentElement.dataset.theme = effectiveTheme;
+    return effectiveTheme;
+  };
+
+  const dispatchChange = (preference) => {
+    const resolved = document.documentElement.classList.contains(className) ? 'dark' : 'light';
+    window.dispatchEvent(
+      new CustomEvent('themechange', {
+        detail: { theme: preference, resolved },
+      }),
+    );
+  };
+
+  applyTheme(currentPreference);
+
+  window.__setTheme = (next) => {
+    const preference = validThemes.includes(String(next)) ? String(next) : resolveTheme(currentPreference);
+    currentPreference = preference;
+    try {
+      localStorage.setItem(storageKey, preference);
+    } catch (error) {
+      console.warn('Unable to persist theme selection:', error);
+    }
+    applyTheme(preference);
+    dispatchChange(preference);
+  };
+})();</script><meta charset="UTF-8"><meta name="description" content="A minimal Astro blog"><meta name="viewport" content="width=device-width"><link rel="icon" type="image/x-icon" href="/blog-preview/previews/pr-449/favicon.ico"><link rel="icon" type="image/png" sizes="32x32" href="/blog-preview/previews/pr-449/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/blog-preview/previews/pr-449/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/blog-preview/previews/pr-449/apple-touch-icon.png"><meta name="generator" content="Astro v5.16.6"><link rel="canonical" href="https://yuanlehome.github.io/blog-preview/previews/pr-449/infra/"><meta property="og:title" content="图解 Infra 视角下的强化学习性能优化"><meta property="og:description" content="A minimal Astro blog"><meta property="og:image" content="/blog-preview/previews/pr-449/images/wechat/infra/002-4dadebfb.png"><meta property="og:type" content="article"><meta property="og:url" content="https://yuanlehome.github.io/blog-preview/previews/pr-449/infra/"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="图解 Infra 视角下的强化学习性能优化"><meta name="twitter:description" content="A minimal Astro blog"><meta name="twitter:image" content="/blog-preview/previews/pr-449/images/wechat/infra/002-4dadebfb.png"><title>图解 Infra 视角下的强化学习性能优化</title><style>:root {
+  /* Typography */
+  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial, Noto Sans SC, PingFang SC, Microsoft YaHei, sans-serif;
+  --font-serif: ui-serif, Georgia, Cambria, Times New Roman, Times, serif;
+  --font-mono: JetBrains Mono, Fira Code, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  --font-size-4xl: 2.25rem;
+  --line-height-body: 1.75;
+  --line-height-heading: 1.3;
+  --line-height-code: 1.65;
+  --line-height-tight: 1.25;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Components */
+  --radius-sm: 0.35rem;
+  --radius-md: 0.65rem;
+  --radius-lg: 0.9rem;
+  --radius-xl: 0.75rem;
+  --shadow-card: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-code-block: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-header: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --border-style: solid;
+  --border-width: 1px;
+  --motion-duration: 160ms;
+  --motion-easing: ease;
+  --spacing-multiplier: 1;
+
+  /* Light Mode Colors */
+  --color-brand: #0284c7;
+  --color-accent: #0284c7;
+  --color-background: #fafafa;
+  --color-foreground: #18181b;
+  --color-muted: #71717a;
+  --color-border: #e4e4e7;
+  --color-card: #f4f4f5;
+  --color-code-background: #f4f4f5;
+  --color-code-foreground: #18181b;
+  --color-code-border: #e4e4e7;
+  --color-code-keyword: #0284c7;
+  --color-code-string: #059669;
+  --color-code-comment: #a1a1aa;
+  --color-code-function: #0284c7;
+
+  /* Code block specific (legacy support) */
+  --code-font: var(--font-mono);
+  --code-radius: 0.9rem;
+  --code-border: 1px solid var(--color-code-border);
+  --code-bg: var(--color-code-background);
+  --code-fg: var(--color-code-foreground);
+  --code-scrollbar: rgb(203 213 225 / 0.75);
+  --code-highlight-bg: rgb(59 130 246 / 0.12);
+  --code-highlight-accent: rgb(59 130 246);
+
+  /* Header specific (legacy support) */
+  --header-bg: rgb(248 250 252 / 0.92);
+  --header-bg-scrolled: rgb(248 250 252 / 0.98);
+  --header-border: rgb(226 232 240 / 0.9);
+  --header-shadow: var(--shadow-header);
+  --header-shadow-strong: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+.dark {
+  /* Dark Mode Colors */
+  --color-brand: #38bdf8;
+  --color-accent: #38bdf8;
+  --color-background: #18181b;
+  --color-foreground: #fafafa;
+  --color-muted: #a1a1aa;
+  --color-border: #3f3f46;
+  --color-card: #27272a;
+  --color-code-background: #1f1f23;
+  --color-code-foreground: #e4e4e7;
+  --color-code-border: #3f3f46;
+  --color-code-keyword: #38bdf8;
+  --color-code-string: #34d399;
+  --color-code-comment: #71717a;
+  --color-code-function: #38bdf8;
+
+  /* Dark mode shadows */
+  --shadow-card: 0 10px 30px rgb(0 0 0 / 0.28);
+  --shadow-code-block: 0 10px 30px rgb(0 0 0 / 0.28);
+  --shadow-header: 0 10px 30px rgb(0 0 0 / 0.28);
+
+  /* Code block specific (legacy support) */
+  --code-border: 1px solid var(--color-code-border);
+  --code-bg: var(--color-code-background);
+  --code-fg: var(--color-code-foreground);
+  --code-scrollbar: rgb(71 85 105 / 0.8);
+  --code-highlight-bg: rgb(59 130 246 / 0.2);
+  --code-highlight-accent: rgb(96 165 250);
+
+  /* Header specific (legacy support) */
+  --header-bg: rgb(15 23 42 / 0.72);
+  --header-bg-scrolled: rgb(15 23 42 / 0.8400000000000001);
+  --header-border: rgb(71 85 105 / 0.8);
+  --header-shadow: var(--shadow-header);
+  --header-shadow-strong: 0 20px 40px rgb(0 0 0 / 0.35);
+}
+</style><link rel="stylesheet" href="/blog-preview/previews/pr-449/_astro/_slug_.n6m0Ptdn.css">
+<style>.reading-progress[data-astro-cid-mu6cnre2]{position:fixed;inset:0 0 auto;height:3px;width:100%;background:transparent;z-index:50;pointer-events:none}.reading-progress__bar[data-astro-cid-mu6cnre2]{display:block;height:100%;width:100%;transform:scaleX(var(--progress-value, 0));transform-origin:left center;background:linear-gradient(90deg,var(--progress-color-start),var(--progress-color-end));transition:transform .1s linear}:root{--progress-color-start: #2563eb;--progress-color-end: #22d3ee}:root.dark{--progress-color-start: #38bdf8;--progress-color-end: #a855f7}@media(prefers-reduced-motion:reduce){.reading-progress__bar[data-astro-cid-mu6cnre2]{transition:none}}
+</style></head> <body class="bg-neutral-50 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 transition-colors duration-300 min-h-screen flex flex-col" data-astro-cid-sckkx6r4>  <div class="reading-progress" data-reading-progress data-target-selector="[data-article]" data-astro-cid-mu6cnre2> <span class="reading-progress__bar" data-reading-progress-bar data-astro-cid-mu6cnre2></span> </div>  <script type="module">const s=document.querySelector("[data-reading-progress]"),p=s?.dataset?.targetSelector||"[data-article]",g=s?.querySelector("[data-reading-progress-bar]"),o=document.querySelector(p);if(s&&g&&o){let n=0,a=0,t=!1;const u=(e,r,w)=>Math.min(Math.max(e,r),w),c=()=>{n=o.getBoundingClientRect().top+window.scrollY,a=o.scrollHeight},i=()=>{const e=Math.max(a-window.innerHeight,1),r=u((window.scrollY-n)/e,0,1);g.style.setProperty("--progress-value",r.toString()),t=!1},l=()=>{t||(t=!0,requestAnimationFrame(i))},d=()=>{c(),l()};c(),i(),window.addEventListener("scroll",l,{passive:!0}),window.addEventListener("resize",d),window.addEventListener("load",d,{once:!0})}</script> <header class="site-header header-variant-frosted" data-header data-site-header> <div class="container mx-auto px-5 py-3 sm:py-4 flex justify-between items-start max-w-5xl"> <a href="/blog-preview/previews/pr-449/" class="text-xl font-bold hover:text-sky-600 dark:hover:text-sky-400 flex items-center gap-2"> <img src="/blog-preview/previews/pr-449/placeholder-social.jpg" alt="Yuanle Liu" width="32" height="32" class="h-8 w-8 rounded"> <span class="hidden sm:inline">Yuanle Liu</span> </a> <nav class="flex items-start gap-3 items-center"> <a href="/blog-preview/previews/pr-449/" class="hover:underline inline-flex items-center "> Home </a><a href="/blog-preview/previews/pr-449/archive/" class="hover:underline inline-flex items-center "> Archive </a><a href="/blog-preview/previews/pr-449/tags/" class="hover:underline inline-flex items-center "> Tags </a><a href="/blog-preview/previews/pr-449/about/" class="hover:underline inline-flex items-center "> About </a> <button id="theme-toggle" class="inline-flex items-center gap-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 px-1" aria-label="Toggle theme"> 🖥️ ☀️ </button> </nav> </div> </header> <script type="module">const u="theme",d=["light","dark"];const g=()=>{try{const e=localStorage.getItem(u);if(e==="light"||e==="dark")return e}catch(e){console.warn("Unable to read theme preference:",e)}return window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"},f=()=>document.documentElement.classList.contains("dark")?"dark":"light",p=e=>e==="dark"?"🌙":"☀️",T=e=>e==="dark"?"Dark":"Light",c=(e,n)=>{const t=document.getElementById("theme-toggle");if(!t)return;const o=n??f(),i=p(o),a=T(o);t.dataset.theme=e,t.textContent="";const s=document.createElement("span");s.className="inline-flex items-center justify-center",s.style.lineHeight="1",s.textContent=i,t.appendChild(s),t.appendChild(document.createTextNode(" "+a)),t.setAttribute("aria-label",`Toggle theme (current: ${a})`)},l=e=>{if(typeof window.__setTheme=="function"){window.__setTheme?.(e);return}const n=e==="dark"?"dark":"light";document.documentElement.classList.toggle("dark",n==="dark");try{localStorage.setItem(u,e)}catch(t){console.warn("Unable to persist theme preference:",t)}window.dispatchEvent(new CustomEvent("themechange",{detail:{theme:e,resolved:n}}))},k=(e,n)=>{const t=n.getBoundingClientRect(),o=e instanceof MouseEvent,i=o&&e.detail>0&&(e.clientX!==0||e.clientY!==0),a=i&&o?e.clientX:t.left+t.width/2,s=i&&o?e.clientY:t.top+t.height/2,r=Math.max(Math.hypot(a,s),Math.hypot(window.innerWidth-a,s),Math.hypot(a,window.innerHeight-s),Math.hypot(window.innerWidth-a,window.innerHeight-s));return{x:a,y:s,r}},E=({x:e,y:n,r:t})=>{const o=document.documentElement;o.style.setProperty("--theme-toggle-x",`${e}px`),o.style.setProperty("--theme-toggle-y",`${n}px`),o.style.setProperty("--theme-toggle-r",`${t}px`)},L=async(e,n,t)=>{if(t){l(e),c(e);return}E(n),document.documentElement.classList.add("theme-toggle-transitioning");const o=document;try{if(typeof o.startViewTransition=="function"){await o.startViewTransition(()=>{l(e),c(e)}).finished.catch(s=>{console.warn("Theme view transition failed:",s)});return}const i=document.createElement("div");i.className="theme-toggle-overlay",e==="dark"&&i.classList.add("dark"),document.body.appendChild(i);try{i.getBoundingClientRect(),i.classList.add("is-animating"),await new Promise(a=>{let s=!1;const r=()=>{s||(s=!0,a())};i.addEventListener("animationend",r,{once:!0}),i.addEventListener("animationcancel",r,{once:!0}),window.setTimeout(r,550)}),l(e),c(e)}finally{i.remove()}}finally{document.documentElement.classList.remove("theme-toggle-transitioning")}};let m=!1;const M=async e=>{if(m)return;const n=e.currentTarget instanceof HTMLElement?e.currentTarget:null;if(!n)return;m=!0,n.setAttribute("disabled","true");const t=g(),o=d[(d.indexOf(t)+1)%d.length];try{const i=k(e,n);await L(o,i,w.matches)}finally{window.setTimeout(()=>{n.removeAttribute("disabled"),m=!1},500)}},h=document.querySelector("[data-header]"),w=window.matchMedia("(prefers-reduced-motion: reduce)"),v=w.matches,y=()=>{if(!h)return;const e=window.scrollY>6;h.classList.toggle("is-scrolled",e)};document.getElementById("theme-toggle")?.addEventListener("click",M);c(g());window.addEventListener("themechange",e=>{const n=e.detail,t=n?.theme??g(),o=n?.resolved;c(t,o)});y();const b=()=>y();window.addEventListener("scroll",b,{passive:!0});v&&h?.classList.add("reduce-motion");</script> <main class="container mx-auto px-4 py-8 max-w-6xl"> <div class="flex flex-col gap-6 lg:grid lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start lg:gap-12" data-post-layout> <div class="w-full" data-toc-shell> <aside class="hidden lg:block h-full"> <div class="flex h-full w-full flex-col gap-3 overflow-hidden rounded-xl border border-zinc-200 bg-neutral-50/80 p-4 shadow-md backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-900/50 lg:sticky lg:top-[var(--site-header-height)] lg:max-h-[calc(100vh-var(--site-header-height)-16px)] lg:h-[calc(100vh-var(--site-header-height)-16px)]" data-toc-container> <div class="space-y-1"> <p class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">文章目录</p> <p class="text-xs text-zinc-500 dark:text-zinc-400">快速跳转到你关心的章节</p> </div> <nav aria-label="文章目录" class="flex-1 min-h-0 overflow-y-auto pr-1" data-toc-scroll> <ol class="space-y-3 text-sm"> <li><a href="#训练的步骤" data-toc-link data-mobile-toc-link data-target="训练的步骤" title="训练的步骤¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>训练的步骤¶</span></a></li><li><a href="#存在问题--挑战" data-toc-link data-mobile-toc-link data-target="存在问题--挑战" title="存在问题 / 挑战¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>存在问题 / 挑战¶</span></a><ol class="mt-1 space-y-1"><li><a href="#权重同步" data-toc-link data-mobile-toc-link data-target="权重同步" title="权重同步¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>权重同步¶</span></a></li><li><a href="#onpolicy-的挑战" data-toc-link data-mobile-toc-link data-target="onpolicy-的挑战" title="OnPolicy 的挑战¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>OnPolicy 的挑战¶</span></a></li></ol></li><li><a href="#性能提速方案" data-toc-link data-mobile-toc-link data-target="性能提速方案" title="性能提速方案¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>性能提速方案¶</span></a><ol class="mt-1 space-y-1"><li><a href="#负载调整" data-toc-link data-mobile-toc-link data-target="负载调整" title="负载调整¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>负载调整¶</span></a></li><li><a href="#异步训练" data-toc-link data-mobile-toc-link data-target="异步训练" title="异步训练¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>异步训练¶</span></a></li><li><a href="#权重同步-1" data-toc-link data-mobile-toc-link data-target="权重同步-1" title="权重同步¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>权重同步¶</span></a></li><li><a href="#rollout-提速" data-toc-link data-mobile-toc-link data-target="rollout-提速" title="Rollout 提速¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>Rollout 提速¶</span></a></li></ol></li> </ol> </nav> </div> </aside> </div> <script type="module">const p=Array.from(document.querySelectorAll("[data-toc-link]")),e=document.querySelector("[data-toc-container]"),i=document.querySelector("[data-toc-shell]"),l=()=>{const t=getComputedStyle(document.documentElement).getPropertyValue("--site-header-height");return parseFloat(t)||0},r=window.matchMedia("(min-width: 1024px)"),g=p.map(t=>document.getElementById(t.dataset.target||"")).filter(t=>!!t),m=()=>{const t=l();g.forEach(n=>{n.style.scrollMarginTop=`${t+12}px`})},w=t=>`#${encodeURIComponent(t)}`,v=t=>decodeURIComponent(t.replace(/^#/,"")),f=t=>{p.forEach(n=>{const o=n.dataset.target===t;n.dataset.active=o?"true":"false",n.setAttribute("aria-current",o?"true":"false")})},u=(t,n=!1)=>{const o=document.getElementById(t);if(!o)return;const a=l(),c=window.scrollY+o.getBoundingClientRect().top-a-12;n?history.replaceState(null,"",w(t)):history.pushState(null,"",w(t)),window.scrollTo({top:c,behavior:"smooth"}),f(t)};p.forEach(t=>t.addEventListener("click",n=>{const o=t.dataset.target;o&&(n.preventDefault(),u(o))}));const y=()=>{e&&(e.dataset.fixed="false",e.style.position="",e.style.left="",e.style.width="",e.style.height="",e.style.maxHeight="",e.style.top="",i&&(i.style.minHeight=""))},x=()=>{if(!e||!i)return;const t=i.getBoundingClientRect(),n=l(),o=`calc(100vh - ${n}px - 16px)`;e.dataset.fixed="true",i.style.minHeight=`${e.offsetHeight}px`,e.style.position="fixed",e.style.top=`${n}px`,e.style.left=`${t.left}px`,e.style.width=`${t.width}px`,e.style.height=o,e.style.maxHeight=o},d=()=>{if(!e||e.dataset.fixed==="true"||!r.matches)return;const t=parseFloat(getComputedStyle(e).top||"0"),n=e.offsetTop-t;if(Number.isNaN(t)||window.scrollY<n)return;const o=e.getBoundingClientRect().top;Math.abs(o-t)>2&&x()},E=()=>{if(!r.matches){y();return}e?.dataset.fixed==="true"&&x()};if(g.length>0){m();const t=new IntersectionObserver(o=>{const a=o.filter(s=>s.isIntersecting).sort((s,h)=>s.target.getBoundingClientRect().top-h.target.getBoundingClientRect().top);if(a[0]){f(a[0].target.id);return}const c=o.filter(s=>s.boundingClientRect.top<0).sort((s,h)=>h.target.getBoundingClientRect().top-s.target.getBoundingClientRect().top);c[0]&&f(c[0].target.id)},{rootMargin:`-${l()}px 0% -55% 0%`,threshold:[0,.25,.5,1]});g.forEach(o=>t.observe(o));const n=v(location.hash||"");n&&requestAnimationFrame(()=>u(n,!0)),window.addEventListener("hashchange",()=>{const o=v(location.hash||"");o&&u(o,!0)})}y();r.matches&&d();r.addEventListener("change",()=>{y(),requestAnimationFrame(()=>{r.matches&&d()})});window.addEventListener("scroll",d,{passive:!0});window.addEventListener("resize",E);window.addEventListener("load",()=>{d(),m()},{once:!0});window.addEventListener("headerheightchange",()=>{m()});</script> <article class="prose dark:prose-invert max-w-none prose-img:rounded-xl prose-img:cursor-zoom-in min-w-0" data-article> <header class="mb-8 not-prose"> <div class="flex flex-col gap-6 md:grid md:grid-cols-[minmax(0,1fr)_220px] md:items-start md:gap-8"> <div class="flex flex-col gap-4 md:h-full"> <h1 class="text-3xl md:text-4xl font-bold leading-tight text-left"> 图解 Infra 视角下的强化学习性能优化 </h1> <div class="text-zinc-500 text-sm flex items-start justify-start gap-3 flex-wrap md:mt-auto"> <time class="flex items-center gap-1" datetime="2026-02-12T00:00:00.000Z" title="发布于 2026-02-12"> <span aria-hidden="true">📅</span> <span>
+发布于 <span class="font-medium">2026-02-12</span> </span> </time>   <div class="flex items-center gap-1"> <span aria-hidden="true">✍️</span> 2401 字
+</div> <div class="flex items-center gap-1" title="2401 words"> <span aria-hidden="true">⏱️</span> 6 min read </div> </div> <div class="flex flex-wrap items-center gap-2" data-testid="post-share-tags-row"> <div class="flex flex-wrap gap-2 items-center" data-testid="post-tags"> <span class="text-zinc-500 text-sm flex items-center gap-1"> <span aria-hidden="true">🏷️</span> <span>标签：</span> </span> <a href="/blog-preview/previews/pr-449/tags/rl-infra/" class="tag-chip inline-flex items-center gap-1.5 rounded-full border transition-colors duration-200 font-medium cursor-pointer text-xs px-2 py-1 
+    border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 
+    dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 dark:hover:border-sky-700
+    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-tag-slug="rl-infra" data-testid="tag-rl-infra"> <span class="tag-name pointer-events-none">RL Infra</span>  </a> </div> <div class="inline-flex items-center gap-2" data-testid="post-share-action"> <span class="text-zinc-500 text-sm" aria-hidden="true"> 📤 </span> <button type="button" class="inline-flex items-center rounded-full border border-pink-200 bg-pink-50 px-2 py-1 text-xs font-medium text-pink-700 transition-colors duration-200 hover:border-pink-300 hover:bg-pink-100 dark:border-pink-900 dark:bg-pink-950 dark:text-pink-300 dark:hover:border-pink-700 dark:hover:bg-pink-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-share-open aria-haspopup="dialog" aria-controls="article-share-dialog">
+分享文章
+</button> </div> </div> </div> <figure class="hidden md:block md:justify-self-end overflow-hidden rounded-xl border border-zinc-200/80 shadow-md dark:border-zinc-800/80 w-full max-w-[320px] md:max-w-[220px] md:min-w-[160px]" data-post-cover> <img src="/blog-preview/previews/pr-449/images/wechat/infra/002-4dadebfb.png" alt="图解 Infra 视角下的强化学习性能优化" class="aspect-[4/3] w-full object-cover transition duration-200" loading="eager" decoding="async"> </figure> <div class="w-full rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 dark:border-sky-900 dark:bg-sky-950 md:col-span-2"> <p class="text-sm text-zinc-700 dark:text-zinc-300 break-words"> <span class="font-semibold">📝 转载 / 引用来源：</span> <span>
+作者 <span class="font-medium">InfraTech</span> ·  </span> <a href="https://mp.weixin.qq.com/s/onW4d3e-SCgO_z_16JgWEA" target="_blank" rel="noopener noreferrer" class="text-sky-600 underline hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300">
+查看原文
+</a> </p> </div> </div> </header> <p>LLM 强化学习（RL）训练过程的性能与资源效率是 AI Infra 重点关注的内容。RL 的场景比预训练（或者 SFT）的工作流更长、协同工作的模块更多，容易出现资源利用率低的情况。Infra 的目标是在保证算法精度/效果满足前提下，应尽量去提升资源效率。本篇简单介绍 RL 训练中可能遇到的问题，并列举几个业界的解决方案。</p>
+<h2 id="训练的步骤">训练的步骤<a href="#训练的步骤" class="heading-anchor" aria-label="Link to 训练的步骤">¶</a></h2>
+<p>强化学习常见算法步骤：</p>
+<p><img src="/blog-preview/previews/pr-449/images/wechat/infra/002-4dadebfb.png" alt="图片"></p>
+<p>梳理出三个层：1 生成（Generation）、2 准备 / 推理（Preparation/Inference）、3 训练（Training）。</p>
+<p><img src="/blog-preview/previews/pr-449/images/wechat/infra/003-e13cf52a.png" alt="图片"></p>
+<p>源自 HybridFlow 图片</p>
+<p>到 AI Infra 关注的训练步骤大致是这样的：</p>
+<p><img src="/blog-preview/previews/pr-449/images/wechat/infra/004-2009976c.png" alt="图片"></p>
+<p>上图包含了：</p>
+<ul>
+<li>
+<p>生成模块（Generator）：加载 Policy 模型运行推理任务，负责流程中 rollout 阶段，硬件资源一般是 GPU。</p>
+</li>
+<li>
+<p>奖励模块（Reward Server）：加载评价模型，模型参数固定，硬件资源 CPU。</p>
+</li>
+<li>
+<p>训练模块（Trainer）：训练 Policy 模型，运行参考模型。硬件资源 GPU。</p>
+</li>
+</ul>
+<p>大致有 6 个处理步骤：</p>
+<ol>
+<li>
+<p>提示词（Prompts）：Trainer 生成提示词给到 Generator，数据大小 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi></mrow><annotation encoding="application/x-tex">n</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal">n</span></span></span></span>；</p>
+</li>
+<li>
+<p>答案（Answers）：每一个 prompt 生成 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>m</mi></mrow><annotation encoding="application/x-tex">m</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal">m</span></span></span></span> 个数据，输出数据 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mo>×</mo><mi>m</mi></mrow><annotation encoding="application/x-tex">n \times m</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6667em;vertical-align:-0.0833em;"></span><span class="mord mathnormal">n</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal">m</span></span></span></span>；</p>
+</li>
+<li>
+<p>奖励（Rewards）：对 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mo>×</mo><mi>m</mi></mrow><annotation encoding="application/x-tex">n \times m</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6667em;vertical-align:-0.0833em;"></span><span class="mord mathnormal">n</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal">m</span></span></span></span> 数据进行打分，得到奖励值 rewards；</p>
+</li>
+<li>
+<p>损失（Loss）：计算模型损失，函数可以是 grpo、ppo 等算法。</p>
+</li>
+<li>
+<p>梯度（Gradient）：计算模型梯度，更新模型权重。</p>
+</li>
+<li>
+<p>同步（Sync）：将 Trainer 的权重同步到 Generator 中。</p>
+</li>
+</ol>
+<p>注意：此例的算法仅考虑了 Reward 模型，若选取的算法改变，步骤和资源分配也将发生改变。</p>
+<p><img src="/blog-preview/previews/pr-449/images/wechat/infra/005-ee332fa9.png" alt="图片"></p>
+<p>PPO 算法，考虑 Critic、Reference 模型</p>
+<h2 id="存在问题--挑战">存在问题 / 挑战<a href="#存在问题--挑战" class="heading-anchor" aria-label="Link to 存在问题 / 挑战">¶</a></h2>
+<h3 id="权重同步">权重同步<a href="#权重同步" class="heading-anchor" aria-label="Link to 权重同步">¶</a></h3>
+<p>训练与推理权重的传递理想中是这样的：</p>
+<p><img src="/blog-preview/previews/pr-449/images/wechat/infra/006-89447b7f.png" alt="图片"></p>
+<p>实际上可能是这样的：</p>
+<p><img src="/blog-preview/previews/pr-449/images/wechat/infra/007-afe8d205.png" alt="图片"></p>
+<p>存在问题：</p>
+<ul>
+<li>
+<p>训推共卡（task-collocated）方案，由于显存不足，权重需要卸载到 CPU 上；</p>
+</li>
+<li>
+<p>训推分离（task-separated/disaggregated）方案：1、分布式并行方案不一致让权重 size 不同；2、跨节点带宽小，多实例传输共用一条链路；</p>
+</li>
+<li>
+<p>权重同步产生空泡（bubble）：</p>
+</li>
+</ul>
+<p><img src="/blog-preview/previews/pr-449/images/wechat/infra/008-64a95083.png" alt="图片"></p>
+<ul>
+<li>精度差异：训练与推理的权重采用的精度格式不同。</li>
+</ul>
+<p>除了上述提到的多实例传输链路带宽共用的情况外，还会出现多种实例链路并非一致情况：</p>
+<p><img src="/blog-preview/previews/pr-449/images/wechat/infra/009-f7bc4dc2.png" alt="图片"></p>
+<p>产生这种问题的可能原因：</p>
+<ul>
+<li>
+<p>不是所有训、推实例都在同一个 NCCL 网络平面下，跨节点之间仅支持 IB/RoCE 或者 TCP 平面传输；</p>
+</li>
+<li>
+<p>训练、推理的 NCCL 版本不一致；</p>
+</li>
+<li>
+<p>系统要求实例支持扩缩容，扩缩容导致实例之间的网络建链失败（一种系统 BUG）。</p>
+</li>
+</ul>
+<h3 id="onpolicy-的挑战">OnPolicy 的挑战<a href="#onpolicy-的挑战" class="heading-anchor" aria-label="Link to OnPolicy 的挑战">¶</a></h3>
+<p>1、Rollout 的长尾 / 拖尾（Long-Tail）：</p>
+<p><img src="/blog-preview/previews/pr-449/images/wechat/infra/010-07badeac.png" alt="图片"></p>
+<p>Rollout 阶段生成数据的结束时机不一致，存在短板效应。耗时占比可以超过 70%。</p>
+<p><img src="/blog-preview/previews/pr-449/images/wechat/infra/011-06e2f21e.png" alt="图片"></p>
+<p>2、序列变化。序列长度随着训练进行会波动变化。当生成序列保持相对平稳时，如下图（I）所示对推理 rollout 的资源要求也是平稳的，但可能会出现（II）所示的情况，rollout 所需资源也得相应地提升。</p>
+<p><img src="/blog-preview/previews/pr-449/images/wechat/infra/012-dec06897.png" alt="图片"></p>
+<h2 id="性能提速方案">性能提速方案<a href="#性能提速方案" class="heading-anchor" aria-label="Link to 性能提速方案">¶</a></h2>
+<h3 id="负载调整">负载调整<a href="#负载调整" class="heading-anchor" aria-label="Link to 负载调整">¶</a></h3>
+<p>根据 Rollout 的负载情况调整负载加载顺序，算法依然是 On policy，无精度损失。</p>
+<p>负载均衡器。通过一个动态负载均衡器实现 DPLB（Data Parallel Load Balance），这个方法发挥出优势的条件：请求数量比较多（>>generator 数量），没有极端长度。</p>
+<p><img src="/blog-preview/previews/pr-449/images/wechat/infra/013-e32cd27e.png" alt="图片"></p>
+<p>DPLB 给 Generator1 调度请求</p>
+<p>我们团队尝试了该方法，在一定条件下提速收益可达 ~30%。</p>
+<p>Tail Batching。根据生成长度组 batch，当 batch 里面出现了过长的数据，打断后放入队列，寻找相同长度数据组 batch 重新调度。</p>
+<p><img src="/blog-preview/previews/pr-449/images/wechat/infra/014-65ee364c.png" alt="图片"></p>
+<p>Tail Batching</p>
+<p>步骤融合。将 rollout 与后续的模型操作（例如 PPO 算法的 Reward/Reference/Critic）进行融合。如 RLHFuse 提到的方案：rollout 阶段将零散的长尾数据打断后集中到部分 GPU 资源上，把 Ref.Infer、Crit.Infer、Rew.Infer 运算调度到 rollout 阶段释放出的资源中。使得 Generate 与 Inference 从串行，变为有部分重叠，从而提升效率。</p>
+<p><img src="/blog-preview/previews/pr-449/images/wechat/infra/015-d06149a5.png" alt="图片"></p>
+<h3 id="异步训练">异步训练<a href="#异步训练" class="heading-anchor" aria-label="Link to 异步训练">¶</a></h3>
+<p>异步强化学习（Asynchronous Reinforcement），off-policy 方式，本轮训练的数据可能来自上一轮 / 上几轮的权重的生成。需要调整算法保证精度。</p>
+<p>KV cache 保持。在 Magistral 中提到了 KV cache 保持的方式，其原理：当遇到过长的生成时，打断生成，但不释放被打断数据的 KV cache。下一轮权重更新后，继续上一轮的生成。单个序列数据可能混合了几个不同权重推理出来的结果。</p>
+<p><img src="/blog-preview/previews/pr-449/images/wechat/infra/016-0de9b5bc.png" alt="图片"></p>
+<p>KV cache 重算。rollout 持续生成，当需要更新权重时才停止，并打断当前数据生成，未完成的数据下一轮重新推理，已生成的 KV cache 重新计算，如 AREAL 的异步流方法。</p>
+<p><img src="/blog-preview/previews/pr-449/images/wechat/infra/017-a67d624e.png" alt="图片"></p>
+<p>长序列分段处理。在 Kimi K1.5 中采用的策略是Partial Rollout，长序列会分段。大概原理：设置推理的最长 tokens 阈值，在一轮 rollout 中当一个序列计算 tokens 数超过该阈值时，该序列会被打断，并存入一个“replay buffer”中。在后面的rollout 过程中，当有序列推理结束，出现空闲资源时，从replay buffer 中拿出未计算完的数据继续推理。这个方式不涉及KV cache 保存/重算。为什么是“partial”？因为短序列不受影响。</p>
+<p><img src="/blog-preview/previews/pr-449/images/wechat/infra/018-6c2f5f88.png" alt="图片"></p>
+<h3 id="权重同步-1">权重同步<a href="#权重同步-1" class="heading-anchor" aria-label="Link to 权重同步">¶</a></h3>
+<h4 id="分离方案的权重同步">分离方案的权重同步<a href="#分离方案的权重同步" class="heading-anchor" aria-label="Link to 分离方案的权重同步">¶</a></h4>
+<p>异步权重更新。允许 policy model 训、推之间权重异步更新，如 AsyncFlow 中提到方式，权重从 actor 的 train 到 rollout 传递更新，支持分实例异步操作。rollout 实例与实例之间运行的权重可以不一致。</p>
+<p><img src="/blog-preview/previews/pr-449/images/wechat/infra/019-7d912eee.png" alt="图片"></p>
+<p>AsyncFlow</p>
+<p>统一的训推权重转换。面对训、推框架不同的并行策略、精度、格式，构建统一的转换层。如 asystem-awex 中提到的，在训练中配置权重写入器（WeightWriter）、推理中配置权重读取器（WeightReader），实现权重分片存储、传输和转换。</p>
+<p><img src="/blog-preview/previews/pr-449/images/wechat/infra/020-1685bc8a.png" alt="图片"></p>
+<p>不同网络用不同传输模式。训练和推理的实例可能位于相同节点、也可能位于不同节点，数据传输的网络不一样需要采用不同的传输模式。比如 awex 提到的训、推之间先用 CUDA IPC 的 zero-copy 操作，然后推理实例之间进行 P2P 同步如下图所示。</p>
+<p><img src="/blog-preview/previews/pr-449/images/wechat/infra/021-d63b171d.png" alt="图片"></p>
+<h4 id="共卡方案的权重同步">共卡方案的权重同步<a href="#共卡方案的权重同步" class="heading-anchor" aria-label="Link to 共卡方案的权重同步">¶</a></h4>
+<p>共享内存传递权重。如 K1.5 的 megatron 与 vLLM 的混合框架中，用一个通用模块 Checkpoint Engine 完成权重传输（解决不同 ProcessGroup 之间互通的问题）。权重的分片注册到一个公共位置，训练或者推理步骤结束时释放掉一些显存。训推引擎在一个 pod 中，共享 GPU 的资源。两个引擎中的 TP 切分策略存在差异，在加载时完成转换。</p>
+<p><img src="/blog-preview/previews/pr-449/images/wechat/infra/022-11dc8fdd.png" alt="图片"></p>
+<p>相比分离方案，共享权重方案的 H2D 会降低传输速度，需要做一定优化处理。</p>
+<h3 id="rollout-提速">Rollout 提速<a href="#rollout-提速" class="heading-anchor" aria-label="Link to Rollout 提速">¶</a></h3>
+<p>Rollout 性能取决于推理的运算速度。要降低 E2EL，其中 ITL 是大头。推理框架的下发效率、特性，算子等对速度都能构成影响。目前主流的两款框架 vLLM、SGLang 各有优劣，所以在 RL 架构中两种框架都能见到。</p>
+<p><img src="/blog-preview/previews/pr-449/images/wechat/infra/023-c85a0478.png" alt="图片"></p>
+<p>提速特性：如投机推理（Speculative Decoding），可以一次生成多个数据，对于一些短输入长输出的场景（prefill 2k -> decode 20k），能带来较大性能提升。</p>
+<p><img src="/blog-preview/previews/pr-449/images/wechat/infra/024-291f3b11.png" alt="图片"></p>
+<p>量化：在 rollout 优化的相关讨论中，提到了一种量化的方式”FlashRL: 8Bit Rollouts”。</p>
+<p><img src="/blog-preview/previews/pr-449/images/wechat/infra/025-d9e289f0.png" alt="图片"></p>
+<p>这种可能对精度产生影响的方案，一般不会由 Infra 单方发起，需要与算法共同讨论。</p>
+<p>框架下发速度：是指框架的调度器（scheduler）将任务从 CPU 侧下发到 GPU 侧的速度。这个是一个通用优化点，既能用于 rollout，也能用于推理部署。比如在 vLLM 中的多进程协同（scheduler 与 worker 在不同进程），multi-step 等特性。</p>
+<p><img src="/blog-preview/previews/pr-449/images/wechat/infra/026-5ae9af37.png" alt="图片"></p>
+<p>muti step</p>
+<p>小结：与预训练动辄千卡 / 万卡规模相比，RL 的资源使用量比较少，目前 RL 性能问题还没有成为 AI 算法迭代的关键瓶颈。在 Infra 的性能优化工作项中，RL 性能优化工作一般排在预训练性能、推理性能之后。随着大家开始尝试扩大（scale up）RL 规模，寻找更好的训练效果，后续 RL 的性能关注度应该会逐步提升。</p> <div class="grid md:grid-cols-2 gap-4 mt-10"> <a href="/blog-preview/previews/pr-449/cuda-compute-sanitizer/" class="block p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-sky-500"> <div class="text-xs uppercase text-zinc-500">Previous</div> <div class="font-semibold">CUDA 非法内存访问的“隐式报错”机制与 compute-sanitizer 实战</div> </a> <a href="/blog-preview/previews/pr-449/pytorch-nonblocking-pinmemory/" class="block p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-sky-500 text-right"> <div class="text-xs uppercase text-zinc-500">Next</div> <div class="font-semibold">在 PyTorch 中正确使用 non_blocking 和 pin_memory()</div> </a> </div> <div class="mt-10 border-t border-zinc-200 dark:border-zinc-800 pt-6"><h3 class="text-lg font-semibold mb-4">Related posts</h3><div class="grid md:grid-cols-2 gap-4"><a href="/blog-preview/previews/pr-449/slimeupdateweights/" class="block p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-sky-500 hover:-translate-y-0.5 transition"><div class="text-xs text-zinc-500 mb-1">3/10/2026</div><div class="font-semibold">slime：update_weights 完整设计与实现拆解</div></a><a href="/blog-preview/previews/pr-449/april-rollpacker-rl-long-tail-rollouts/" class="block p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-sky-500 hover:-translate-y-0.5 transition"><div class="text-xs text-zinc-500 mb-1">3/2/2026</div><div class="font-semibold">从 APRIL 到 RollPacker：如何在 RL 里处理 Long-tail Rollouts</div></a><a href="/blog-preview/previews/pr-449/efficient-rl-training-optimizing-memory-usage-in-verl/" class="block p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-sky-500 hover:-translate-y-0.5 transition"><div class="text-xs text-zinc-500 mb-1">2/5/2026</div><div class="font-semibold">高效强化学习训练 - 优化 verl 中的内存使用</div></a><a href="/blog-preview/previews/pr-449/slime/" class="block p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-sky-500 hover:-translate-y-0.5 transition"><div class="text-xs text-zinc-500 mb-1">2/5/2026</div><div class="font-semibold">高效强化学习训练 - 优化 slime 中的权重同步</div></a></div></div> <section id="comments" class="mt-12" data-comments> <div class="rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 p-6 md:p-8"> <script src="https://giscus.app/client.js" data-repo="yuanlehome/blog" data-repo-id="R_kgDOQu2Jjw" data-category="General" data-category-id="DIC_kwDOQu2Jj84C0QDN" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="bottom" data-theme="light" data-lang="zh-CN" crossorigin="anonymous" async></script> </div> </section> <script>(() => {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return;
+
+  // Theme mapping for Giscus from config
+  const themeMap = {"light":"light","dark":"dark"};
+
+  // Single source of truth: read effective theme from DOM
+  const getEffectiveTheme = () => {
+    const isDark =
+      document.documentElement.dataset.theme === 'dark' ||
+      document.documentElement.classList.contains('dark');
+    return isDark ? 'dark' : 'light';
+  };
+
+  // Track current theme state
+  let currentTheme = getEffectiveTheme();
+
+  // Set initial theme on the script tag before Giscus loads
+  const setInitialTheme = () => {
+    const effectiveTheme = getEffectiveTheme();
+    const giscusTheme = themeMap[effectiveTheme] ?? 'light';
+    const giscusScript = document.querySelector('script[src*="giscus.app/client.js"]');
+    if (giscusScript) {
+      giscusScript.setAttribute('data-theme', giscusTheme);
+    }
+  };
+
+  // Update container data attribute for tracking
+  const setContainerTheme = (theme) => {
+    const container = document.getElementById('comments');
+    if (container) {
+      container.setAttribute('data-giscus-theme', theme);
+    }
+  };
+
+  // Send theme update message to Giscus iframe
+  const postThemeMessage = (resolvedTheme) => {
+    const effective = resolvedTheme ?? currentTheme;
+    const giscusTheme = themeMap[effective] ?? 'light';
+    setContainerTheme(giscusTheme);
+    
+    const iframe = document.querySelector('iframe.giscus-frame');
+    if (iframe && iframe.contentWindow) {
+      iframe.contentWindow.postMessage(
+        { giscus: { setConfig: { theme: giscusTheme } } },
+        'https://giscus.app',
+      );
+    }
+  };
+
+  // Debounce helper to prevent excessive syncs
+  let syncTimeout = null;
+  const debouncedSync = (callback, delay = 50) => {
+    if (syncTimeout) clearTimeout(syncTimeout);
+    syncTimeout = setTimeout(callback, delay);
+  };
+
+  // Main sync function: update theme if changed
+  const syncCommentTheme = (resolvedOverride) => {
+    const detected = resolvedOverride ?? getEffectiveTheme();
+    if (detected !== currentTheme) {
+      currentTheme = detected;
+    }
+    postThemeMessage(detected);
+  };
+
+  // Wait for iframe with improved retry logic
+  let retryCount = 0;
+  const maxRetries = 50; // ~5 seconds with 100ms intervals
+  const waitForIframe = () => {
+    const iframe = document.querySelector('iframe.giscus-frame');
+    if (iframe) {
+      // Found iframe, send theme
+      if (iframe instanceof HTMLIFrameElement) {
+        const sendTheme = () => {
+          postThemeMessage();
+        };
+        
+        // Try to send immediately and also on load event
+        sendTheme();
+        if (!iframe.complete) {
+          iframe.addEventListener('load', sendTheme, { once: true });
+        }
+      }
+      return;
+    }
+
+    // Retry if not found yet
+    retryCount++;
+    if (retryCount < maxRetries) {
+      setTimeout(waitForIframe, 100);
+    }
+  };
+
+  // Set initial theme before Giscus loads
+  setInitialTheme();
+
+  // Listen for DOM changes (class/data-theme attribute)
+  const observer = new MutationObserver(() => {
+    debouncedSync(() => syncCommentTheme());
+  });
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['class', 'data-theme'],
+  });
+
+  // Listen for custom theme change events
+  window.addEventListener('themechange', (event) => {
+    const detail = event?.detail || {};
+    const resolved = detail.resolved || getEffectiveTheme();
+    debouncedSync(() => syncCommentTheme(resolved));
+  });
+
+  // Listen for storage events (cross-tab synchronization)
+  window.addEventListener('storage', (event) => {
+    if (event.key === 'theme' && (event.newValue === 'light' || event.newValue === 'dark')) {
+      debouncedSync(() => syncCommentTheme());
+    }
+  });
+
+  // Listen for system theme changes (if using system preference)
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  const handleSystemThemeChange = () => {
+    // Only sync if theme might be using system preference
+    try {
+      const stored = localStorage.getItem('theme');
+      if (!stored || stored === 'system') {
+        debouncedSync(() => syncCommentTheme());
+      }
+    } catch (e) {
+      // Ignore localStorage errors
+    }
+  };
+  
+  if (mediaQuery.addEventListener) {
+    mediaQuery.addEventListener('change', handleSystemThemeChange);
+  }
+
+  // Initial sync and wait for iframe
+  syncCommentTheme();
+  waitForIframe();
+})();</script> <div id="page-bottom-anchor" aria-hidden="true" style="height: 1px;"></div> </article>  </div> <div class="fixed inset-0 z-50 pointer-events-none data-[open=true]:pointer-events-auto lg:hidden" data-mobile-toc data-open="false" aria-hidden="true"><div class="absolute inset-0 bg-zinc-900/40 opacity-0 transition duration-200 data-[open=true]:opacity-100 dark:bg-black/50" data-mobile-toc-backdrop></div><div id="mobile-toc-drawer" role="dialog" aria-modal="true" aria-label="文章目录" class="absolute inset-x-0 bottom-0 translate-y-full rounded-t-2xl border border-zinc-200 bg-neutral-50/95 shadow-2xl ring-1 ring-black/5 transition duration-200 data-[open=true]:translate-y-0 dark:border-zinc-800 dark:bg-zinc-900/95 dark:ring-white/10" data-mobile-toc-drawer><div class="flex items-center justify-between gap-3 px-4 pt-4 pb-3"><div><p class="text-sm font-semibold text-zinc-900 dark:text-zinc-50">文章目录</p><p class="text-xs text-zinc-500 dark:text-zinc-400">点击条目可跳转</p></div><button type="button" class="rounded-full border border-zinc-200 bg-neutral-50 px-3 py-1 text-sm font-medium text-zinc-800 shadow-sm transition hover:text-sky-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:text-sky-400 dark:focus-visible:ring-offset-zinc-900" data-mobile-toc-close>
+关闭
+</button></div><div class="max-h-[60vh] overflow-y-auto px-4 pb-5" data-mobile-toc-scroll><ol class="space-y-3 text-sm"><li><a href="#训练的步骤" data-toc-link data-mobile-toc-link data-target="训练的步骤" title="训练的步骤¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>训练的步骤¶</span></a></li><li><a href="#存在问题--挑战" data-toc-link data-mobile-toc-link data-target="存在问题--挑战" title="存在问题 / 挑战¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>存在问题 / 挑战¶</span></a><ol class="mt-1 space-y-1"><li><a href="#权重同步" data-toc-link data-mobile-toc-link data-target="权重同步" title="权重同步¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>权重同步¶</span></a></li><li><a href="#onpolicy-的挑战" data-toc-link data-mobile-toc-link data-target="onpolicy-的挑战" title="OnPolicy 的挑战¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>OnPolicy 的挑战¶</span></a></li></ol></li><li><a href="#性能提速方案" data-toc-link data-mobile-toc-link data-target="性能提速方案" title="性能提速方案¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>性能提速方案¶</span></a><ol class="mt-1 space-y-1"><li><a href="#负载调整" data-toc-link data-mobile-toc-link data-target="负载调整" title="负载调整¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>负载调整¶</span></a></li><li><a href="#异步训练" data-toc-link data-mobile-toc-link data-target="异步训练" title="异步训练¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>异步训练¶</span></a></li><li><a href="#权重同步-1" data-toc-link data-mobile-toc-link data-target="权重同步-1" title="权重同步¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>权重同步¶</span></a></li><li><a href="#rollout-提速" data-toc-link data-mobile-toc-link data-target="rollout-提速" title="Rollout 提速¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>Rollout 提速¶</span></a></li></ol></li></ol></div></div></div><script type="module">const c=document.querySelector("[data-mobile-toc]"),a=document.querySelector("[data-mobile-toc-drawer]"),s=document.querySelector("[data-mobile-toc-backdrop]"),p=()=>Array.from(document.querySelectorAll("[data-mobile-toc-open]")),k=document.querySelector("[data-mobile-toc-close]"),g=()=>Array.from((a??c)?.querySelectorAll("[data-mobile-toc-link]")??[]),o=document.body,S=window.matchMedia("(prefers-reduced-motion: reduce)");S.matches;const h=()=>{const e=getComputedStyle(document.documentElement).getPropertyValue("--site-header-height");return parseFloat(e)||0};let l=0;const v=50,L=e=>window.dispatchEvent(new CustomEvent("mobile-toc:toggle",{detail:{open:e}})),A=e=>{p().forEach(n=>n.setAttribute("aria-expanded",e?"true":"false"))},i=e=>{e.preventDefault(),r(!0)},f=()=>{p().forEach(e=>{e.removeEventListener("click",i),e.addEventListener("click",i)})},T=()=>{l=window.scrollY,o.style.position="fixed",o.style.width="100%",o.style.top=`-${l}px`},B=()=>{o.style.position="",o.style.width="",o.style.top="",window.scrollTo({top:l})},r=e=>{!c||!a||(c.dataset.open=String(e),a.dataset.open=String(e),s?.setAttribute("data-open",String(e)),c.setAttribute("aria-hidden",e?"false":"true"),A(e),L(e),e?T():B())},y=()=>{const e=h();g().map(t=>document.getElementById(t.dataset.target||"")).filter(t=>!!t).forEach(t=>{t.style.scrollMarginTop=`${e+16}px`})},d=e=>`#${encodeURIComponent(e)}`,w=(e,n=!1)=>{const t=document.getElementById(e);if(!t)return;const E=h(),b=window.scrollY+t.getBoundingClientRect().top-E-16;n?history.replaceState(null,"",d(e)):history.pushState(null,"",d(e)),window.scrollTo({top:b,behavior:"auto"})};f();const O=new MutationObserver(f);O.observe(document.body,{subtree:!0,childList:!0,attributes:!0,attributeFilter:["data-mobile-toc-open"]});k?.addEventListener("click",()=>r(!1));s?.addEventListener("click",e=>{e.target===s&&r(!1)});const u=e=>{const t=e.currentTarget?.dataset.target;t&&(e.preventDefault(),e.stopPropagation(),r(!1),setTimeout(()=>w(t),v))};g().forEach(e=>{e.removeEventListener("click",u),e.addEventListener("click",u)});window.addEventListener("keydown",e=>{e.key==="Escape"&&r(!1)});y();window.addEventListener("headerheightchange",y);const m=decodeURIComponent(location.hash.replace(/^#/,""));m&&requestAnimationFrame(()=>w(m,!0));</script> <div class="floating-action-stack fixed z-40 flex flex-col items-end gap-3 lg:hidden pointer-events-auto transition-opacity data-[toc-open=true]:opacity-0 data-[toc-open=true]:pointer-events-none" data-floating-action-stack style="inset-inline-end: calc(env(safe-area-inset-right, 0px) + 1rem); inset-block-start: 50%; transform: translateY(-50%);"><button type="button" class="floating-action-stack__button h-11 w-11 rounded-full border border-gray-200 bg-white/90 text-gray-900 shadow-lg backdrop-blur-sm ring-offset-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 hover:-translate-y-0.5 hover:border-blue-200 hover:text-blue-600 data-[visible=false]:opacity-0 data-[visible=false]:pointer-events-none data-[visible=true]:opacity-100 data-[visible=true]:pointer-events-auto dark:border-gray-800 dark:bg-gray-900/85 dark:text-gray-100 dark:ring-offset-gray-900 dark:hover:border-blue-500/50 dark:hover:text-blue-300" data-floating-action-button data-action="toc" data-visible="true" style="transition-delay: 0ms;" aria-label="打开目录抽屉" data-mobile-toc-open="true"><span class="sr-only">目录</span><span aria-hidden="true" class="text-base">📑</span></button></div><script type="module">const o=document.querySelector("[data-floating-action-stack]"),r=o?.querySelector('[data-action="toc"]'),e=document.querySelector("[data-mobile-toc]"),a=t=>{o&&(o.dataset.tocOpen=t?"true":"false")};a(e?.dataset.open==="true");r?.addEventListener("click",()=>{requestAnimationFrame(()=>r?.blur())});window.addEventListener("mobile-toc:toggle",t=>{const n=t.detail;n&&a(n.open)});e&&new MutationObserver(()=>{a(e.dataset.open==="true")}).observe(e,{attributes:!0,attributeFilter:["data-open"]});</script> <button type="button" class="fixed left-1/2 top-20 z-40 -translate-x-1/2 rounded-full border border-zinc-200 bg-white/95 px-4 py-2 text-sm font-medium text-zinc-900 shadow-lg backdrop-blur-sm transition data-[visible=false]:pointer-events-none data-[visible=false]:-translate-y-2 data-[visible=false]:opacity-0 data-[visible=true]:opacity-100 dark:border-zinc-800 dark:bg-zinc-900/90 dark:text-zinc-100" data-scroll-up-top-button data-target-selector="[data-article]" data-visible="false" aria-label="回到文章顶部">
+回到顶部
+</button> <script type="module">const t=document.querySelector("[data-scroll-up-top-button]"),f=t?.dataset.targetSelector||"[data-article]",d=document.querySelector(f),m=window.matchMedia("(prefers-reduced-motion: reduce)");if(!t||!d)t&&(t.dataset.visible="false");else{let o=0,l=window.scrollY,r=!1;const u=()=>{const e=getComputedStyle(document.documentElement).getPropertyValue("--site-header-height");return parseFloat(e)||0},s=()=>{o=d.getBoundingClientRect().top+window.scrollY},a=e=>{t.dataset.visible=e?"true":"false"},n=()=>{const e=window.scrollY,i=e-l,w=Math.abs(i)>=6;e<=o+140?a(!1):w&&a(i<0),l=e,r=!1},c=()=>{r||(r=!0,requestAnimationFrame(n))},p=()=>{const e=Math.max(0,o-u()-12);window.scrollTo({top:e,behavior:m.matches?"auto":"smooth"})};s(),n(),window.addEventListener("scroll",c,{passive:!0}),window.addEventListener("resize",()=>{s(),c()}),window.addEventListener("load",()=>{s(),n()},{once:!0}),t.addEventListener("click",p)}</script> </main> <footer class="py-8 mt-auto border-t border-zinc-200 dark:border-zinc-800"> <div class="container mx-auto px-4 text-center text-zinc-500 max-w-4xl">
+&copy; 2026 Yuanle Liu. All rights reserved. </div> </footer>  <script type="module" src="/blog-preview/previews/pr-449/_astro/Layout.astro_astro_type_script_index_0_lang.DsFEAATy.js"></script> <script type="module">const i=new WeakMap,c=(e,t)=>{e.dataset.state=t,t==="copied"?e.textContent="Copied":t==="error"?e.textContent="Failed":e.textContent="Copy";const o=i.get(e);if(o&&window.clearTimeout(o),t!=="idle"){const r=window.setTimeout(()=>c(e,"idle"),2e3);i.set(e,r)}},n=async e=>{const t=e.closest(".code-block");if(!t)return;const o=t.getAttribute("data-raw-code")??"";try{await navigator.clipboard.writeText(o),c(e,"copied")}catch(r){console.error("Copy failed",r),c(e,"error")}},s=()=>{document.addEventListener("click",e=>{const o=e.target?.closest("button.code-block__copy");o&&(e.preventDefault(),n(o))})},a=()=>{typeof document>"u"||s()};a();</script> <script type="module">function d(){const n=document.querySelector("[data-site-header]");if(!n){document.documentElement.style.setProperty("--site-header-height","0px");return}let i=0;const t=()=>{const e=n.getBoundingClientRect().height;Math.abs(e-i)>.5&&(i=e,document.documentElement.style.setProperty("--site-header-height",`${e}px`),window.dispatchEvent(new CustomEvent("headerheightchange",{detail:{height:e}})))};t(),"ResizeObserver"in window&&new ResizeObserver(()=>{t()}).observe(n),window.addEventListener("resize",t,{passive:!0}),window.addEventListener("load",t,{once:!0})}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",d):d();</script> </body> </html> <dialog id="article-image-zoom-dialog" class="fixed inset-0 m-0 h-screen w-screen max-h-none max-w-none touch-none border-0 bg-black/85 p-0 backdrop:bg-black/85 [&[open]]:grid [&[open]]:place-items-center" aria-label="图片预览"> <button type="button" data-image-zoom-close class="absolute right-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-2xl text-white transition hover:bg-black/70 focus:outline-none focus:ring-2 focus:ring-white" aria-label="关闭预览">
+×
+</button> <img data-image-zoom-preview alt="" draggable="false" class="max-h-[90vh] max-w-[90vw] touch-none select-none rounded-lg bg-zinc-100 p-2 object-contain shadow-2xl transition-transform duration-150 ease-out will-change-transform dark:bg-zinc-800" loading="eager" decoding="async"> <div class="pointer-events-none absolute bottom-4 left-1/2 z-10 -translate-x-1/2 rounded-full bg-black/55 px-3 py-2"> <div class="pointer-events-auto flex items-center gap-2 text-sm text-white"> <button type="button" data-image-zoom-out class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/35 hover:bg-white/10" aria-label="缩小">
+−
+</button> <span data-image-zoom-level class="min-w-14 text-center tabular-nums">100%</span> <button type="button" data-image-zoom-in class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/35 hover:bg-white/10" aria-label="放大">
++
+</button> </div> </div> </dialog> <dialog id="article-share-dialog" class="w-[min(92vw,640px)] rounded-2xl border border-zinc-200 bg-white p-0 text-zinc-900 shadow-2xl backdrop:bg-black/50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100" aria-label="分享文章"> <div class="flex items-center justify-between border-b border-zinc-200 px-5 py-4 dark:border-zinc-800"> <h2 class="text-lg font-semibold">分享文章</h2> <button type="button" data-share-close class="inline-flex h-9 w-9 items-center justify-center rounded-full text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200" aria-label="关闭分享窗口">
+×
+</button> </div> <div class="space-y-5 px-5 py-4"> <section class="space-y-2"> <div class="flex items-center justify-between gap-3"> <h3 class="text-sm font-medium text-zinc-700 dark:text-zinc-300">Markdown 链接</h3> <button type="button" class="rounded-md border border-zinc-300 px-3 py-1.5 text-sm transition hover:border-zinc-400 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:border-zinc-500 dark:hover:bg-zinc-800" data-share-copy="markdown">
+复制
+</button> </div> <pre class="overflow-x-hidden whitespace-pre-wrap break-all rounded-lg bg-zinc-100 px-3 py-2 text-sm text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200" data-share-text="markdown">      </pre> </section> <section class="space-y-2"> <div class="flex items-center justify-between gap-3"> <h3 class="text-sm font-medium text-zinc-700 dark:text-zinc-300">标题 + 链接</h3> <button type="button" class="rounded-md border border-zinc-300 px-3 py-1.5 text-sm transition hover:border-zinc-400 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:border-zinc-500 dark:hover:bg-zinc-800" data-share-copy="plain">
+复制
+</button> </div> <pre class="overflow-x-hidden whitespace-pre-wrap break-all rounded-lg bg-zinc-100 px-3 py-2 text-sm text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200" data-share-text="plain">      </pre> </section> <p data-share-status class="min-h-5 text-sm text-emerald-600 dark:text-emerald-400" aria-live="polite"></p> </div> </dialog> <script type="module" src="/blog-preview/previews/pr-449/_astro/_...slug_.astro_astro_type_script_index_0_lang.Bbz5kgQv.js"></script>
