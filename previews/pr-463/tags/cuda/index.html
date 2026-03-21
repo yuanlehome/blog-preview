@@ -1,0 +1,185 @@
+<!DOCTYPE html><html lang="en" data-astro-cid-sckkx6r4> <head><script>(() => {
+  const storageKey = 'theme';
+  const className = 'dark';
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  const validThemes = ['light', 'dark'];
+  let currentPreference = (() => {
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored && validThemes.includes(stored)) return stored;
+    } catch (error) {
+      console.warn('Unable to access localStorage for theme:', error);
+    }
+    return mediaQuery.matches ? 'dark' : 'light';
+  })();
+
+  const resolveTheme = (preference) => (preference === 'dark' ? 'dark' : 'light');
+
+  const applyTheme = (preference) => {
+    const effectiveTheme = resolveTheme(preference);
+    document.documentElement.classList.toggle(className, effectiveTheme === 'dark');
+    document.documentElement.dataset.theme = effectiveTheme;
+    return effectiveTheme;
+  };
+
+  const dispatchChange = (preference) => {
+    const resolved = document.documentElement.classList.contains(className) ? 'dark' : 'light';
+    window.dispatchEvent(
+      new CustomEvent('themechange', {
+        detail: { theme: preference, resolved },
+      }),
+    );
+  };
+
+  applyTheme(currentPreference);
+
+  window.__setTheme = (next) => {
+    const preference = validThemes.includes(String(next)) ? String(next) : resolveTheme(currentPreference);
+    currentPreference = preference;
+    try {
+      localStorage.setItem(storageKey, preference);
+    } catch (error) {
+      console.warn('Unable to persist theme selection:', error);
+    }
+    applyTheme(preference);
+    dispatchChange(preference);
+  };
+})();</script><meta charset="UTF-8"><meta name="description" content="包含 CUDA 标签的文章列表，共 6 篇"><meta name="viewport" content="width=device-width"><link rel="icon" type="image/x-icon" href="/blog-preview/previews/pr-463/favicon.ico"><link rel="icon" type="image/png" sizes="32x32" href="/blog-preview/previews/pr-463/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/blog-preview/previews/pr-463/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/blog-preview/previews/pr-463/apple-touch-icon.png"><meta name="generator" content="Astro v5.16.6"><link rel="canonical" href="https://yuanlehome.github.io/blog-preview/previews/pr-463/tags/cuda/"><meta property="og:title" content="CUDA | Tags | Yuanle Liu"><meta property="og:description" content="包含 CUDA 标签的文章列表，共 6 篇"><meta property="og:image" content="/blog-preview/previews/pr-463/placeholder-social.jpg"><meta property="og:type" content="article"><meta property="og:url" content="https://yuanlehome.github.io/blog-preview/previews/pr-463/tags/cuda/"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="CUDA | Tags | Yuanle Liu"><meta name="twitter:description" content="包含 CUDA 标签的文章列表，共 6 篇"><meta name="twitter:image" content="/blog-preview/previews/pr-463/placeholder-social.jpg"><title>CUDA | Tags | Yuanle Liu</title><style>:root {
+  /* Typography */
+  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial, Noto Sans SC, PingFang SC, Microsoft YaHei, sans-serif;
+  --font-serif: ui-serif, Georgia, Cambria, Times New Roman, Times, serif;
+  --font-mono: JetBrains Mono, Fira Code, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  --font-size-4xl: 2.25rem;
+  --line-height-body: 1.75;
+  --line-height-heading: 1.3;
+  --line-height-code: 1.65;
+  --line-height-tight: 1.25;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Components */
+  --radius-sm: 0.35rem;
+  --radius-md: 0.65rem;
+  --radius-lg: 0.9rem;
+  --radius-xl: 0.75rem;
+  --shadow-card: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-code-block: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-header: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --border-style: solid;
+  --border-width: 1px;
+  --motion-duration: 160ms;
+  --motion-easing: ease;
+  --spacing-multiplier: 1;
+
+  /* Light Mode Colors */
+  --color-brand: #0284c7;
+  --color-accent: #0284c7;
+  --color-background: #fafafa;
+  --color-foreground: #18181b;
+  --color-muted: #71717a;
+  --color-border: #e4e4e7;
+  --color-card: #f4f4f5;
+  --color-code-background: #f4f4f5;
+  --color-code-foreground: #18181b;
+  --color-code-border: #e4e4e7;
+  --color-code-keyword: #0284c7;
+  --color-code-string: #059669;
+  --color-code-comment: #a1a1aa;
+  --color-code-function: #0284c7;
+
+  /* Code block specific (legacy support) */
+  --code-font: var(--font-mono);
+  --code-radius: 0.9rem;
+  --code-border: 1px solid var(--color-code-border);
+  --code-bg: var(--color-code-background);
+  --code-fg: var(--color-code-foreground);
+  --code-scrollbar: rgb(203 213 225 / 0.75);
+  --code-highlight-bg: rgb(59 130 246 / 0.12);
+  --code-highlight-accent: rgb(59 130 246);
+
+  /* Header specific (legacy support) */
+  --header-bg: rgb(248 250 252 / 0.92);
+  --header-bg-scrolled: rgb(248 250 252 / 0.98);
+  --header-border: rgb(226 232 240 / 0.9);
+  --header-shadow: var(--shadow-header);
+  --header-shadow-strong: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+.dark {
+  /* Dark Mode Colors */
+  --color-brand: #38bdf8;
+  --color-accent: #38bdf8;
+  --color-background: #18181b;
+  --color-foreground: #fafafa;
+  --color-muted: #a1a1aa;
+  --color-border: #3f3f46;
+  --color-card: #27272a;
+  --color-code-background: #1f1f23;
+  --color-code-foreground: #e4e4e7;
+  --color-code-border: #3f3f46;
+  --color-code-keyword: #38bdf8;
+  --color-code-string: #34d399;
+  --color-code-comment: #71717a;
+  --color-code-function: #38bdf8;
+
+  /* Dark mode shadows */
+  --shadow-card: 0 10px 30px rgb(0 0 0 / 0.28);
+  --shadow-code-block: 0 10px 30px rgb(0 0 0 / 0.28);
+  --shadow-header: 0 10px 30px rgb(0 0 0 / 0.28);
+
+  /* Code block specific (legacy support) */
+  --code-border: 1px solid var(--color-code-border);
+  --code-bg: var(--color-code-background);
+  --code-fg: var(--color-code-foreground);
+  --code-scrollbar: rgb(71 85 105 / 0.8);
+  --code-highlight-bg: rgb(59 130 246 / 0.2);
+  --code-highlight-accent: rgb(96 165 250);
+
+  /* Header specific (legacy support) */
+  --header-bg: rgb(15 23 42 / 0.72);
+  --header-bg-scrolled: rgb(15 23 42 / 0.8400000000000001);
+  --header-border: rgb(71 85 105 / 0.8);
+  --header-shadow: var(--shadow-header);
+  --header-shadow-strong: 0 20px 40px rgb(0 0 0 / 0.35);
+}
+</style><link rel="stylesheet" href="/blog-preview/previews/pr-463/_astro/_slug_.6007L5ih.css"></head> <body class="bg-neutral-50 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 transition-colors duration-300 min-h-screen flex flex-col" data-astro-cid-sckkx6r4>  <header class="site-header header-variant-frosted" data-header data-site-header> <div class="container mx-auto px-5 py-3 sm:py-4 flex justify-between items-start max-w-5xl"> <a href="/blog-preview/previews/pr-463/" class="text-xl font-bold hover:text-sky-600 dark:hover:text-sky-400 flex items-center gap-2"> <img src="/blog-preview/previews/pr-463/placeholder-social.jpg" alt="Yuanle Liu" width="32" height="32" class="h-8 w-8 rounded"> <span class="hidden sm:inline">Yuanle Liu</span> </a> <nav class="flex items-start gap-3 items-center"> <a href="/blog-preview/previews/pr-463/" class="hover:underline inline-flex items-center "> Home </a><a href="/blog-preview/previews/pr-463/archive/" class="hover:underline inline-flex items-center "> Archive </a><a href="/blog-preview/previews/pr-463/tags/" class="hover:underline inline-flex items-center text-sky-600 dark:text-sky-400 font-semibold" aria-current="page"> Tags </a><a href="/blog-preview/previews/pr-463/about/" class="hover:underline inline-flex items-center "> About </a> <button id="theme-toggle" class="inline-flex items-center gap-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 px-1" aria-label="Toggle theme"> 🖥️ ☀️ </button> </nav> </div> </header> <script type="module">const u="theme",d=["light","dark"];const g=()=>{try{const e=localStorage.getItem(u);if(e==="light"||e==="dark")return e}catch(e){console.warn("Unable to read theme preference:",e)}return window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"},f=()=>document.documentElement.classList.contains("dark")?"dark":"light",p=e=>e==="dark"?"🌙":"☀️",T=e=>e==="dark"?"Dark":"Light",c=(e,n)=>{const t=document.getElementById("theme-toggle");if(!t)return;const o=n??f(),i=p(o),a=T(o);t.dataset.theme=e,t.textContent="";const s=document.createElement("span");s.className="inline-flex items-center justify-center",s.style.lineHeight="1",s.textContent=i,t.appendChild(s),t.appendChild(document.createTextNode(" "+a)),t.setAttribute("aria-label",`Toggle theme (current: ${a})`)},l=e=>{if(typeof window.__setTheme=="function"){window.__setTheme?.(e);return}const n=e==="dark"?"dark":"light";document.documentElement.classList.toggle("dark",n==="dark");try{localStorage.setItem(u,e)}catch(t){console.warn("Unable to persist theme preference:",t)}window.dispatchEvent(new CustomEvent("themechange",{detail:{theme:e,resolved:n}}))},k=(e,n)=>{const t=n.getBoundingClientRect(),o=e instanceof MouseEvent,i=o&&e.detail>0&&(e.clientX!==0||e.clientY!==0),a=i&&o?e.clientX:t.left+t.width/2,s=i&&o?e.clientY:t.top+t.height/2,r=Math.max(Math.hypot(a,s),Math.hypot(window.innerWidth-a,s),Math.hypot(a,window.innerHeight-s),Math.hypot(window.innerWidth-a,window.innerHeight-s));return{x:a,y:s,r}},E=({x:e,y:n,r:t})=>{const o=document.documentElement;o.style.setProperty("--theme-toggle-x",`${e}px`),o.style.setProperty("--theme-toggle-y",`${n}px`),o.style.setProperty("--theme-toggle-r",`${t}px`)},L=async(e,n,t)=>{if(t){l(e),c(e);return}E(n),document.documentElement.classList.add("theme-toggle-transitioning");const o=document;try{if(typeof o.startViewTransition=="function"){await o.startViewTransition(()=>{l(e),c(e)}).finished.catch(s=>{console.warn("Theme view transition failed:",s)});return}const i=document.createElement("div");i.className="theme-toggle-overlay",e==="dark"&&i.classList.add("dark"),document.body.appendChild(i);try{i.getBoundingClientRect(),i.classList.add("is-animating"),await new Promise(a=>{let s=!1;const r=()=>{s||(s=!0,a())};i.addEventListener("animationend",r,{once:!0}),i.addEventListener("animationcancel",r,{once:!0}),window.setTimeout(r,550)}),l(e),c(e)}finally{i.remove()}}finally{document.documentElement.classList.remove("theme-toggle-transitioning")}};let m=!1;const M=async e=>{if(m)return;const n=e.currentTarget instanceof HTMLElement?e.currentTarget:null;if(!n)return;m=!0,n.setAttribute("disabled","true");const t=g(),o=d[(d.indexOf(t)+1)%d.length];try{const i=k(e,n);await L(o,i,w.matches)}finally{window.setTimeout(()=>{n.removeAttribute("disabled"),m=!1},500)}},h=document.querySelector("[data-header]"),w=window.matchMedia("(prefers-reduced-motion: reduce)"),v=w.matches,y=()=>{if(!h)return;const e=window.scrollY>6;h.classList.toggle("is-scrolled",e)};document.getElementById("theme-toggle")?.addEventListener("click",M);c(g());window.addEventListener("themechange",e=>{const n=e.detail,t=n?.theme??g(),o=n?.resolved;c(t,o)});y();const b=()=>y();window.addEventListener("scroll",b,{passive:!0});v&&h?.classList.add("reduce-motion");</script> <main class="container mx-auto px-4 py-8 max-w-4xl"> <div class="mb-8"> <div class="flex items-center gap-3 mb-4"> <a href="/blog-preview/previews/pr-463/tags/" class="text-sky-600 hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300 transition-colors flex items-center gap-1" data-testid="back-to-tags"> <span aria-hidden="true">←</span> <span>所有标签</span> </a> </div> <h1 class="text-4xl font-bold mb-2">Tag: CUDA</h1> <p class="text-zinc-600 dark:text-zinc-400">共 6 篇文章</p> </div> <div id="posts-container"> <ul class="grid gap-6" id="post-list"> <li class="list-none"> <article class="relative block overflow-hidden rounded-2xl border border-zinc-200/80 bg-neutral-50/80 px-5 py-5 shadow-[0_10px_30px_rgb(24_24_27/0.04)] transition duration-200 ease-out hover:-translate-y-1 hover:border-sky-200 hover:shadow-[0_14px_36px_rgb(2_132_199/0.1)] motion-reduce:transform-none motion-reduce:shadow-none dark:border-zinc-800/80 dark:bg-zinc-900/70 dark:shadow-[0_16px_38px_rgb(0_0_0/0.4)] dark:hover:border-sky-500/35 dark:hover:shadow-[0_18px_40px_rgb(56_189_248/0.12)]"> <div class="flex flex-col gap-4 md:grid md:grid-cols-[minmax(0,1fr)_200px] md:items-start md:gap-6"> <div class="flex flex-col gap-2 md:h-full"> <h3 class="text-xl font-semibold leading-tight text-zinc-900 dark:text-zinc-100"> <a href="/blog-preview/previews/pr-463/cuda-pragma-unroll/" class="hover:text-sky-600 focus-visible:text-sky-600 dark:hover:text-sky-400 dark:focus-visible:text-sky-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900"> <span class="underline-offset-4 decoration-2 decoration-sky-200/0 transition hover:underline hover:decoration-sky-400/80 dark:hover:decoration-sky-400/60"> CUDA 性能知识点：#pragma unroll 可能让你更慢 </span> </a> </h3> <div class="flex flex-col gap-2 md:mt-auto"> <div class="text-sm text-zinc-600 dark:text-zinc-400"> <span class="flex items-center gap-1">📅 2026-02-26</span> </div> <div class="text-sm text-zinc-500 flex items-center gap-4 flex-wrap"> <span class="flex items-center gap-1">✍️ 531 字</span> <span class="flex items-center gap-1" title="531 words">
+⏱️ 2 min read </span> </div> <div class="flex flex-wrap gap-1.5 items-center" data-testid="post-list-tags"> <a href="/blog-preview/previews/pr-463/tags/cuda/" class="inline-flex items-center gap-1 rounded-full border text-xs px-2 py-0.5 transition-colors duration-200 font-medium cursor-pointer
+                          border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 
+                          dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 dark:hover:border-sky-700
+                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-tag-slug="cuda"> <span class="pointer-events-none">CUDA</span> </a>  </div> </div> </div> <a href="/blog-preview/previews/pr-463/cuda-pragma-unroll/" class="md:justify-self-end block overflow-hidden rounded-xl border border-zinc-200/70 shadow-sm transition duration-200 ease-out hover:shadow-md hover:border-sky-200 dark:border-zinc-800/70 dark:hover:border-sky-400/40 w-full max-w-[320px] md:max-w-[200px] md:min-w-[160px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900"> <img src="/blog-preview/previews/pr-463/images/notion/cuda-pragma-unroll/31422dca-4210-8077-90a4-dd78efb2762f.png" alt="CUDA 性能知识点：#pragma unroll 可能让你更慢" loading="lazy" class="aspect-[4/3] w-full object-cover transition duration-300 ease-out motion-safe:hover:scale-[1.01] motion-reduce:transform-none"> </a> </div> </article> </li><li class="list-none"> <article class="relative block overflow-hidden rounded-2xl border border-zinc-200/80 bg-neutral-50/80 px-5 py-5 shadow-[0_10px_30px_rgb(24_24_27/0.04)] transition duration-200 ease-out hover:-translate-y-1 hover:border-sky-200 hover:shadow-[0_14px_36px_rgb(2_132_199/0.1)] motion-reduce:transform-none motion-reduce:shadow-none dark:border-zinc-800/80 dark:bg-zinc-900/70 dark:shadow-[0_16px_38px_rgb(0_0_0/0.4)] dark:hover:border-sky-500/35 dark:hover:shadow-[0_18px_40px_rgb(56_189_248/0.12)]"> <div class="flex flex-col gap-4 md:grid md:grid-cols-[minmax(0,1fr)_200px] md:items-start md:gap-6"> <div class="flex flex-col gap-2 md:h-full"> <h3 class="text-xl font-semibold leading-tight text-zinc-900 dark:text-zinc-100"> <a href="/blog-preview/previews/pr-463/cuda-compute-sanitizer/" class="hover:text-sky-600 focus-visible:text-sky-600 dark:hover:text-sky-400 dark:focus-visible:text-sky-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900"> <span class="underline-offset-4 decoration-2 decoration-sky-200/0 transition hover:underline hover:decoration-sky-400/80 dark:hover:decoration-sky-400/60"> CUDA 非法内存访问的“隐式报错”机制与 compute-sanitizer 实战 </span> </a> </h3> <div class="flex flex-col gap-2 md:mt-auto"> <div class="text-sm text-zinc-600 dark:text-zinc-400"> <span class="flex items-center gap-1">📅 2026-02-26</span> </div> <div class="text-sm text-zinc-500 flex items-center gap-4 flex-wrap"> <span class="flex items-center gap-1">✍️ 866 字</span> <span class="flex items-center gap-1" title="866 words">
+⏱️ 2 min read </span> </div> <div class="flex flex-wrap gap-1.5 items-center" data-testid="post-list-tags"> <a href="/blog-preview/previews/pr-463/tags/cuda/" class="inline-flex items-center gap-1 rounded-full border text-xs px-2 py-0.5 transition-colors duration-200 font-medium cursor-pointer
+                          border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 
+                          dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 dark:hover:border-sky-700
+                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-tag-slug="cuda"> <span class="pointer-events-none">CUDA</span> </a>  </div> </div> </div> <a href="/blog-preview/previews/pr-463/cuda-compute-sanitizer/" class="md:justify-self-end block overflow-hidden rounded-xl border border-zinc-200/70 shadow-sm transition duration-200 ease-out hover:shadow-md hover:border-sky-200 dark:border-zinc-800/70 dark:hover:border-sky-400/40 w-full max-w-[320px] md:max-w-[200px] md:min-w-[160px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900"> <img src="/blog-preview/previews/pr-463/images/notion/cuda-compute-sanitizer/31422dca-4210-8030-8f09-ce3b30348366.png" alt="CUDA 非法内存访问的“隐式报错”机制与 compute-sanitizer 实战" loading="lazy" class="aspect-[4/3] w-full object-cover transition duration-300 ease-out motion-safe:hover:scale-[1.01] motion-reduce:transform-none"> </a> </div> </article> </li><li class="list-none"> <article class="relative block overflow-hidden rounded-2xl border border-zinc-200/80 bg-neutral-50/80 px-5 py-5 shadow-[0_10px_30px_rgb(24_24_27/0.04)] transition duration-200 ease-out hover:-translate-y-1 hover:border-sky-200 hover:shadow-[0_14px_36px_rgb(2_132_199/0.1)] motion-reduce:transform-none motion-reduce:shadow-none dark:border-zinc-800/80 dark:bg-zinc-900/70 dark:shadow-[0_16px_38px_rgb(0_0_0/0.4)] dark:hover:border-sky-500/35 dark:hover:shadow-[0_18px_40px_rgb(56_189_248/0.12)]"> <div class="flex flex-col gap-4 md:grid md:grid-cols-[minmax(0,1fr)_200px] md:items-start md:gap-6"> <div class="flex flex-col gap-2 md:h-full"> <h3 class="text-xl font-semibold leading-tight text-zinc-900 dark:text-zinc-100"> <a href="/blog-preview/previews/pr-463/inside-nvidia-gpus-anatomy-of-high-performance-matmul-kernels/" class="hover:text-sky-600 focus-visible:text-sky-600 dark:hover:text-sky-400 dark:focus-visible:text-sky-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900"> <span class="underline-offset-4 decoration-2 decoration-sky-200/0 transition hover:underline hover:decoration-sky-400/80 dark:hover:decoration-sky-400/60"> Inside NVIDIA GPUs: Anatomy of high performance matmul kernels </span> </a> </h3> <div class="flex flex-col gap-2 md:mt-auto"> <div class="text-sm text-zinc-600 dark:text-zinc-400"> <span class="flex items-center gap-1">📅 2025-12-29</span> </div> <div class="text-sm text-zinc-500 flex items-center gap-4 flex-wrap"> <span class="flex items-center gap-1">✍️ 15580 字</span> <span class="flex items-center gap-1" title="15580 words">
+⏱️ 35 min read </span> </div> <div class="flex flex-wrap gap-1.5 items-center" data-testid="post-list-tags"> <a href="/blog-preview/previews/pr-463/tags/cuda/" class="inline-flex items-center gap-1 rounded-full border text-xs px-2 py-0.5 transition-colors duration-200 font-medium cursor-pointer
+                          border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 
+                          dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 dark:hover:border-sky-700
+                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-tag-slug="cuda"> <span class="pointer-events-none">CUDA</span> </a><a href="/blog-preview/previews/pr-463/tags/performance/" class="inline-flex items-center gap-1 rounded-full border text-xs px-2 py-0.5 transition-colors duration-200 font-medium cursor-pointer
+                          border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 
+                          dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 dark:hover:border-sky-700
+                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-tag-slug="performance"> <span class="pointer-events-none">Performance</span> </a>  </div> </div> </div> <a href="/blog-preview/previews/pr-463/inside-nvidia-gpus-anatomy-of-high-performance-matmul-kernels/" class="md:justify-self-end block overflow-hidden rounded-xl border border-zinc-200/70 shadow-sm transition duration-200 ease-out hover:shadow-md hover:border-sky-200 dark:border-zinc-800/70 dark:hover:border-sky-400/40 w-full max-w-[320px] md:max-w-[200px] md:min-w-[160px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900"> <img src="/blog-preview/previews/pr-463/images/others/inside-nvidia-gpus-anatomy-of-high-performance-matmul-kernels/001-8ee6a76e.png" alt="Inside NVIDIA GPUs: Anatomy of high performance matmul kernels" loading="lazy" class="aspect-[4/3] w-full object-cover transition duration-300 ease-out motion-safe:hover:scale-[1.01] motion-reduce:transform-none"> </a> </div> </article> </li><li class="list-none"> <article class="relative block overflow-hidden rounded-2xl border border-zinc-200/80 bg-neutral-50/80 px-5 py-5 shadow-[0_10px_30px_rgb(24_24_27/0.04)] transition duration-200 ease-out hover:-translate-y-1 hover:border-sky-200 hover:shadow-[0_14px_36px_rgb(2_132_199/0.1)] motion-reduce:transform-none motion-reduce:shadow-none dark:border-zinc-800/80 dark:bg-zinc-900/70 dark:shadow-[0_16px_38px_rgb(0_0_0/0.4)] dark:hover:border-sky-500/35 dark:hover:shadow-[0_18px_40px_rgb(56_189_248/0.12)]"> <div class="flex flex-col gap-4 md:grid md:grid-cols-[minmax(0,1fr)_200px] md:items-start md:gap-6"> <div class="flex flex-col gap-2 md:h-full"> <h3 class="text-xl font-semibold leading-tight text-zinc-900 dark:text-zinc-100"> <a href="/blog-preview/previews/pr-463/my-first-multi-gpu-kernel-writing-all-to-all-for-amd-mi300x/" class="hover:text-sky-600 focus-visible:text-sky-600 dark:hover:text-sky-400 dark:focus-visible:text-sky-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900"> <span class="underline-offset-4 decoration-2 decoration-sky-200/0 transition hover:underline hover:decoration-sky-400/80 dark:hover:decoration-sky-400/60"> My first Multi-GPU kernel: Writing All-to-all for AMD MI300X </span> </a> </h3> <div class="flex flex-col gap-2 md:mt-auto"> <div class="text-sm text-zinc-600 dark:text-zinc-400"> <span class="flex items-center gap-1">📅 2025-11-02</span> </div> <div class="text-sm text-zinc-500 flex items-center gap-4 flex-wrap"> <span class="flex items-center gap-1">✍️ 10412 字</span> <span class="flex items-center gap-1" title="10412 words">
+⏱️ 24 min read </span> </div> <div class="flex flex-wrap gap-1.5 items-center" data-testid="post-list-tags"> <a href="/blog-preview/previews/pr-463/tags/cuda/" class="inline-flex items-center gap-1 rounded-full border text-xs px-2 py-0.5 transition-colors duration-200 font-medium cursor-pointer
+                          border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 
+                          dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 dark:hover:border-sky-700
+                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-tag-slug="cuda"> <span class="pointer-events-none">CUDA</span> </a>  </div> </div> </div> <a href="/blog-preview/previews/pr-463/my-first-multi-gpu-kernel-writing-all-to-all-for-amd-mi300x/" class="md:justify-self-end block overflow-hidden rounded-xl border border-zinc-200/70 shadow-sm transition duration-200 ease-out hover:shadow-md hover:border-sky-200 dark:border-zinc-800/70 dark:hover:border-sky-400/40 w-full max-w-[320px] md:max-w-[200px] md:min-w-[160px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900"> <img src="/blog-preview/previews/pr-463/images/others/my-first-multi-gpu-kernel-writing-all-to-all-for-amd-mi300x/001-169158dd.svg" alt="My first Multi-GPU kernel: Writing All-to-all for AMD MI300X" loading="lazy" class="aspect-[4/3] w-full object-cover transition duration-300 ease-out motion-safe:hover:scale-[1.01] motion-reduce:transform-none"> </a> </div> </article> </li><li class="list-none"> <article class="relative block overflow-hidden rounded-2xl border border-zinc-200/80 bg-neutral-50/80 px-5 py-5 shadow-[0_10px_30px_rgb(24_24_27/0.04)] transition duration-200 ease-out hover:-translate-y-1 hover:border-sky-200 hover:shadow-[0_14px_36px_rgb(2_132_199/0.1)] motion-reduce:transform-none motion-reduce:shadow-none dark:border-zinc-800/80 dark:bg-zinc-900/70 dark:shadow-[0_16px_38px_rgb(0_0_0/0.4)] dark:hover:border-sky-500/35 dark:hover:shadow-[0_18px_40px_rgb(56_189_248/0.12)]"> <div class="flex flex-col gap-4 md:grid md:grid-cols-[minmax(0,1fr)_200px] md:items-start md:gap-6"> <div class="flex flex-col gap-2 md:h-full"> <h3 class="text-xl font-semibold leading-tight text-zinc-900 dark:text-zinc-100"> <a href="/blog-preview/previews/pr-463/writing-speed-of-light-flash-attention-for-5090-in-cuda-c/" class="hover:text-sky-600 focus-visible:text-sky-600 dark:hover:text-sky-400 dark:focus-visible:text-sky-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900"> <span class="underline-offset-4 decoration-2 decoration-sky-200/0 transition hover:underline hover:decoration-sky-400/80 dark:hover:decoration-sky-400/60"> Writing Speed-of-Light Flash Attention for 5090 in CUDA C++ </span> </a> </h3> <div class="flex flex-col gap-2 md:mt-auto"> <div class="text-sm text-zinc-600 dark:text-zinc-400"> <span class="flex items-center gap-1">📅 2025-08-23</span> </div> <div class="text-sm text-zinc-500 flex items-center gap-4 flex-wrap"> <span class="flex items-center gap-1">✍️ 8753 字</span> <span class="flex items-center gap-1" title="8753 words">
+⏱️ 20 min read </span> </div> <div class="flex flex-wrap gap-1.5 items-center" data-testid="post-list-tags"> <a href="/blog-preview/previews/pr-463/tags/cuda/" class="inline-flex items-center gap-1 rounded-full border text-xs px-2 py-0.5 transition-colors duration-200 font-medium cursor-pointer
+                          border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 
+                          dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 dark:hover:border-sky-700
+                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-tag-slug="cuda"> <span class="pointer-events-none">CUDA</span> </a><a href="/blog-preview/previews/pr-463/tags/flashattention/" class="inline-flex items-center gap-1 rounded-full border text-xs px-2 py-0.5 transition-colors duration-200 font-medium cursor-pointer
+                          border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 
+                          dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 dark:hover:border-sky-700
+                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-tag-slug="flashattention"> <span class="pointer-events-none">FlashAttention</span> </a>  </div> </div> </div> <a href="/blog-preview/previews/pr-463/writing-speed-of-light-flash-attention-for-5090-in-cuda-c/" class="md:justify-self-end block overflow-hidden rounded-xl border border-zinc-200/70 shadow-sm transition duration-200 ease-out hover:shadow-md hover:border-sky-200 dark:border-zinc-800/70 dark:hover:border-sky-400/40 w-full max-w-[320px] md:max-w-[200px] md:min-w-[160px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900"> <img src="/blog-preview/previews/pr-463/images/others/writing-speed-of-light-flash-attention-for-5090-in-cuda-c/001-d8f57fc4.svg" alt="Writing Speed-of-Light Flash Attention for 5090 in CUDA C++" loading="lazy" class="aspect-[4/3] w-full object-cover transition duration-300 ease-out motion-safe:hover:scale-[1.01] motion-reduce:transform-none"> </a> </div> </article> </li><li class="list-none"> <article class="relative block overflow-hidden rounded-2xl border border-zinc-200/80 bg-neutral-50/80 px-5 py-5 shadow-[0_10px_30px_rgb(24_24_27/0.04)] transition duration-200 ease-out hover:-translate-y-1 hover:border-sky-200 hover:shadow-[0_14px_36px_rgb(2_132_199/0.1)] motion-reduce:transform-none motion-reduce:shadow-none dark:border-zinc-800/80 dark:bg-zinc-900/70 dark:shadow-[0_16px_38px_rgb(0_0_0/0.4)] dark:hover:border-sky-500/35 dark:hover:shadow-[0_18px_40px_rgb(56_189_248/0.12)]"> <div class="flex flex-col gap-4 md:grid md:grid-cols-[minmax(0,1fr)_200px] md:items-start md:gap-6"> <div class="flex flex-col gap-2 md:h-full"> <h3 class="text-xl font-semibold leading-tight text-zinc-900 dark:text-zinc-100"> <a href="/blog-preview/previews/pr-463/how-to-write-a-fast-matrix-multiplication-from-scratch-with-tensor-cores/" class="hover:text-sky-600 focus-visible:text-sky-600 dark:hover:text-sky-400 dark:focus-visible:text-sky-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900"> <span class="underline-offset-4 decoration-2 decoration-sky-200/0 transition hover:underline hover:decoration-sky-400/80 dark:hover:decoration-sky-400/60"> How To Write A Fast Matrix Multiplication From Scratch With Tensor Cores </span> </a> </h3> <div class="flex flex-col gap-2 md:mt-auto"> <div class="text-sm text-zinc-600 dark:text-zinc-400"> <span class="flex items-center gap-1">📅 2024-08-10</span> </div> <div class="text-sm text-zinc-500 flex items-center gap-4 flex-wrap"> <span class="flex items-center gap-1">✍️ 23070 字</span> <span class="flex items-center gap-1" title="23070 words">
+⏱️ 52 min read </span> </div> <div class="flex flex-wrap gap-1.5 items-center" data-testid="post-list-tags"> <a href="/blog-preview/previews/pr-463/tags/cuda/" class="inline-flex items-center gap-1 rounded-full border text-xs px-2 py-0.5 transition-colors duration-200 font-medium cursor-pointer
+                          border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 
+                          dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 dark:hover:border-sky-700
+                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-tag-slug="cuda"> <span class="pointer-events-none">CUDA</span> </a>  </div> </div> </div> <a href="/blog-preview/previews/pr-463/how-to-write-a-fast-matrix-multiplication-from-scratch-with-tensor-cores/" class="md:justify-self-end block overflow-hidden rounded-xl border border-zinc-200/70 shadow-sm transition duration-200 ease-out hover:shadow-md hover:border-sky-200 dark:border-zinc-800/70 dark:hover:border-sky-400/40 w-full max-w-[320px] md:max-w-[200px] md:min-w-[160px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900"> <img src="/blog-preview/previews/pr-463/images/others/how-to-write-a-fast-matrix-multiplication-from-scratch-with-tensor-cores/001-ea2647b5.png" alt="How To Write A Fast Matrix Multiplication From Scratch With Tensor Cores" loading="lazy" class="aspect-[4/3] w-full object-cover transition duration-300 ease-out motion-safe:hover:scale-[1.01] motion-reduce:transform-none"> </a> </div> </article> </li> </ul> </div> <script id="posts-data" type="application/json">[{"slug":"cuda-pragma-unroll","title":"CUDA 性能知识点：#pragma unroll 可能让你更慢"},{"slug":"cuda-compute-sanitizer","title":"CUDA 非法内存访问的“隐式报错”机制与 compute-sanitizer 实战"},{"slug":"inside-nvidia-gpus-anatomy-of-high-performance-matmul-kernels","title":"Inside NVIDIA GPUs: Anatomy of high performance matmul kernels"},{"slug":"my-first-multi-gpu-kernel-writing-all-to-all-for-amd-mi300x","title":"My first Multi-GPU kernel: Writing All-to-all for AMD MI300X"},{"slug":"writing-speed-of-light-flash-attention-for-5090-in-cuda-c","title":"Writing Speed-of-Light Flash Attention for 5090 in CUDA C++"},{"slug":"how-to-write-a-fast-matrix-multiplication-from-scratch-with-tensor-cores","title":"How To Write A Fast Matrix Multiplication From Scratch With Tensor Cores"}]</script> </main> <footer class="py-8 mt-auto border-t border-zinc-200 dark:border-zinc-800"> <div class="container mx-auto px-4 text-center text-zinc-500 max-w-4xl">
+&copy; 2026 Yuanle Liu. All rights reserved. </div> </footer> <script type="module">(function(){const s=document.getElementById("posts-data");if(!s)return;const c=JSON.parse(s.textContent||"[]"),n=document.getElementById("post-search"),t=document.getElementById("posts-container");if(!n||!t)return;const l=t.innerHTML;function a(){const o=n.value.toLowerCase().trim();if(!o){t.innerHTML=l;return}const r=c.filter(e=>e.title.toLowerCase().includes(o));if(r.length===0){t.innerHTML='<p class="text-zinc-500 dark:text-zinc-400">未找到匹配的文章</p>';return}t.querySelectorAll("#post-list > li").forEach(e=>{const i=e.querySelector("a");if(!i)return;const p=i.getAttribute("href")?.split("/").filter(Boolean).pop(),u=r.some(f=>f.slug===p);e.style.display=u?"":"none"})}n.addEventListener("input",a)})();</script>  <script type="module" src="/blog-preview/previews/pr-463/_astro/Layout.astro_astro_type_script_index_0_lang.DjXb9tth.js"></script> <script type="module">const i=new WeakMap,c=(e,t)=>{e.dataset.state=t,t==="copied"?e.textContent="Copied":t==="error"?e.textContent="Failed":e.textContent="Copy";const o=i.get(e);if(o&&window.clearTimeout(o),t!=="idle"){const r=window.setTimeout(()=>c(e,"idle"),2e3);i.set(e,r)}},n=async e=>{const t=e.closest(".code-block");if(!t)return;const o=t.getAttribute("data-raw-code")??"";try{await navigator.clipboard.writeText(o),c(e,"copied")}catch(r){console.error("Copy failed",r),c(e,"error")}},s=()=>{document.addEventListener("click",e=>{const o=e.target?.closest("button.code-block__copy");o&&(e.preventDefault(),n(o))})},a=()=>{typeof document>"u"||s()};a();</script> <script type="module">function d(){const n=document.querySelector("[data-site-header]");if(!n){document.documentElement.style.setProperty("--site-header-height","0px");return}let i=0;const t=()=>{const e=n.getBoundingClientRect().height;Math.abs(e-i)>.5&&(i=e,document.documentElement.style.setProperty("--site-header-height",`${e}px`),window.dispatchEvent(new CustomEvent("headerheightchange",{detail:{height:e}})))};t(),"ResizeObserver"in window&&new ResizeObserver(()=>{t()}).observe(n),window.addEventListener("resize",t,{passive:!0}),window.addEventListener("load",t,{once:!0})}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",d):d();</script> </body> </html>
