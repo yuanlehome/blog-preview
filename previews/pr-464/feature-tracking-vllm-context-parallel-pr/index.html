@@ -1,0 +1,1295 @@
+<!DOCTYPE html><html lang="en" data-astro-cid-sckkx6r4> <head><script>(() => {
+  const storageKey = 'theme';
+  const className = 'dark';
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  const validThemes = ['light', 'dark'];
+  let currentPreference = (() => {
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored && validThemes.includes(stored)) return stored;
+    } catch (error) {
+      console.warn('Unable to access localStorage for theme:', error);
+    }
+    return mediaQuery.matches ? 'dark' : 'light';
+  })();
+
+  const resolveTheme = (preference) => (preference === 'dark' ? 'dark' : 'light');
+
+  const applyTheme = (preference) => {
+    const effectiveTheme = resolveTheme(preference);
+    document.documentElement.classList.toggle(className, effectiveTheme === 'dark');
+    document.documentElement.dataset.theme = effectiveTheme;
+    return effectiveTheme;
+  };
+
+  const dispatchChange = (preference) => {
+    const resolved = document.documentElement.classList.contains(className) ? 'dark' : 'light';
+    window.dispatchEvent(
+      new CustomEvent('themechange', {
+        detail: { theme: preference, resolved },
+      }),
+    );
+  };
+
+  applyTheme(currentPreference);
+
+  window.__setTheme = (next) => {
+    const preference = validThemes.includes(String(next)) ? String(next) : resolveTheme(currentPreference);
+    currentPreference = preference;
+    try {
+      localStorage.setItem(storageKey, preference);
+    } catch (error) {
+      console.warn('Unable to persist theme selection:', error);
+    }
+    applyTheme(preference);
+    dispatchChange(preference);
+  };
+})();</script><meta charset="UTF-8"><meta name="description" content="A minimal Astro blog"><meta name="viewport" content="width=device-width"><link rel="icon" type="image/x-icon" href="/blog-preview/previews/pr-464/favicon.ico"><link rel="icon" type="image/png" sizes="32x32" href="/blog-preview/previews/pr-464/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/blog-preview/previews/pr-464/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/blog-preview/previews/pr-464/apple-touch-icon.png"><meta name="generator" content="Astro v5.16.6"><link rel="canonical" href="https://yuanlehome.github.io/blog-preview/previews/pr-464/feature-tracking-vllm-context-parallel-pr/"><meta property="og:title" content="[Feature tracking] vllm Context Parallel PR 分析报告"><meta property="og:description" content="A minimal Astro blog"><meta property="og:image" content="/blog-preview/previews/pr-464/placeholder-social.jpg"><meta property="og:type" content="article"><meta property="og:url" content="https://yuanlehome.github.io/blog-preview/previews/pr-464/feature-tracking-vllm-context-parallel-pr/"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="[Feature tracking] vllm Context Parallel PR 分析报告"><meta name="twitter:description" content="A minimal Astro blog"><meta name="twitter:image" content="/blog-preview/previews/pr-464/placeholder-social.jpg"><title>[Feature tracking] vllm Context Parallel PR 分析报告</title><style>:root {
+  /* Typography */
+  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial, Noto Sans SC, PingFang SC, Microsoft YaHei, sans-serif;
+  --font-serif: ui-serif, Georgia, Cambria, Times New Roman, Times, serif;
+  --font-mono: JetBrains Mono, Fira Code, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  --font-size-4xl: 2.25rem;
+  --line-height-body: 1.75;
+  --line-height-heading: 1.3;
+  --line-height-code: 1.65;
+  --line-height-tight: 1.25;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Components */
+  --radius-sm: 0.35rem;
+  --radius-md: 0.65rem;
+  --radius-lg: 0.9rem;
+  --radius-xl: 0.75rem;
+  --shadow-card: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-code-block: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-header: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --border-style: solid;
+  --border-width: 1px;
+  --motion-duration: 160ms;
+  --motion-easing: ease;
+  --spacing-multiplier: 1;
+
+  /* Light Mode Colors */
+  --color-brand: #0284c7;
+  --color-accent: #0284c7;
+  --color-background: #fafafa;
+  --color-foreground: #18181b;
+  --color-muted: #71717a;
+  --color-border: #e4e4e7;
+  --color-card: #f4f4f5;
+  --color-code-background: #f4f4f5;
+  --color-code-foreground: #18181b;
+  --color-code-border: #e4e4e7;
+  --color-code-keyword: #0284c7;
+  --color-code-string: #059669;
+  --color-code-comment: #a1a1aa;
+  --color-code-function: #0284c7;
+
+  /* Code block specific (legacy support) */
+  --code-font: var(--font-mono);
+  --code-radius: 0.9rem;
+  --code-border: 1px solid var(--color-code-border);
+  --code-bg: var(--color-code-background);
+  --code-fg: var(--color-code-foreground);
+  --code-scrollbar: rgb(203 213 225 / 0.75);
+  --code-highlight-bg: rgb(59 130 246 / 0.12);
+  --code-highlight-accent: rgb(59 130 246);
+
+  /* Header specific (legacy support) */
+  --header-bg: rgb(248 250 252 / 0.92);
+  --header-bg-scrolled: rgb(248 250 252 / 0.98);
+  --header-border: rgb(226 232 240 / 0.9);
+  --header-shadow: var(--shadow-header);
+  --header-shadow-strong: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+.dark {
+  /* Dark Mode Colors */
+  --color-brand: #38bdf8;
+  --color-accent: #38bdf8;
+  --color-background: #18181b;
+  --color-foreground: #fafafa;
+  --color-muted: #a1a1aa;
+  --color-border: #3f3f46;
+  --color-card: #27272a;
+  --color-code-background: #1f1f23;
+  --color-code-foreground: #e4e4e7;
+  --color-code-border: #3f3f46;
+  --color-code-keyword: #38bdf8;
+  --color-code-string: #34d399;
+  --color-code-comment: #71717a;
+  --color-code-function: #38bdf8;
+
+  /* Dark mode shadows */
+  --shadow-card: 0 10px 30px rgb(0 0 0 / 0.28);
+  --shadow-code-block: 0 10px 30px rgb(0 0 0 / 0.28);
+  --shadow-header: 0 10px 30px rgb(0 0 0 / 0.28);
+
+  /* Code block specific (legacy support) */
+  --code-border: 1px solid var(--color-code-border);
+  --code-bg: var(--color-code-background);
+  --code-fg: var(--color-code-foreground);
+  --code-scrollbar: rgb(71 85 105 / 0.8);
+  --code-highlight-bg: rgb(59 130 246 / 0.2);
+  --code-highlight-accent: rgb(96 165 250);
+
+  /* Header specific (legacy support) */
+  --header-bg: rgb(15 23 42 / 0.72);
+  --header-bg-scrolled: rgb(15 23 42 / 0.8400000000000001);
+  --header-border: rgb(71 85 105 / 0.8);
+  --header-shadow: var(--shadow-header);
+  --header-shadow-strong: 0 20px 40px rgb(0 0 0 / 0.35);
+}
+</style><link rel="stylesheet" href="/blog-preview/previews/pr-464/_astro/_slug_.mYVJTT-y.css">
+<style>.reading-progress[data-astro-cid-mu6cnre2]{position:fixed;inset:0 0 auto;height:3px;width:100%;background:transparent;z-index:50;pointer-events:none}.reading-progress__bar[data-astro-cid-mu6cnre2]{display:block;height:100%;width:100%;transform:scaleX(var(--progress-value, 0));transform-origin:left center;background:linear-gradient(90deg,var(--progress-color-start),var(--progress-color-end));transition:transform .1s linear}:root{--progress-color-start: #2563eb;--progress-color-end: #22d3ee}:root.dark{--progress-color-start: #38bdf8;--progress-color-end: #a855f7}@media(prefers-reduced-motion:reduce){.reading-progress__bar[data-astro-cid-mu6cnre2]{transition:none}}
+</style></head> <body class="bg-neutral-50 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 transition-colors duration-300 min-h-screen flex flex-col" data-astro-cid-sckkx6r4>  <div class="reading-progress" data-reading-progress data-target-selector="[data-article]" data-astro-cid-mu6cnre2> <span class="reading-progress__bar" data-reading-progress-bar data-astro-cid-mu6cnre2></span> </div>  <script type="module">const s=document.querySelector("[data-reading-progress]"),p=s?.dataset?.targetSelector||"[data-article]",g=s?.querySelector("[data-reading-progress-bar]"),o=document.querySelector(p);if(s&&g&&o){let n=0,a=0,t=!1;const u=(e,r,w)=>Math.min(Math.max(e,r),w),c=()=>{n=o.getBoundingClientRect().top+window.scrollY,a=o.scrollHeight},i=()=>{const e=Math.max(a-window.innerHeight,1),r=u((window.scrollY-n)/e,0,1);g.style.setProperty("--progress-value",r.toString()),t=!1},l=()=>{t||(t=!0,requestAnimationFrame(i))},d=()=>{c(),l()};c(),i(),window.addEventListener("scroll",l,{passive:!0}),window.addEventListener("resize",d),window.addEventListener("load",d,{once:!0})}</script> <header class="site-header header-variant-frosted" data-header data-site-header> <div class="container mx-auto px-5 py-3 sm:py-4 flex justify-between items-start max-w-5xl"> <a href="/blog-preview/previews/pr-464/" class="text-xl font-bold hover:text-sky-600 dark:hover:text-sky-400 flex items-center gap-2"> <img src="/blog-preview/previews/pr-464/placeholder-social.jpg" alt="Yuanle Liu" width="32" height="32" class="h-8 w-8 rounded"> <span class="hidden sm:inline">Yuanle Liu</span> </a> <nav class="flex items-start gap-3 items-center"> <a href="/blog-preview/previews/pr-464/" class="hover:underline inline-flex items-center "> Home </a><a href="/blog-preview/previews/pr-464/archive/" class="hover:underline inline-flex items-center "> Archive </a><a href="/blog-preview/previews/pr-464/tags/" class="hover:underline inline-flex items-center "> Tags </a><a href="/blog-preview/previews/pr-464/about/" class="hover:underline inline-flex items-center "> About </a> <button id="theme-toggle" class="inline-flex items-center gap-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 px-1" aria-label="Toggle theme"> 🖥️ ☀️ </button> </nav> </div> </header> <script type="module">const u="theme",d=["light","dark"];const g=()=>{try{const e=localStorage.getItem(u);if(e==="light"||e==="dark")return e}catch(e){console.warn("Unable to read theme preference:",e)}return window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"},f=()=>document.documentElement.classList.contains("dark")?"dark":"light",p=e=>e==="dark"?"🌙":"☀️",T=e=>e==="dark"?"Dark":"Light",c=(e,n)=>{const t=document.getElementById("theme-toggle");if(!t)return;const o=n??f(),i=p(o),a=T(o);t.dataset.theme=e,t.textContent="";const s=document.createElement("span");s.className="inline-flex items-center justify-center",s.style.lineHeight="1",s.textContent=i,t.appendChild(s),t.appendChild(document.createTextNode(" "+a)),t.setAttribute("aria-label",`Toggle theme (current: ${a})`)},l=e=>{if(typeof window.__setTheme=="function"){window.__setTheme?.(e);return}const n=e==="dark"?"dark":"light";document.documentElement.classList.toggle("dark",n==="dark");try{localStorage.setItem(u,e)}catch(t){console.warn("Unable to persist theme preference:",t)}window.dispatchEvent(new CustomEvent("themechange",{detail:{theme:e,resolved:n}}))},k=(e,n)=>{const t=n.getBoundingClientRect(),o=e instanceof MouseEvent,i=o&&e.detail>0&&(e.clientX!==0||e.clientY!==0),a=i&&o?e.clientX:t.left+t.width/2,s=i&&o?e.clientY:t.top+t.height/2,r=Math.max(Math.hypot(a,s),Math.hypot(window.innerWidth-a,s),Math.hypot(a,window.innerHeight-s),Math.hypot(window.innerWidth-a,window.innerHeight-s));return{x:a,y:s,r}},E=({x:e,y:n,r:t})=>{const o=document.documentElement;o.style.setProperty("--theme-toggle-x",`${e}px`),o.style.setProperty("--theme-toggle-y",`${n}px`),o.style.setProperty("--theme-toggle-r",`${t}px`)},L=async(e,n,t)=>{if(t){l(e),c(e);return}E(n),document.documentElement.classList.add("theme-toggle-transitioning");const o=document;try{if(typeof o.startViewTransition=="function"){await o.startViewTransition(()=>{l(e),c(e)}).finished.catch(s=>{console.warn("Theme view transition failed:",s)});return}const i=document.createElement("div");i.className="theme-toggle-overlay",e==="dark"&&i.classList.add("dark"),document.body.appendChild(i);try{i.getBoundingClientRect(),i.classList.add("is-animating"),await new Promise(a=>{let s=!1;const r=()=>{s||(s=!0,a())};i.addEventListener("animationend",r,{once:!0}),i.addEventListener("animationcancel",r,{once:!0}),window.setTimeout(r,550)}),l(e),c(e)}finally{i.remove()}}finally{document.documentElement.classList.remove("theme-toggle-transitioning")}};let m=!1;const M=async e=>{if(m)return;const n=e.currentTarget instanceof HTMLElement?e.currentTarget:null;if(!n)return;m=!0,n.setAttribute("disabled","true");const t=g(),o=d[(d.indexOf(t)+1)%d.length];try{const i=k(e,n);await L(o,i,w.matches)}finally{window.setTimeout(()=>{n.removeAttribute("disabled"),m=!1},500)}},h=document.querySelector("[data-header]"),w=window.matchMedia("(prefers-reduced-motion: reduce)"),v=w.matches,y=()=>{if(!h)return;const e=window.scrollY>6;h.classList.toggle("is-scrolled",e)};document.getElementById("theme-toggle")?.addEventListener("click",M);c(g());window.addEventListener("themechange",e=>{const n=e.detail,t=n?.theme??g(),o=n?.resolved;c(t,o)});y();const b=()=>y();window.addEventListener("scroll",b,{passive:!0});v&&h?.classList.add("reduce-motion");</script> <main class="container mx-auto px-4 py-8 max-w-6xl"> <div class="flex flex-col gap-6 lg:grid lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start lg:gap-12" data-post-layout> <div class="w-full" data-toc-shell> <aside class="hidden lg:block h-full"> <div class="flex h-full w-full flex-col gap-3 overflow-hidden rounded-xl border border-zinc-200 bg-neutral-50/80 p-4 shadow-md backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-900/50 lg:sticky lg:top-[var(--site-header-height)] lg:max-h-[calc(100vh-var(--site-header-height)-16px)] lg:h-[calc(100vh-var(--site-header-height)-16px)]" data-toc-container> <div class="space-y-1"> <p class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">文章目录</p> <p class="text-xs text-zinc-500 dark:text-zinc-400">快速跳转到你关心的章节</p> </div> <nav aria-label="文章目录" class="flex-1 min-h-0 overflow-y-auto pr-1" data-toc-scroll> <ol class="space-y-3 text-sm"> <li><a href="#一总体概况" data-toc-link data-mobile-toc-link data-target="一总体概况" title="一、总体概况¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>一、总体概况¶</span></a></li><li><a href="#二pr-分类统计" data-toc-link data-mobile-toc-link data-target="二pr-分类统计" title="二、PR 分类统计¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>二、PR 分类统计¶</span></a></li><li><a href="#三技术演进时间线里程碑视图" data-toc-link data-mobile-toc-link data-target="三技术演进时间线里程碑视图" title="三、技术演进时间线（里程碑视图）¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>三、技术演进时间线（里程碑视图）¶</span></a><ol class="mt-1 space-y-1"><li><a href="#阶段一dcp-基础能力落地2025年8月" data-toc-link data-mobile-toc-link data-target="阶段一dcp-基础能力落地2025年8月" title="阶段一：DCP 基础能力落地（2025年8月）¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>阶段一：DCP 基础能力落地（2025年8月）¶</span></a></li><li><a href="#阶段二dcp-多后端扩展2025年9月" data-toc-link data-mobile-toc-link data-target="阶段二dcp-多后端扩展2025年9月" title="阶段二：DCP 多后端扩展（2025年9月）¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>阶段二：DCP 多后端扩展（2025年9月）¶</span></a></li><li><a href="#阶段三dcp-稳定化与生产就绪2025年10月-11月" data-toc-link data-mobile-toc-link data-target="阶段三dcp-稳定化与生产就绪2025年10月-11月" title="阶段三：DCP 稳定化与生产就绪（2025年10月-11月）¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>阶段三：DCP 稳定化与生产就绪（2025年10月-11月）¶</span></a></li><li><a href="#阶段四pcp-正式引入2025年11月-12月" data-toc-link data-mobile-toc-link data-target="阶段四pcp-正式引入2025年11月-12月" title="阶段四：PCP 正式引入（2025年11月-12月）¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>阶段四：PCP 正式引入（2025年11月-12月）¶</span></a></li><li><a href="#阶段五架构重构与次世代并行2026年1月-3月" data-toc-link data-mobile-toc-link data-target="阶段五架构重构与次世代并行2026年1月-3月" title="阶段五：架构重构与次世代并行（2026年1月-3月）¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>阶段五：架构重构与次世代并行（2026年1月-3月）¶</span></a></li></ol></li><li><a href="#四核心技术解析" data-toc-link data-mobile-toc-link data-target="四核心技术解析" title="四、核心技术解析¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>四、核心技术解析¶</span></a><ol class="mt-1 space-y-1"><li><a href="#41-dcpdecode-context-parallelism" data-toc-link data-mobile-toc-link data-target="41-dcpdecode-context-parallelism" title="4.1 DCP（Decode Context Parallelism）¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>4.1 DCP（Decode Context Parallelism）¶</span></a></li><li><a href="#42-pcpprefill-context-parallelism" data-toc-link data-mobile-toc-link data-target="42-pcpprefill-context-parallelism" title="4.2 PCP（Prefill Context Parallelism）¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>4.2 PCP（Prefill Context Parallelism）¶</span></a></li><li><a href="#43-helix-并行context--tensor-联合并行" data-toc-link data-mobile-toc-link data-target="43-helix-并行context--tensor-联合并行" title="4.3 Helix 并行（Context + Tensor 联合并行）¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>4.3 Helix 并行（Context + Tensor 联合并行）¶</span></a></li></ol></li><li><a href="#五核心贡献者分析" data-toc-link data-mobile-toc-link data-target="五核心贡献者分析" title="五、核心贡献者分析¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>五、核心贡献者分析¶</span></a></li><li><a href="#六主要技术挑战与已知问题" data-toc-link data-mobile-toc-link data-target="六主要技术挑战与已知问题" title="六、主要技术挑战与已知问题¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>六、主要技术挑战与已知问题¶</span></a><ol class="mt-1 space-y-1"><li><a href="#61-已解决的核心问题" data-toc-link data-mobile-toc-link data-target="61-已解决的核心问题" title="6.1 已解决的核心问题¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>6.1 已解决的核心问题¶</span></a></li><li><a href="#62-当前开放的已知问题" data-toc-link data-mobile-toc-link data-target="62-当前开放的已知问题" title="6.2 当前开放的已知问题¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>6.2 当前开放的已知问题¶</span></a></li></ol></li><li><a href="#七关键趋势与判断" data-toc-link data-mobile-toc-link data-target="七关键趋势与判断" title="七、关键趋势与判断¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>七、关键趋势与判断¶</span></a><ol class="mt-1 space-y-1"><li><a href="#趋势1dcp-已进入生产就绪阶段" data-toc-link data-mobile-toc-link data-target="趋势1dcp-已进入生产就绪阶段" title="趋势1：DCP 已进入”生产就绪”阶段¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>趋势1：DCP 已进入”生产就绪”阶段¶</span></a></li><li><a href="#趋势2pcp-处于快速迭代中尚未稳定" data-toc-link data-mobile-toc-link data-target="趋势2pcp-处于快速迭代中尚未稳定" title="趋势2：PCP 处于”快速迭代”中，尚未稳定¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>趋势2：PCP 处于”快速迭代”中，尚未稳定¶</span></a></li><li><a href="#趋势3向统一并行框架演进" data-toc-link data-mobile-toc-link data-target="趋势3向统一并行框架演进" title="趋势3：向”统一并行框架”演进¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>趋势3：向”统一并行框架”演进¶</span></a></li><li><a href="#趋势4deepseek-架构驱动" data-toc-link data-mobile-toc-link data-target="趋势4deepseek-架构驱动" title="趋势4：DeepSeek 架构驱动¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>趋势4：DeepSeek 架构驱动¶</span></a></li><li><a href="#趋势5多硬件平台并重" data-toc-link data-mobile-toc-link data-target="趋势5多硬件平台并重" title="趋势5：多硬件平台并重¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>趋势5：多硬件平台并重¶</span></a></li></ol></li><li><a href="#八各阶段-pr-合并率分析" data-toc-link data-mobile-toc-link data-target="八各阶段-pr-合并率分析" title="八、各阶段 PR 合并率分析¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>八、各阶段 PR 合并率分析¶</span></a></li><li><a href="#九对实践者的建议" data-toc-link data-mobile-toc-link data-target="九对实践者的建议" title="九、对实践者的建议¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>九、对实践者的建议¶</span></a><ol class="mt-1 space-y-1"><li><a href="#使用-dcp" data-toc-link data-mobile-toc-link data-target="使用-dcp" title="使用 DCP：¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>使用 DCP：¶</span></a></li><li><a href="#使用-pcp" data-toc-link data-mobile-toc-link data-target="使用-pcp" title="使用 PCP：¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>使用 PCP：¶</span></a></li><li><a href="#关注-helix" data-toc-link data-mobile-toc-link data-target="关注-helix" title="关注 Helix：¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>关注 Helix：¶</span></a></li></ol></li><li><a href="#十附录完整-pr-索引" data-toc-link data-mobile-toc-link data-target="十附录完整-pr-索引" title="十、附录：完整 PR 索引¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>十、附录：完整 PR 索引¶</span></a><ol class="mt-1 space-y-1"><li><a href="#已合并-pr36个" data-toc-link data-mobile-toc-link data-target="已合并-pr36个" title="已合并 PR（36个）¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>已合并 PR（36个）¶</span></a></li><li><a href="#开放中的关键-pr29个节选重要" data-toc-link data-mobile-toc-link data-target="开放中的关键-pr29个节选重要" title="开放中的关键 PR（29个，节选重要）¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>开放中的关键 PR（29个，节选重要）¶</span></a></li></ol></li> </ol> </nav> </div> </aside> </div> <script type="module">const p=Array.from(document.querySelectorAll("[data-toc-link]")),e=document.querySelector("[data-toc-container]"),i=document.querySelector("[data-toc-shell]"),l=()=>{const t=getComputedStyle(document.documentElement).getPropertyValue("--site-header-height");return parseFloat(t)||0},r=window.matchMedia("(min-width: 1024px)"),g=p.map(t=>document.getElementById(t.dataset.target||"")).filter(t=>!!t),m=()=>{const t=l();g.forEach(n=>{n.style.scrollMarginTop=`${t+12}px`})},w=t=>`#${encodeURIComponent(t)}`,v=t=>decodeURIComponent(t.replace(/^#/,"")),f=t=>{p.forEach(n=>{const o=n.dataset.target===t;n.dataset.active=o?"true":"false",n.setAttribute("aria-current",o?"true":"false")})},u=(t,n=!1)=>{const o=document.getElementById(t);if(!o)return;const a=l(),c=window.scrollY+o.getBoundingClientRect().top-a-12;n?history.replaceState(null,"",w(t)):history.pushState(null,"",w(t)),window.scrollTo({top:c,behavior:"smooth"}),f(t)};p.forEach(t=>t.addEventListener("click",n=>{const o=t.dataset.target;o&&(n.preventDefault(),u(o))}));const y=()=>{e&&(e.dataset.fixed="false",e.style.position="",e.style.left="",e.style.width="",e.style.height="",e.style.maxHeight="",e.style.top="",i&&(i.style.minHeight=""))},x=()=>{if(!e||!i)return;const t=i.getBoundingClientRect(),n=l(),o=`calc(100vh - ${n}px - 16px)`;e.dataset.fixed="true",i.style.minHeight=`${e.offsetHeight}px`,e.style.position="fixed",e.style.top=`${n}px`,e.style.left=`${t.left}px`,e.style.width=`${t.width}px`,e.style.height=o,e.style.maxHeight=o},d=()=>{if(!e||e.dataset.fixed==="true"||!r.matches)return;const t=parseFloat(getComputedStyle(e).top||"0"),n=e.offsetTop-t;if(Number.isNaN(t)||window.scrollY<n)return;const o=e.getBoundingClientRect().top;Math.abs(o-t)>2&&x()},E=()=>{if(!r.matches){y();return}e?.dataset.fixed==="true"&&x()};if(g.length>0){m();const t=new IntersectionObserver(o=>{const a=o.filter(s=>s.isIntersecting).sort((s,h)=>s.target.getBoundingClientRect().top-h.target.getBoundingClientRect().top);if(a[0]){f(a[0].target.id);return}const c=o.filter(s=>s.boundingClientRect.top<0).sort((s,h)=>h.target.getBoundingClientRect().top-s.target.getBoundingClientRect().top);c[0]&&f(c[0].target.id)},{rootMargin:`-${l()}px 0% -55% 0%`,threshold:[0,.25,.5,1]});g.forEach(o=>t.observe(o));const n=v(location.hash||"");n&&requestAnimationFrame(()=>u(n,!0)),window.addEventListener("hashchange",()=>{const o=v(location.hash||"");o&&u(o,!0)})}y();r.matches&&d();r.addEventListener("change",()=>{y(),requestAnimationFrame(()=>{r.matches&&d()})});window.addEventListener("scroll",d,{passive:!0});window.addEventListener("resize",E);window.addEventListener("load",()=>{d(),m()},{once:!0});window.addEventListener("headerheightchange",()=>{m()});</script> <article class="prose dark:prose-invert max-w-none prose-img:rounded-xl prose-img:cursor-zoom-in min-w-0" data-article> <header class="mb-8 not-prose"> <div class="flex flex-col gap-6 md:grid md:grid-cols-1"> <div class="flex flex-col gap-4 "> <h1 class="text-3xl md:text-4xl font-bold leading-tight text-left"> [Feature tracking] vllm Context Parallel PR 分析报告 </h1> <div class="text-zinc-500 text-sm flex items-start justify-start gap-3 flex-wrap "> <time class="flex items-center gap-1" datetime="2026-03-21T00:00:00.000Z" title="发布于 2026-03-21"> <span aria-hidden="true">📅</span> <span>
+发布于 <span class="font-medium">2026-03-21</span> </span> </time>   <div class="flex items-center gap-1"> <span aria-hidden="true">✍️</span> 3628 字
+</div> <div class="flex items-center gap-1" title="3628 words"> <span aria-hidden="true">⏱️</span> 9 min read </div> </div> <div class="flex flex-wrap items-center gap-2" data-testid="post-share-tags-row">  <div class="inline-flex items-center gap-2" data-testid="post-share-action"> <span class="text-zinc-500 text-sm" aria-hidden="true"> 📤 </span> <button type="button" class="inline-flex items-center rounded-full border border-pink-200 bg-pink-50 px-2 py-1 text-xs font-medium text-pink-700 transition-colors duration-200 hover:border-pink-300 hover:bg-pink-100 dark:border-pink-900 dark:bg-pink-950 dark:text-pink-300 dark:hover:border-pink-700 dark:hover:bg-pink-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-share-open aria-haspopup="dialog" aria-controls="article-share-dialog">
+分享文章
+</button> </div> </div> </div>   </div> </header> <blockquote>
+<p><strong>时间范围</strong>：2025年7月20日 ～ 2026年3月20日（过去8个月）<br>
+<strong>仓库</strong>：<a href="https://github.com/vllm-project/vllm" target="_blank" rel="noopener noreferrer">https://github.com/vllm-project/vllm</a><strong>关键词覆盖</strong>：context parallel、context parallelism、DCP（Decode Context Parallelism）、PCP（Prefill Context Parallelism）、ring attention、sequence parallel<br>
+<strong>报告生成日期</strong>：2026年03月20日</p>
+</blockquote>
+<hr>
+<h2 id="一总体概况">一、总体概况<a href="#一总体概况" class="heading-anchor" aria-label="Link to 一、总体概况">¶</a></h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>指标</th><th>数值</th></tr></thead><tbody><tr><td>相关 PR 总数</td><td><strong>80 个</strong></td></tr><tr><td>已合并（merged）</td><td><strong>36 个</strong>（45%）</td></tr><tr><td>开放中（open）</td><td><strong>29 个</strong>（36%）</td></tr><tr><td>已关闭未合并（closed）</td><td><strong>15 个</strong>（19%）</td></tr><tr><td>核心贡献者</td><td>~15 人</td></tr><tr><td>月均合并 PR 数</td><td>~4.5 个/月</td></tr></tbody></table>
+<p>过去8个月，vllm 社区在 Context Parallel 方向投入了大量精力，从无到有地构建了完整的 DCP（Decode Context Parallelism）体系，并在 2025 年 11 月正式引入 PCP（Prefill Context Parallelism）。整个演进节奏清晰：<strong>先 Decode 侧铺底，再 Prefill 侧跟进，最后迈向统一并行框架</strong>。</p>
+<hr>
+<h2 id="二pr-分类统计">二、PR 分类统计<a href="#二pr-分类统计" class="heading-anchor" aria-label="Link to 二、PR 分类统计">¶</a></h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>类别</th><th>数量</th><th>占比</th><th>说明</th></tr></thead><tbody><tr><td>Bug 修复（bugfix）</td><td>23</td><td>29%</td><td>修复 DCP/PCP 在各场景下的正确性问题</td></tr><tr><td>功能扩展（enhancement）</td><td>22</td><td>28%</td><td>扩展 CP 的硬件后端、模型架构支持</td></tr><tr><td>新功能（feature）</td><td>19</td><td>24%</td><td>全新的 CP 功能（PCP、Helix 并行等）</td></tr><tr><td>用户体验（UX）</td><td>8</td><td>10%</td><td>错误提示、配置简化、文档</td></tr><tr><td>性能优化（perf）</td><td>3</td><td>4%</td><td>通信性能、内存访问优化</td></tr><tr><td>测试/CI（test）</td><td>3</td><td>4%</td><td>集成测试、CI 覆盖</td></tr><tr><td>文档（docs）</td><td>2</td><td>3%</td><td>用户手册、API 文档</td></tr></tbody></table>
+<p><strong>关键洞察</strong>：bugfix 占比最高（29%），说明 CP 功能整体仍处于快速迭代 + 稳定化阶段，功能边界在持续扩展的同时，正确性保证是核心挑战。</p>
+<hr>
+<h2 id="三技术演进时间线里程碑视图">三、技术演进时间线（里程碑视图）<a href="#三技术演进时间线里程碑视图" class="heading-anchor" aria-label="Link to 三、技术演进时间线（里程碑视图）">¶</a></h2>
+<h3 id="阶段一dcp-基础能力落地2025年8月">阶段一：DCP 基础能力落地（2025年8月）<a href="#阶段一dcp-基础能力落地2025年8月" class="heading-anchor" aria-label="Link to 阶段一：DCP 基础能力落地（2025年8月）">¶</a></h3>
+<p>这一阶段是整个 Context Parallel 体系的起点，主要针对 <strong>DeepSeek MLA 架构</strong>实现 Decode 阶段的 Context Parallelism。</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>PR</th><th>标题</th><th>状态</th><th>重要性</th></tr></thead><tbody><tr><td><a href="https://github.com/vllm-project/vllm/pull/23791" target="_blank" rel="noopener noreferrer">#23791</a></td><td>Cuda kernels for upcoming DCP feature</td><td>✅ 已合并 2025-08-28</td><td>⭐⭐⭐ 底层内核基础</td></tr><tr><td><a href="https://github.com/vllm-project/vllm/pull/23734" target="_blank" rel="noopener noreferrer">#23734</a></td><td>Support Decode Context Parallel (DCP) for MLA</td><td>✅ 已合并 2025-09-06</td><td>⭐⭐⭐ DCP 首个特性</td></tr></tbody></table>
+<p><strong>背景</strong>：DeepSeek v2/v3 使用 MLA（Multi-head Latent Attention）架构，其 KV Cache 压缩特性使得跨节点的 KV 分片和 AllGather 更加经济。DCP 首先在 MLA 上实现，是合理的技术选择。</p>
+<hr>
+<h3 id="阶段二dcp-多后端扩展2025年9月">阶段二：DCP 多后端扩展（2025年9月）<a href="#阶段二dcp-多后端扩展2025年9月" class="heading-anchor" aria-label="Link to 阶段二：DCP 多后端扩展（2025年9月）">¶</a></h3>
+<p>MLA DCP 落地后，社区迅速跟进扩展到多个注意力后端和硬件平台。</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>PR</th><th>标题</th><th>状态</th><th>重要性</th></tr></thead><tbody><tr><td><a href="https://github.com/vllm-project/vllm/pull/24385" target="_blank" rel="noopener noreferrer">#24385</a></td><td>DCP on Blackwell with CUTLASS MLA</td><td>✅ 已合并 2025-09-08</td><td>⭐⭐⭐ H200/B200 支持</td></tr><tr><td><a href="https://github.com/vllm-project/vllm/pull/24453" target="_blank" rel="noopener noreferrer">#24453</a></td><td>DCP for FLASH_ATTN_MLA backend</td><td>✅ 已合并 2025-09-10</td><td>⭐⭐ FlashAttn 后端</td></tr><tr><td><a href="https://github.com/vllm-project/vllm/pull/24864" target="_blank" rel="noopener noreferrer">#24864</a></td><td>Support DCP for GQA with FlashAttention</td><td>✅ 已合并 2025-10-14</td><td>⭐⭐⭐ GQA 架构支持</td></tr><tr><td><a href="https://github.com/vllm-project/vllm/pull/25132" target="_blank" rel="noopener noreferrer">#25132</a></td><td>DCP for Triton backend (ROCm)</td><td>✅ 已合并 2025-09-25</td><td>⭐⭐ AMD GPU 支持</td></tr><tr><td><a href="https://github.com/vllm-project/vllm/pull/25414" target="_blank" rel="noopener noreferrer">#25414</a></td><td>Remove contiguous output req for CP MLA</td><td>✅ 已合并 2025-09-23</td><td>⭐ 正确性修复</td></tr></tbody></table>
+<p><strong>关键判断</strong>：DCP 从 MLA（DeepSeek）扩展到 GQA（Llama/Qwen 等主流架构），并覆盖 FlashAttention 和 Triton（ROCm）两大后端，标志着 DCP 从”实验性”走向”通用化”。</p>
+<hr>
+<h3 id="阶段三dcp-稳定化与生产就绪2025年10月-11月">阶段三：DCP 稳定化与生产就绪（2025年10月-11月）<a href="#阶段三dcp-稳定化与生产就绪2025年10月-11月" class="heading-anchor" aria-label="Link to 阶段三：DCP 稳定化与生产就绪（2025年10月-11月）">¶</a></h3>
+<p>这一阶段以大量 bugfix 为主，同时完善了用户文档和部署指南。</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>PR</th><th>标题</th><th>状态</th><th>问题类型</th></tr></thead><tbody><tr><td><a href="https://github.com/vllm-project/vllm/pull/26296" target="_blank" rel="noopener noreferrer">#26296</a></td><td>Fix block_size of hash in DCP prefix caching</td><td>✅ 已合并</td><td>Prefix Cache 兼容性</td></tr><tr><td><a href="https://github.com/vllm-project/vllm/pull/26509" target="_blank" rel="noopener noreferrer">#26509</a></td><td>CP: fix correct_attn_out for 4-D views</td><td>✅ 已合并</td><td>注意力输出修正</td></tr><tr><td><a href="https://github.com/vllm-project/vllm/pull/26574" target="_blank" rel="noopener noreferrer">#26574</a></td><td>Set default CUDAGraphMode to PIECEWISE for DCP</td><td>✅ 已合并</td><td>CUDA Graph 兼容性</td></tr><tr><td><a href="https://github.com/vllm-project/vllm/pull/25049" target="_blank" rel="noopener noreferrer">#25049</a></td><td>DCP with query length > 1 (MTP) with FA3</td><td>✅ 已合并 2025-10-09</td><td>MTP（多步推理）支持</td></tr><tr><td><a href="https://github.com/vllm-project/vllm/pull/27518" target="_blank" rel="noopener noreferrer">#27518</a></td><td>Fix wrong dcp_local_seq_lens calc</td><td>✅ 已合并</td><td>序列长度计算 Bug</td></tr><tr><td><a href="https://github.com/vllm-project/vllm/pull/27929" target="_blank" rel="noopener noreferrer">#27929</a></td><td>DCP: check return_lse for all layers</td><td>✅ 已合并</td><td>多层 LSE 计算 Bug</td></tr><tr><td><a href="https://github.com/vllm-project/vllm/pull/28100" target="_blank" rel="noopener noreferrer">#28100</a></td><td>Fix DCP Assert (reorder_batch_threshold)</td><td>✅ 已合并</td><td>断言错误</td></tr><tr><td><a href="https://github.com/vllm-project/vllm/pull/26696" target="_blank" rel="noopener noreferrer">#26696</a></td><td>DCP kv_cache interleave size > 1</td><td>✅ 已合并 2025-11-08</td><td>KV Cache 交错支持</td></tr><tr><td><a href="https://github.com/vllm-project/vllm/pull/26877" target="_blank" rel="noopener noreferrer">#26877</a></td><td>DCP deployment documentation</td><td>✅ 已合并</td><td>用户手册</td></tr></tbody></table>
+<p><strong>主要痛点集中在</strong>：① Prefix Caching 与 CP 的兼容性；② CUDA Graph 的 PIECEWISE 模式适配；③ 多步推理（MTP）下的序列长度计算。</p>
+<hr>
+<h3 id="阶段四pcp-正式引入2025年11月-12月">阶段四：PCP 正式引入（2025年11月-12月）<a href="#阶段四pcp-正式引入2025年11月-12月" class="heading-anchor" aria-label="Link to 阶段四：PCP 正式引入（2025年11月-12月）">¶</a></h3>
+<p>PCP（Prefill Context Parallelism）与 DCP 原理相近，但作用于 Prefill 阶段，对长上下文场景（如 128K+ tokens）尤为关键。</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>PR</th><th>标题</th><th>状态</th><th>重要性</th></tr></thead><tbody><tr><td><a href="https://github.com/vllm-project/vllm/pull/28718" target="_blank" rel="noopener noreferrer">#28718</a></td><td><strong>[Feature] Prefill Context Parallel (PCP) basic support</strong></td><td>✅ 已合并 2025-11-19</td><td>⭐⭐⭐ PCP 里程碑</td></tr><tr><td><a href="https://github.com/vllm-project/vllm/pull/29094" target="_blank" rel="noopener noreferrer">#29094</a></td><td>Fix block size in block_table with PCP</td><td>✅ 已合并 2025-11-22</td><td>⭐⭐ 正确性修复</td></tr><tr><td><a href="https://github.com/vllm-project/vllm/pull/29487" target="_blank" rel="noopener noreferrer">#29487</a></td><td>Fix num_q_heads on DCP for Flashinfer</td><td>✅ 已合并 2025-12-05</td><td>⭐ Flashinfer 兼容</td></tr><tr><td><a href="https://github.com/vllm-project/vllm/pull/29952" target="_blank" rel="noopener noreferrer">#29952</a></td><td>PCP&#x26;DCP CUDA graph check refactor</td><td>✅ 已合并 2025-12-05</td><td>⭐⭐ CUDA Graph 重构</td></tr><tr><td><a href="https://github.com/vllm-project/vllm/pull/30309" target="_blank" rel="noopener noreferrer">#30309</a></td><td>Fix DCP accuracy with FLASH_ATTN_MLA</td><td>✅ 已合并 2025-12-09</td><td>⭐⭐ 精度问题</td></tr><tr><td><a href="https://github.com/vllm-project/vllm/pull/31003" target="_blank" rel="noopener noreferrer">#31003</a></td><td>PCP basic support for MoE model</td><td>✅ 已合并 2025-12-31</td><td>⭐⭐⭐ MoE 支持</td></tr><tr><td><a href="https://github.com/vllm-project/vllm/pull/28723" target="_blank" rel="noopener noreferrer">#28723</a></td><td>Support PCP for GQA flashinfer</td><td>🔵 开放中</td><td>后端扩展</td></tr><tr><td><a href="https://github.com/vllm-project/vllm/pull/28988" target="_blank" rel="noopener noreferrer">#28988</a></td><td>Support PCP with MLA</td><td>🔵 开放中</td><td>MLA 扩展</td></tr></tbody></table>
+<p><strong>重要意义</strong>：PCP 使得 vllm 在 Prefill 阶段也能横向扩展算力，这对长上下文推理（128K-1M tokens）至关重要。MoE 模型的 PCP 支持则直接服务于 DeepSeek MoE 等大规模生产模型。</p>
+<hr>
+<h3 id="阶段五架构重构与次世代并行2026年1月-3月">阶段五：架构重构与次世代并行（2026年1月-3月）<a href="#阶段五架构重构与次世代并行2026年1月-3月" class="heading-anchor" aria-label="Link to 阶段五：架构重构与次世代并行（2026年1月-3月）">¶</a></h3>
+<p>这一阶段以大规模重构和下一代并行框架探索为特征。</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>PR</th><th>标题</th><th>状态</th><th>重要性</th></tr></thead><tbody><tr><td><a href="https://github.com/vllm-project/vllm/pull/33239" target="_blank" rel="noopener noreferrer">#33239</a></td><td>Move DCP validation to ParallelConfig</td><td>✅ 已合并 2026-01-30</td><td>⭐⭐ 配置解耦</td></tr><tr><td><a href="https://github.com/vllm-project/vllm/pull/34179" target="_blank" rel="noopener noreferrer">#34179</a></td><td><strong>DCP support for GPU model runner v2</strong></td><td>✅ 已合并 2026-02-18</td><td>⭐⭐⭐ 新执行引擎</td></tr><tr><td><a href="https://github.com/vllm-project/vllm/pull/34786" target="_blank" rel="noopener noreferrer">#34786</a></td><td>DCP simplification for model runner v2</td><td>✅ 已合并 2026-02-18</td><td>⭐⭐ 代码简化</td></tr><tr><td><a href="https://github.com/vllm-project/vllm/pull/34883" target="_blank" rel="noopener noreferrer">#34883</a></td><td><strong>Add All-to-All communication backend for DCP</strong></td><td>✅ 已合并 2026-03-04</td><td>⭐⭐⭐ 通信后端优化</td></tr><tr><td><a href="https://github.com/vllm-project/vllm/pull/34024" target="_blank" rel="noopener noreferrer">#34024</a></td><td><strong>Add Helix (Context + Tensor) Parallelism</strong></td><td>🔵 开放中</td><td>⭐⭐⭐ 联合并行框架</td></tr><tr><td><a href="https://github.com/vllm-project/vllm/pull/33403" target="_blank" rel="noopener noreferrer">#33403</a></td><td>[WIP] pcp alternative impl</td><td>🔵 开放中</td><td>⭐⭐ PCP 替代实现</td></tr><tr><td><a href="https://github.com/vllm-project/vllm/pull/36306" target="_blank" rel="noopener noreferrer">#36306</a></td><td>PCP alternative implementation</td><td>🔵 开放中</td><td>⭐⭐ PCP 替代实现</td></tr><tr><td><a href="https://github.com/vllm-project/vllm/pull/36287" target="_blank" rel="noopener noreferrer">#36287</a></td><td>Add —tensor-parallel-size-attention for TPA</td><td>🔵 开放中</td><td>⭐⭐ Tensor+Context 分离</td></tr><tr><td><a href="https://github.com/vllm-project/vllm/pull/35206" target="_blank" rel="noopener noreferrer">#35206</a></td><td>Support Sequence Parallel for Model Runner v2</td><td>🔵 开放中</td><td>⭐⭐ 序列并行</td></tr></tbody></table>
+<hr>
+<h2 id="四核心技术解析">四、核心技术解析<a href="#四核心技术解析" class="heading-anchor" aria-label="Link to 四、核心技术解析">¶</a></h2>
+<h3 id="41-dcpdecode-context-parallelism">4.1 DCP（Decode Context Parallelism）<a href="#41-dcpdecode-context-parallelism" class="heading-anchor" aria-label="Link to 4.1 DCP（Decode Context Parallelism）">¶</a></h3>
+<p><strong>原理</strong>：在 Decode 阶段（自回归生成），将不同请求的 KV Cache 分布在多个 GPU 上，通过 AllGather 或 All-to-All 通信聚合注意力计算。</p>
+<p><strong>技术实现要点</strong>：</p>
+<ul>
+<li><strong>通信方式</strong>：从 AllGather（简单，带宽需求高）→ All-to-All（#34883，更高效）演进</li>
+<li><strong>KV Cache 分片</strong>：<code>dcp_local_seq_lens</code> 管理每个 GPU 上的本地 KV 长度</li>
+<li><strong>注意力后端</strong>：支持 FlashAttention v2/v3、FLASH_ATTN_MLA、Triton（ROCm）、Flashinfer</li>
+<li><strong>LSE 聚合</strong>：各 GPU 的 log-sum-exp 需要合并才能得到正确的 softmax 结果</li>
+<li><strong>CUDA Graph 兼容</strong>：使用 PIECEWISE 模式（而非整图模式）以支持动态形状</li>
+</ul>
+<p><strong>适用场景</strong>：大 Batch + 长历史 KV（高 KV Cache 压力场景），如多轮对话、RAG 推理</p>
+<h3 id="42-pcpprefill-context-parallelism">4.2 PCP（Prefill Context Parallelism）<a href="#42-pcpprefill-context-parallelism" class="heading-anchor" aria-label="Link to 4.2 PCP（Prefill Context Parallelism）">¶</a></h3>
+<p><strong>原理</strong>：在 Prefill 阶段（Prompt 处理），将长输入序列切分为多个 chunks，分布在不同 GPU 上，各 GPU 独立计算本地注意力后通过 Ring Attention 或 All-to-All 聚合。</p>
+<p><strong>技术实现要点</strong>：</p>
+<ul>
+<li><strong>Causal Mask 处理</strong>：Prefill 使用因果注意力，跨块的因果关系需要特殊处理（local chunk 的 KV 必须能访问之前 chunks 的 KV）</li>
+<li><strong>块表（block_table）兼容</strong>：PCP 改变了 token 在物理内存中的分布，<code>block_table</code> 需要相应调整（#29094）</li>
+<li><strong>MoE 支持</strong>：MoE 模型的 FFN 计算不涉及跨序列依赖，PCP 对 MoE 更加友好（#31003）</li>
+<li><strong>竞争实现</strong>：目前有两条技术路线并行探索（#33403 vs #36306），预计将在 Q2 2026 收敛</li>
+</ul>
+<p><strong>适用场景</strong>：超长 Prompt 处理（128K+ tokens），如文档理解、代码分析、长上下文推理</p>
+<h3 id="43-helix-并行context--tensor-联合并行">4.3 Helix 并行（Context + Tensor 联合并行）<a href="#43-helix-并行context--tensor-联合并行" class="heading-anchor" aria-label="Link to 4.3 Helix 并行（Context + Tensor 联合并行）">¶</a></h3>
+<p><strong>原理</strong>（#34024）：将 Context Parallelism 和 Tensor Parallelism 结合，形成二维并行网格，进一步提升大规模集群的利用率。</p>
+<ul>
+<li><strong>TPA（Tensor Parallel Attention）</strong>：注意力层和 FFN 层使用不同的并行度（#36287，<code>-tensor-parallel-size-attention</code> 参数）</li>
+<li><strong>Helix 网格</strong>：CP Rank × TP Rank 构成二维通信拓扑，优化节点内/节点间通信</li>
+</ul>
+<p>这是 vllm 向类 Megatron 的”3D 并行”演进的重要信号。</p>
+<hr>
+<h2 id="五核心贡献者分析">五、核心贡献者分析<a href="#五核心贡献者分析" class="heading-anchor" aria-label="Link to 五、核心贡献者分析">¶</a></h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>贡献者</th><th>主要贡献方向</th><th>PR 数量（估计）</th></tr></thead><tbody><tr><td><strong>youzhedian</strong></td><td>DCP for MLA 首席贡献者，CUDA kernel</td><td>8+</td></tr><tr><td><strong>FENP</strong></td><td>DCP GQA FlashAttention，PCP MLA 扩展</td><td>5+</td></tr><tr><td><strong>pisceskkk</strong></td><td>PCP 首个实现，GQA Flashinfer</td><td>4+</td></tr><tr><td><strong>sungsooha</strong></td><td>DCP Model Runner v2，Helix 并行，All-to-All</td><td>5+</td></tr><tr><td><strong>LucasWilkinson</strong></td><td>PCP 替代实现，底层优化</td><td>3+</td></tr><tr><td><strong>qiruiyangmeta</strong></td><td>Context Parallel 基础设施（token sharding）</td><td>3</td></tr><tr><td><strong>aws-bowencc</strong></td><td>DCP prefill→non-DCP decode 混合推理</td><td>2+</td></tr></tbody></table>
+<p><strong>观察</strong>：贡献者来自百度、AWS、Meta 等多家公司，体现了社区的多元化；其中 <code>youzhedian</code>、<code>FENP</code> 等来自百度的工程师主导了 DCP/MLA 方向的核心工作。</p>
+<hr>
+<h2 id="六主要技术挑战与已知问题">六、主要技术挑战与已知问题<a href="#六主要技术挑战与已知问题" class="heading-anchor" aria-label="Link to 六、主要技术挑战与已知问题">¶</a></h2>
+<h3 id="61-已解决的核心问题">6.1 已解决的核心问题<a href="#61-已解决的核心问题" class="heading-anchor" aria-label="Link to 6.1 已解决的核心问题">¶</a></h3>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>问题</th><th>解决方案</th><th>相关 PR</th></tr></thead><tbody><tr><td>Prefix Caching + DCP 兼容性</td><td>修正 KV block hash 中的 block_size 计算</td><td>#26296</td></tr><tr><td>CUDA Graph 与 DCP 不兼容</td><td>强制使用 PIECEWISE 模式</td><td>#26574</td></tr><tr><td>MTP（多步推理）下 query_len>1</td><td>FA3 后端适配</td><td>#25049</td></tr><tr><td>LSE 多层聚合错误</td><td>所有层统一检查 return_lse</td><td>#27929</td></tr><tr><td>DCP + FLASH_ATTN_MLA 精度问题</td><td>修复注意力输出累加精度</td><td>#30309</td></tr></tbody></table>
+<h3 id="62-当前开放的已知问题">6.2 当前开放的已知问题<a href="#62-当前开放的已知问题" class="heading-anchor" aria-label="Link to 6.2 当前开放的已知问题">¶</a></h3>
+<ul>
+<li><strong>PCP 双实现收敛</strong>：目前有 #33403（WIP）和 #36306 两个 PCP 替代实现同时开放，存在设计决策未定的风险</li>
+<li><strong>PCP + MLA 未完成</strong>：#28988（PCP with MLA）仍处于 Open 状态，DeepSeek 系列模型的 Prefill CP 尚不完整</li>
+<li><strong>PCP + GQA Flashinfer</strong>：#28723 仍处于 Open 状态</li>
+<li><strong>DCP CUDA Graph 修复</strong>：#36070 等近期 bugfix 仍在评审中</li>
+<li><strong>Helix 并行</strong>：#34024 是大型 PR（联合并行框架），Review 复杂度高，合并周期可能较长</li>
+</ul>
+<hr>
+<h2 id="七关键趋势与判断">七、关键趋势与判断<a href="#七关键趋势与判断" class="heading-anchor" aria-label="Link to 七、关键趋势与判断">¶</a></h2>
+<h3 id="趋势1dcp-已进入生产就绪阶段">趋势1：DCP 已进入”生产就绪”阶段<a href="#趋势1dcp-已进入生产就绪阶段" class="heading-anchor" aria-label="Link to 趋势1：DCP 已进入”生产就绪”阶段">¶</a></h3>
+<p>自 2026 年 2 月 DCP 适配 Model Runner v2（#34179）并引入 All-to-All 通信后端（#34883）后，DCP 已具备在最新执行引擎上稳定运行的能力，进入生产就绪阶段。</p>
+<h3 id="趋势2pcp-处于快速迭代中尚未稳定">趋势2：PCP 处于”快速迭代”中，尚未稳定<a href="#趋势2pcp-处于快速迭代中尚未稳定" class="heading-anchor" aria-label="Link to 趋势2：PCP 处于”快速迭代”中，尚未稳定">¶</a></h3>
+<p>PCP 于 2025 年 11 月合入基础版本后，持续出现 bugfix 和设计调整。目前存在两个并行的 PCP 替代实现（#33403 vs #36306），表明社区对 PCP 的最佳实现路径仍有争论，<strong>预计 Q2 2026 前后完成收敛</strong>。</p>
+<h3 id="趋势3向统一并行框架演进">趋势3：向”统一并行框架”演进<a href="#趋势3向统一并行框架演进" class="heading-anchor" aria-label="Link to 趋势3：向”统一并行框架”演进">¶</a></h3>
+<p>Helix 并行（#34024）和 TPA 分离（#36287）的出现，表明 vllm 正在从”单一并行维度”向”多维并行的统一框架”演进，目标是在大规模集群（256+ GPU）上实现最优的计算-通信 overlap。</p>
+<h3 id="趋势4deepseek-架构驱动">趋势4：DeepSeek 架构驱动<a href="#趋势4deepseek-架构驱动" class="heading-anchor" aria-label="Link to 趋势4：DeepSeek 架构驱动">¶</a></h3>
+<p>纵观整个 CP 演进，MLA 架构（DeepSeek）是最核心的驱动力。DCP 首先在 MLA 上实现，PCP 的 MLA 扩展也在积极推进，表明 vllm 社区高度关注 DeepSeek 系列模型的推理效率。</p>
+<h3 id="趋势5多硬件平台并重">趋势5：多硬件平台并重<a href="#趋势5多硬件平台并重" class="heading-anchor" aria-label="Link to 趋势5：多硬件平台并重">¶</a></h3>
+<p>CP 功能先后适配了 NVIDIA（CUDA / FlashAttention）、AMD（ROCm / Triton 后端）和 Blackwell（H200/B200 / CUTLASS），显示出 vllm 在硬件无关性上的持续投入。</p>
+<hr>
+<h2 id="八各阶段-pr-合并率分析">八、各阶段 PR 合并率分析<a href="#八各阶段-pr-合并率分析" class="heading-anchor" aria-label="Link to 八、各阶段 PR 合并率分析">¶</a></h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>阶段</th><th>时间段</th><th>PR 数</th><th>合并率</th></tr></thead><tbody><tr><td>DCP 基础落地</td><td>2025-08</td><td>2</td><td>100%</td></tr><tr><td>DCP 多后端扩展</td><td>2025-09</td><td>8</td><td>88%</td></tr><tr><td>DCP 稳定化</td><td>2025-10 ~ 11</td><td>20</td><td>75%</td></tr><tr><td>PCP 引入</td><td>2025-11 ~ 12</td><td>15</td><td>53%</td></tr><tr><td>架构重构</td><td>2026-01 ~ 02</td><td>18</td><td>44%</td></tr><tr><td>次世代并行</td><td>2026-03</td><td>17</td><td>12%</td></tr></tbody></table>
+<p><strong>趋势</strong>：越到近期，Open PR 比例越高，这符合”最新功能仍在评审”的规律，并非停滞信号。</p>
+<hr>
+<h2 id="九对实践者的建议">九、对实践者的建议<a href="#九对实践者的建议" class="heading-anchor" aria-label="Link to 九、对实践者的建议">¶</a></h2>
+<h3 id="使用-dcp">使用 DCP：<a href="#使用-dcp" class="heading-anchor" aria-label="Link to 使用 DCP：">¶</a></h3>
+<ul>
+<li>推荐搭配 <code>CUDAGraphMode=PIECEWISE</code>（现已为默认值）</li>
+<li>在 FlashAttention v3（FA3）后端和 Blackwell GPU 上效果最佳</li>
+<li>与 Prefix Caching 联用需注意 KV block 大小对齐问题（已修复）</li>
+</ul>
+<h3 id="使用-pcp">使用 PCP：<a href="#使用-pcp" class="heading-anchor" aria-label="Link to 使用 PCP：">¶</a></h3>
+<ul>
+<li>当前建议使用 <strong>主线版本</strong>（#28718 已合并），等待 #33403/#36306 的替代实现稳定后再评估切换</li>
+<li>MoE 模型（如 DeepSeek）PCP 已支持（#31003）</li>
+<li>MLA 架构的 PCP（#28988）尚未合并，建议关注但暂不用于生产</li>
+</ul>
+<h3 id="关注-helix">关注 Helix：<a href="#关注-helix" class="heading-anchor" aria-label="Link to 关注 Helix：">¶</a></h3>
+<ul>
+<li>#34024 是下一个值得重点关注的 PR，将带来 Context+Tensor 联合并行的统一接口</li>
+</ul>
+<hr>
+<h2 id="十附录完整-pr-索引">十、附录：完整 PR 索引<a href="#十附录完整-pr-索引" class="heading-anchor" aria-label="Link to 十、附录：完整 PR 索引">¶</a></h2>
+<h3 id="已合并-pr36个">已合并 PR（36个）<a href="#已合并-pr36个" class="heading-anchor" aria-label="Link to 已合并 PR（36个）">¶</a></h3>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>PR 编号</th><th>标题</th><th>合并时间</th><th>分类</th></tr></thead><tbody><tr><td>#23791</td><td>Cuda kernels for upcoming DCP feature</td><td>2025-08-28</td><td>feature</td></tr><tr><td>#23734</td><td>Support DCP for MLA</td><td>2025-09-06</td><td>feature</td></tr><tr><td>#24385</td><td>DCP on Blackwell with CUTLASS MLA</td><td>2025-09-08</td><td>enhancement</td></tr><tr><td>#24453</td><td>DCP for FLASH_ATTN_MLA backend</td><td>2025-09-10</td><td>enhancement</td></tr><tr><td>#25414</td><td>Remove contiguous output req for CP MLA</td><td>2025-09-23</td><td>bugfix</td></tr><tr><td>#25132</td><td>DCP for Triton backend (ROCm)</td><td>2025-09-25</td><td>enhancement</td></tr><tr><td>#24864</td><td>Support DCP for GQA with FlashAttention</td><td>2025-10-14</td><td>feature</td></tr><tr><td>#26296</td><td>Fix block_size of hash in DCP prefix caching</td><td>2025-10-10</td><td>bugfix</td></tr><tr><td>#26509</td><td>CP: fix correct_attn_out for 4-D views</td><td>2025-10-11</td><td>bugfix</td></tr><tr><td>#26574</td><td>Set default CUDAGraphMode to PIECEWISE for DCP</td><td>2025-10-12</td><td>bugfix</td></tr><tr><td>#25049</td><td>DCP with query length > 1 (MTP) with FA3</td><td>2025-10-09</td><td>enhancement</td></tr><tr><td>#26877</td><td>DCP deployment documentation</td><td>2025-10</td><td>docs</td></tr><tr><td>#26696</td><td>DCP kv_cache interleave size > 1</td><td>2025-11-08</td><td>enhancement</td></tr><tr><td>#27518</td><td>Fix wrong dcp_local_seq_lens calc</td><td>2025-11-05</td><td>bugfix</td></tr><tr><td>#27929</td><td>DCP: check return_lse for all layers</td><td>2025-11-05</td><td>bugfix</td></tr><tr><td>#28100</td><td>Fix DCP Assert (reorder_batch_threshold)</td><td>2025-11-05</td><td>bugfix</td></tr><tr><td>#28526</td><td>Fix local_chunk_len for DCP in reorg_kvcache</td><td>2025-11-13</td><td>bugfix</td></tr><tr><td>#25438</td><td>DCP for GQA with Flashinfer</td><td>2025-11-14</td><td>enhancement</td></tr><tr><td>#28718</td><td><strong>PCP basic support</strong></td><td>2025-11-19</td><td>feature</td></tr><tr><td>#28751</td><td>Fix DCP AssertionError (reorder_batch_threshold)</td><td>2025-11-15</td><td>bugfix</td></tr><tr><td>#29094</td><td>Fix block size in block_table with PCP</td><td>2025-11-22</td><td>bugfix</td></tr><tr><td>#29487</td><td>Fix num_q_heads on DCP for Flashinfer</td><td>2025-12-05</td><td>bugfix</td></tr><tr><td>#29952</td><td>PCP&#x26;DCP CUDA graph check refactor</td><td>2025-12-05</td><td>enhancement</td></tr><tr><td>#30050</td><td>Relocate PCP feature check</td><td>2025-12-11</td><td>enhancement</td></tr><tr><td>#30309</td><td>Fix DCP accuracy with FLASH_ATTN_MLA</td><td>2025-12-09</td><td>bugfix</td></tr><tr><td>#31003</td><td>PCP basic support for MoE model</td><td>2025-12-31</td><td>feature</td></tr><tr><td>#33239</td><td>Move DCP validation to ParallelConfig</td><td>2026-01-30</td><td>enhancement</td></tr><tr><td>#34179</td><td><strong>DCP support for GPU model runner v2</strong></td><td>2026-02-18</td><td>feature</td></tr><tr><td>#34786</td><td>DCP simplification for model runner v2</td><td>2026-02-18</td><td>enhancement</td></tr><tr><td>#34883</td><td><strong>Add All-to-All communication backend for DCP</strong></td><td>2026-03-04</td><td>feature</td></tr><tr><td>#35082</td><td>Fix DCP + FA3 crash (missing num_splits)</td><td>2026-02-27</td><td>bugfix</td></tr><tr><td>#31277</td><td>Support ViT SP parallelism in qwen2.5vl/qwen3vl</td><td>2025-12~</td><td>feature</td></tr></tbody></table>
+<h3 id="开放中的关键-pr29个节选重要">开放中的关键 PR（29个，节选重要）<a href="#开放中的关键-pr29个节选重要" class="heading-anchor" aria-label="Link to 开放中的关键 PR（29个，节选重要）">¶</a></h3>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>PR 编号</th><th>标题</th><th>创建时间</th><th>优先级</th></tr></thead><tbody><tr><td>#34024</td><td>Add Helix (Context + Tensor) Parallelism</td><td>2026-02-06</td><td>⭐⭐⭐</td></tr><tr><td>#36306</td><td>PCP alternative implementation</td><td>2026-03-07</td><td>⭐⭐⭐</td></tr><tr><td>#36287</td><td>Add —tensor-parallel-size-attention</td><td>2026-03-06</td><td>⭐⭐⭐</td></tr><tr><td>#35206</td><td>Support Sequence Parallel for Model Runner v2</td><td>2026-02-24</td><td>⭐⭐</td></tr><tr><td>#34975</td><td>dcp prefill -> non-dcp decode prototype</td><td>2026-02-20</td><td>⭐⭐</td></tr><tr><td>#28988</td><td>Support PCP with MLA</td><td>2025-11-19</td><td>⭐⭐</td></tr><tr><td>#28723</td><td>PCP for GQA flashinfer</td><td>2025-11-14</td><td>⭐⭐</td></tr><tr><td>#33403</td><td>[WIP] pcp alternative impl</td><td>2026-01-30</td><td>⭐⭐</td></tr><tr><td>#23545</td><td>DCCP supported</td><td>2025-08-25</td><td>⭐</td></tr></tbody></table> <div class="grid md:grid-cols-2 gap-4 mt-10"> <a href="/blog-preview/previews/pr-464/pipeline-parallelism-in-sglang-scaling-to-million-token-contexts-and-beyond/" class="block p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-sky-500"> <div class="text-xs uppercase text-zinc-500">Previous</div> <div class="font-semibold">Pipeline Parallelism in SGLang: Scaling to Million-Token Contexts and Beyond</div> </a> <a href="/blog-preview/previews/pr-464/feature-tracking-sglang-context-parallel-pr/" class="block p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-sky-500 text-right"> <div class="text-xs uppercase text-zinc-500">Next</div> <div class="font-semibold">[Feature tracking] sglang Context Parallel PR 分析报告</div> </a> </div>  <section id="comments" class="mt-12" data-comments> <div class="rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 p-6 md:p-8"> <script src="https://giscus.app/client.js" data-repo="yuanlehome/blog" data-repo-id="R_kgDOQu2Jjw" data-category="General" data-category-id="DIC_kwDOQu2Jj84C0QDN" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="bottom" data-theme="light" data-lang="zh-CN" crossorigin="anonymous" async></script> </div> </section> <script>(() => {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return;
+
+  // Theme mapping for Giscus from config
+  const themeMap = {"light":"light","dark":"dark"};
+
+  // Single source of truth: read effective theme from DOM
+  const getEffectiveTheme = () => {
+    const isDark =
+      document.documentElement.dataset.theme === 'dark' ||
+      document.documentElement.classList.contains('dark');
+    return isDark ? 'dark' : 'light';
+  };
+
+  // Track current theme state
+  let currentTheme = getEffectiveTheme();
+
+  // Set initial theme on the script tag before Giscus loads
+  const setInitialTheme = () => {
+    const effectiveTheme = getEffectiveTheme();
+    const giscusTheme = themeMap[effectiveTheme] ?? 'light';
+    const giscusScript = document.querySelector('script[src*="giscus.app/client.js"]');
+    if (giscusScript) {
+      giscusScript.setAttribute('data-theme', giscusTheme);
+    }
+  };
+
+  // Update container data attribute for tracking
+  const setContainerTheme = (theme) => {
+    const container = document.getElementById('comments');
+    if (container) {
+      container.setAttribute('data-giscus-theme', theme);
+    }
+  };
+
+  // Send theme update message to Giscus iframe
+  const postThemeMessage = (resolvedTheme) => {
+    const effective = resolvedTheme ?? currentTheme;
+    const giscusTheme = themeMap[effective] ?? 'light';
+    setContainerTheme(giscusTheme);
+    
+    const iframe = document.querySelector('iframe.giscus-frame');
+    if (iframe && iframe.contentWindow) {
+      iframe.contentWindow.postMessage(
+        { giscus: { setConfig: { theme: giscusTheme } } },
+        'https://giscus.app',
+      );
+    }
+  };
+
+  // Debounce helper to prevent excessive syncs
+  let syncTimeout = null;
+  const debouncedSync = (callback, delay = 50) => {
+    if (syncTimeout) clearTimeout(syncTimeout);
+    syncTimeout = setTimeout(callback, delay);
+  };
+
+  // Main sync function: update theme if changed
+  const syncCommentTheme = (resolvedOverride) => {
+    const detected = resolvedOverride ?? getEffectiveTheme();
+    if (detected !== currentTheme) {
+      currentTheme = detected;
+    }
+    postThemeMessage(detected);
+  };
+
+  // Wait for iframe with improved retry logic
+  let retryCount = 0;
+  const maxRetries = 50; // ~5 seconds with 100ms intervals
+  const waitForIframe = () => {
+    const iframe = document.querySelector('iframe.giscus-frame');
+    if (iframe) {
+      // Found iframe, send theme
+      if (iframe instanceof HTMLIFrameElement) {
+        const sendTheme = () => {
+          postThemeMessage();
+        };
+        
+        // Try to send immediately and also on load event
+        sendTheme();
+        if (!iframe.complete) {
+          iframe.addEventListener('load', sendTheme, { once: true });
+        }
+      }
+      return;
+    }
+
+    // Retry if not found yet
+    retryCount++;
+    if (retryCount < maxRetries) {
+      setTimeout(waitForIframe, 100);
+    }
+  };
+
+  // Set initial theme before Giscus loads
+  setInitialTheme();
+
+  // Listen for DOM changes (class/data-theme attribute)
+  const observer = new MutationObserver(() => {
+    debouncedSync(() => syncCommentTheme());
+  });
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['class', 'data-theme'],
+  });
+
+  // Listen for custom theme change events
+  window.addEventListener('themechange', (event) => {
+    const detail = event?.detail || {};
+    const resolved = detail.resolved || getEffectiveTheme();
+    debouncedSync(() => syncCommentTheme(resolved));
+  });
+
+  // Listen for storage events (cross-tab synchronization)
+  window.addEventListener('storage', (event) => {
+    if (event.key === 'theme' && (event.newValue === 'light' || event.newValue === 'dark')) {
+      debouncedSync(() => syncCommentTheme());
+    }
+  });
+
+  // Listen for system theme changes (if using system preference)
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  const handleSystemThemeChange = () => {
+    // Only sync if theme might be using system preference
+    try {
+      const stored = localStorage.getItem('theme');
+      if (!stored || stored === 'system') {
+        debouncedSync(() => syncCommentTheme());
+      }
+    } catch (e) {
+      // Ignore localStorage errors
+    }
+  };
+  
+  if (mediaQuery.addEventListener) {
+    mediaQuery.addEventListener('change', handleSystemThemeChange);
+  }
+
+  // Initial sync and wait for iframe
+  syncCommentTheme();
+  waitForIframe();
+})();</script> <div id="page-bottom-anchor" aria-hidden="true" style="height: 1px;"></div> </article>  </div> <div class="fixed inset-0 z-50 pointer-events-none data-[open=true]:pointer-events-auto lg:hidden" data-mobile-toc data-open="false" aria-hidden="true"><div class="absolute inset-0 bg-zinc-900/40 opacity-0 transition duration-200 data-[open=true]:opacity-100 dark:bg-black/50" data-mobile-toc-backdrop></div><div id="mobile-toc-drawer" role="dialog" aria-modal="true" aria-label="文章目录" class="absolute inset-x-0 bottom-0 translate-y-full rounded-t-2xl border border-zinc-200 bg-neutral-50/95 shadow-2xl ring-1 ring-black/5 transition duration-200 data-[open=true]:translate-y-0 dark:border-zinc-800 dark:bg-zinc-900/95 dark:ring-white/10" data-mobile-toc-drawer><div class="flex items-center justify-between gap-3 px-4 pt-4 pb-3"><div><p class="text-sm font-semibold text-zinc-900 dark:text-zinc-50">文章目录</p><p class="text-xs text-zinc-500 dark:text-zinc-400">点击条目可跳转</p></div><button type="button" class="rounded-full border border-zinc-200 bg-neutral-50 px-3 py-1 text-sm font-medium text-zinc-800 shadow-sm transition hover:text-sky-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:text-sky-400 dark:focus-visible:ring-offset-zinc-900" data-mobile-toc-close>
+关闭
+</button></div><div class="max-h-[60vh] overflow-y-auto px-4 pb-5" data-mobile-toc-scroll><ol class="space-y-3 text-sm"><li><a href="#一总体概况" data-toc-link data-mobile-toc-link data-target="一总体概况" title="一、总体概况¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>一、总体概况¶</span></a></li><li><a href="#二pr-分类统计" data-toc-link data-mobile-toc-link data-target="二pr-分类统计" title="二、PR 分类统计¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>二、PR 分类统计¶</span></a></li><li><a href="#三技术演进时间线里程碑视图" data-toc-link data-mobile-toc-link data-target="三技术演进时间线里程碑视图" title="三、技术演进时间线（里程碑视图）¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>三、技术演进时间线（里程碑视图）¶</span></a><ol class="mt-1 space-y-1"><li><a href="#阶段一dcp-基础能力落地2025年8月" data-toc-link data-mobile-toc-link data-target="阶段一dcp-基础能力落地2025年8月" title="阶段一：DCP 基础能力落地（2025年8月）¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>阶段一：DCP 基础能力落地（2025年8月）¶</span></a></li><li><a href="#阶段二dcp-多后端扩展2025年9月" data-toc-link data-mobile-toc-link data-target="阶段二dcp-多后端扩展2025年9月" title="阶段二：DCP 多后端扩展（2025年9月）¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>阶段二：DCP 多后端扩展（2025年9月）¶</span></a></li><li><a href="#阶段三dcp-稳定化与生产就绪2025年10月-11月" data-toc-link data-mobile-toc-link data-target="阶段三dcp-稳定化与生产就绪2025年10月-11月" title="阶段三：DCP 稳定化与生产就绪（2025年10月-11月）¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>阶段三：DCP 稳定化与生产就绪（2025年10月-11月）¶</span></a></li><li><a href="#阶段四pcp-正式引入2025年11月-12月" data-toc-link data-mobile-toc-link data-target="阶段四pcp-正式引入2025年11月-12月" title="阶段四：PCP 正式引入（2025年11月-12月）¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>阶段四：PCP 正式引入（2025年11月-12月）¶</span></a></li><li><a href="#阶段五架构重构与次世代并行2026年1月-3月" data-toc-link data-mobile-toc-link data-target="阶段五架构重构与次世代并行2026年1月-3月" title="阶段五：架构重构与次世代并行（2026年1月-3月）¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>阶段五：架构重构与次世代并行（2026年1月-3月）¶</span></a></li></ol></li><li><a href="#四核心技术解析" data-toc-link data-mobile-toc-link data-target="四核心技术解析" title="四、核心技术解析¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>四、核心技术解析¶</span></a><ol class="mt-1 space-y-1"><li><a href="#41-dcpdecode-context-parallelism" data-toc-link data-mobile-toc-link data-target="41-dcpdecode-context-parallelism" title="4.1 DCP（Decode Context Parallelism）¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>4.1 DCP（Decode Context Parallelism）¶</span></a></li><li><a href="#42-pcpprefill-context-parallelism" data-toc-link data-mobile-toc-link data-target="42-pcpprefill-context-parallelism" title="4.2 PCP（Prefill Context Parallelism）¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>4.2 PCP（Prefill Context Parallelism）¶</span></a></li><li><a href="#43-helix-并行context--tensor-联合并行" data-toc-link data-mobile-toc-link data-target="43-helix-并行context--tensor-联合并行" title="4.3 Helix 并行（Context + Tensor 联合并行）¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>4.3 Helix 并行（Context + Tensor 联合并行）¶</span></a></li></ol></li><li><a href="#五核心贡献者分析" data-toc-link data-mobile-toc-link data-target="五核心贡献者分析" title="五、核心贡献者分析¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>五、核心贡献者分析¶</span></a></li><li><a href="#六主要技术挑战与已知问题" data-toc-link data-mobile-toc-link data-target="六主要技术挑战与已知问题" title="六、主要技术挑战与已知问题¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>六、主要技术挑战与已知问题¶</span></a><ol class="mt-1 space-y-1"><li><a href="#61-已解决的核心问题" data-toc-link data-mobile-toc-link data-target="61-已解决的核心问题" title="6.1 已解决的核心问题¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>6.1 已解决的核心问题¶</span></a></li><li><a href="#62-当前开放的已知问题" data-toc-link data-mobile-toc-link data-target="62-当前开放的已知问题" title="6.2 当前开放的已知问题¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>6.2 当前开放的已知问题¶</span></a></li></ol></li><li><a href="#七关键趋势与判断" data-toc-link data-mobile-toc-link data-target="七关键趋势与判断" title="七、关键趋势与判断¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>七、关键趋势与判断¶</span></a><ol class="mt-1 space-y-1"><li><a href="#趋势1dcp-已进入生产就绪阶段" data-toc-link data-mobile-toc-link data-target="趋势1dcp-已进入生产就绪阶段" title="趋势1：DCP 已进入”生产就绪”阶段¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>趋势1：DCP 已进入”生产就绪”阶段¶</span></a></li><li><a href="#趋势2pcp-处于快速迭代中尚未稳定" data-toc-link data-mobile-toc-link data-target="趋势2pcp-处于快速迭代中尚未稳定" title="趋势2：PCP 处于”快速迭代”中，尚未稳定¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>趋势2：PCP 处于”快速迭代”中，尚未稳定¶</span></a></li><li><a href="#趋势3向统一并行框架演进" data-toc-link data-mobile-toc-link data-target="趋势3向统一并行框架演进" title="趋势3：向”统一并行框架”演进¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>趋势3：向”统一并行框架”演进¶</span></a></li><li><a href="#趋势4deepseek-架构驱动" data-toc-link data-mobile-toc-link data-target="趋势4deepseek-架构驱动" title="趋势4：DeepSeek 架构驱动¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>趋势4：DeepSeek 架构驱动¶</span></a></li><li><a href="#趋势5多硬件平台并重" data-toc-link data-mobile-toc-link data-target="趋势5多硬件平台并重" title="趋势5：多硬件平台并重¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>趋势5：多硬件平台并重¶</span></a></li></ol></li><li><a href="#八各阶段-pr-合并率分析" data-toc-link data-mobile-toc-link data-target="八各阶段-pr-合并率分析" title="八、各阶段 PR 合并率分析¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>八、各阶段 PR 合并率分析¶</span></a></li><li><a href="#九对实践者的建议" data-toc-link data-mobile-toc-link data-target="九对实践者的建议" title="九、对实践者的建议¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>九、对实践者的建议¶</span></a><ol class="mt-1 space-y-1"><li><a href="#使用-dcp" data-toc-link data-mobile-toc-link data-target="使用-dcp" title="使用 DCP：¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>使用 DCP：¶</span></a></li><li><a href="#使用-pcp" data-toc-link data-mobile-toc-link data-target="使用-pcp" title="使用 PCP：¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>使用 PCP：¶</span></a></li><li><a href="#关注-helix" data-toc-link data-mobile-toc-link data-target="关注-helix" title="关注 Helix：¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>关注 Helix：¶</span></a></li></ol></li><li><a href="#十附录完整-pr-索引" data-toc-link data-mobile-toc-link data-target="十附录完整-pr-索引" title="十、附录：完整 PR 索引¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>十、附录：完整 PR 索引¶</span></a><ol class="mt-1 space-y-1"><li><a href="#已合并-pr36个" data-toc-link data-mobile-toc-link data-target="已合并-pr36个" title="已合并 PR（36个）¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>已合并 PR（36个）¶</span></a></li><li><a href="#开放中的关键-pr29个节选重要" data-toc-link data-mobile-toc-link data-target="开放中的关键-pr29个节选重要" title="开放中的关键 PR（29个，节选重要）¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>开放中的关键 PR（29个，节选重要）¶</span></a></li></ol></li></ol></div></div></div><script type="module">const c=document.querySelector("[data-mobile-toc]"),a=document.querySelector("[data-mobile-toc-drawer]"),s=document.querySelector("[data-mobile-toc-backdrop]"),p=()=>Array.from(document.querySelectorAll("[data-mobile-toc-open]")),k=document.querySelector("[data-mobile-toc-close]"),h=()=>Array.from((a??c)?.querySelectorAll("[data-mobile-toc-link]")??[]),o=document.body,v=window.matchMedia("(prefers-reduced-motion: reduce)");v.matches;const g=()=>{const e=getComputedStyle(document.documentElement).getPropertyValue("--site-header-height");return parseFloat(e)||0};let i=0;const S=50,L=e=>window.dispatchEvent(new CustomEvent("mobile-toc:toggle",{detail:{open:e}})),A=e=>{p().forEach(n=>n.setAttribute("aria-expanded",e?"true":"false"))},l=e=>{e.preventDefault(),r(!0)},f=()=>{p().forEach(e=>{e.removeEventListener("click",l),e.addEventListener("click",l)})},T=()=>{i=window.scrollY,o.style.position="fixed",o.style.width="100%",o.style.top=`-${i}px`},B=()=>{o.style.position="",o.style.width="",o.style.top="",window.scrollTo({top:i,behavior:"instant"})},r=e=>{!c||!a||(c.dataset.open=String(e),a.dataset.open=String(e),s?.setAttribute("data-open",String(e)),c.setAttribute("aria-hidden",e?"false":"true"),A(e),L(e),e?T():B())},y=()=>{const e=g();h().map(t=>document.getElementById(t.dataset.target||"")).filter(t=>!!t).forEach(t=>{t.style.scrollMarginTop=`${e+16}px`})},d=e=>`#${encodeURIComponent(e)}`,w=(e,n=!1)=>{const t=document.getElementById(e);if(!t)return;const b=g(),E=window.scrollY+t.getBoundingClientRect().top-b-16;window.scrollTo({top:E,behavior:"instant"}),n?history.replaceState(null,"",d(e)):history.pushState(null,"",d(e))};f();const O=new MutationObserver(f);O.observe(document.body,{subtree:!0,childList:!0,attributes:!0,attributeFilter:["data-mobile-toc-open"]});k?.addEventListener("click",()=>r(!1));s?.addEventListener("click",e=>{e.target===s&&r(!1)});const u=e=>{const t=e.currentTarget?.dataset.target;t&&(e.preventDefault(),e.stopPropagation(),r(!1),setTimeout(()=>w(t),S))};h().forEach(e=>{e.removeEventListener("click",u),e.addEventListener("click",u)});window.addEventListener("keydown",e=>{e.key==="Escape"&&r(!1)});y();window.addEventListener("headerheightchange",y);const m=decodeURIComponent(location.hash.replace(/^#/,""));m&&requestAnimationFrame(()=>w(m,!0));</script> <div class="floating-action-stack fixed z-40 flex flex-col items-end gap-3 lg:hidden pointer-events-auto transition-opacity data-[toc-open=true]:opacity-0 data-[toc-open=true]:pointer-events-none" data-floating-action-stack style="inset-inline-end: calc(env(safe-area-inset-right, 0px) + 1rem); inset-block-start: 50%; transform: translateY(-50%);"><button type="button" class="floating-action-stack__button h-11 w-11 rounded-full border border-gray-200 bg-white/90 text-gray-900 shadow-lg backdrop-blur-sm ring-offset-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 hover:-translate-y-0.5 hover:border-blue-200 hover:text-blue-600 data-[visible=false]:opacity-0 data-[visible=false]:pointer-events-none data-[visible=true]:opacity-100 data-[visible=true]:pointer-events-auto dark:border-gray-800 dark:bg-gray-900/85 dark:text-gray-100 dark:ring-offset-gray-900 dark:hover:border-blue-500/50 dark:hover:text-blue-300" data-floating-action-button data-action="toc" data-visible="true" style="transition-delay: 0ms;" aria-label="打开目录抽屉" data-mobile-toc-open="true"><span class="sr-only">目录</span><span aria-hidden="true" class="text-base">📑</span></button></div><script type="module">const o=document.querySelector("[data-floating-action-stack]"),r=o?.querySelector('[data-action="toc"]'),e=document.querySelector("[data-mobile-toc]"),a=t=>{o&&(o.dataset.tocOpen=t?"true":"false")};a(e?.dataset.open==="true");r?.addEventListener("click",()=>{requestAnimationFrame(()=>r?.blur())});window.addEventListener("mobile-toc:toggle",t=>{const n=t.detail;n&&a(n.open)});e&&new MutationObserver(()=>{a(e.dataset.open==="true")}).observe(e,{attributes:!0,attributeFilter:["data-open"]});</script> <button type="button" class="fixed left-1/2 top-20 z-40 -translate-x-1/2 rounded-full border border-zinc-200 bg-white/95 px-4 py-2 text-sm font-medium text-zinc-900 shadow-lg backdrop-blur-sm transition data-[visible=false]:pointer-events-none data-[visible=false]:-translate-y-2 data-[visible=false]:opacity-0 data-[visible=true]:opacity-100 dark:border-zinc-800 dark:bg-zinc-900/90 dark:text-zinc-100" data-scroll-up-top-button data-target-selector="[data-article]" data-visible="false" aria-label="回到文章顶部">
+回到顶部
+</button> <script type="module">const t=document.querySelector("[data-scroll-up-top-button]"),f=t?.dataset.targetSelector||"[data-article]",d=document.querySelector(f),m=window.matchMedia("(prefers-reduced-motion: reduce)");if(!t||!d)t&&(t.dataset.visible="false");else{let o=0,l=window.scrollY,r=!1;const u=()=>{const e=getComputedStyle(document.documentElement).getPropertyValue("--site-header-height");return parseFloat(e)||0},s=()=>{o=d.getBoundingClientRect().top+window.scrollY},a=e=>{t.dataset.visible=e?"true":"false"},n=()=>{const e=window.scrollY,i=e-l,w=Math.abs(i)>=6;e<=o+140?a(!1):w&&a(i<0),l=e,r=!1},c=()=>{r||(r=!0,requestAnimationFrame(n))},p=()=>{const e=Math.max(0,o-u()-12);window.scrollTo({top:e,behavior:m.matches?"auto":"smooth"})};s(),n(),window.addEventListener("scroll",c,{passive:!0}),window.addEventListener("resize",()=>{s(),c()}),window.addEventListener("load",()=>{s(),n()},{once:!0}),t.addEventListener("click",p)}</script> </main> <footer class="py-8 mt-auto border-t border-zinc-200 dark:border-zinc-800"> <div class="container mx-auto px-4 text-center text-zinc-500 max-w-4xl">
+&copy; 2026 Yuanle Liu. All rights reserved. </div> </footer>  <script type="module" src="/blog-preview/previews/pr-464/_astro/Layout.astro_astro_type_script_index_0_lang.gitfCyfb.js"></script> <script type="module">const i=new WeakMap,c=(e,t)=>{e.dataset.state=t,t==="copied"?e.textContent="Copied":t==="error"?e.textContent="Failed":e.textContent="Copy";const o=i.get(e);if(o&&window.clearTimeout(o),t!=="idle"){const r=window.setTimeout(()=>c(e,"idle"),2e3);i.set(e,r)}},n=async e=>{const t=e.closest(".code-block");if(!t)return;const o=t.getAttribute("data-raw-code")??"";try{await navigator.clipboard.writeText(o),c(e,"copied")}catch(r){console.error("Copy failed",r),c(e,"error")}},s=()=>{document.addEventListener("click",e=>{const o=e.target?.closest("button.code-block__copy");o&&(e.preventDefault(),n(o))})},a=()=>{typeof document>"u"||s()};a();</script> <script type="module">function d(){const n=document.querySelector("[data-site-header]");if(!n){document.documentElement.style.setProperty("--site-header-height","0px");return}let i=0;const t=()=>{const e=n.getBoundingClientRect().height;Math.abs(e-i)>.5&&(i=e,document.documentElement.style.setProperty("--site-header-height",`${e}px`),window.dispatchEvent(new CustomEvent("headerheightchange",{detail:{height:e}})))};t(),"ResizeObserver"in window&&new ResizeObserver(()=>{t()}).observe(n),window.addEventListener("resize",t,{passive:!0}),window.addEventListener("load",t,{once:!0})}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",d):d();</script> </body> </html> <dialog id="article-image-zoom-dialog" class="fixed inset-0 m-0 h-screen w-screen max-h-none max-w-none touch-none border-0 bg-black/85 p-0 backdrop:bg-black/85 [&[open]]:grid [&[open]]:place-items-center" aria-label="图片预览"> <button type="button" data-image-zoom-close class="absolute right-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-2xl text-white transition hover:bg-black/70 focus:outline-none focus:ring-2 focus:ring-white" aria-label="关闭预览">
+×
+</button> <img data-image-zoom-preview alt="" draggable="false" class="max-h-[90vh] max-w-[90vw] touch-none select-none rounded-lg bg-zinc-100 p-2 object-contain shadow-2xl transition-transform duration-150 ease-out will-change-transform dark:bg-zinc-800" loading="eager" decoding="async"> <div class="pointer-events-none absolute bottom-4 left-1/2 z-10 -translate-x-1/2 rounded-full bg-black/55 px-3 py-2"> <div class="pointer-events-auto flex items-center gap-2 text-sm text-white"> <button type="button" data-image-zoom-out class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/35 hover:bg-white/10" aria-label="缩小">
+−
+</button> <span data-image-zoom-level class="min-w-14 text-center tabular-nums">100%</span> <button type="button" data-image-zoom-in class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/35 hover:bg-white/10" aria-label="放大">
++
+</button> </div> </div> </dialog> <dialog id="article-share-dialog" class="w-[min(92vw,640px)] rounded-2xl border border-zinc-200 bg-white p-0 text-zinc-900 shadow-2xl backdrop:bg-black/50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100" aria-label="分享文章"> <div class="flex items-center justify-between border-b border-zinc-200 px-5 py-4 dark:border-zinc-800"> <h2 class="text-lg font-semibold">分享文章</h2> <button type="button" data-share-close class="inline-flex h-9 w-9 items-center justify-center rounded-full text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200" aria-label="关闭分享窗口">
+×
+</button> </div> <div class="space-y-5 px-5 py-4"> <section class="space-y-2"> <div class="flex items-center justify-between gap-3"> <h3 class="text-sm font-medium text-zinc-700 dark:text-zinc-300">Markdown 链接</h3> <button type="button" class="rounded-md border border-zinc-300 px-3 py-1.5 text-sm transition hover:border-zinc-400 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:border-zinc-500 dark:hover:bg-zinc-800" data-share-copy="markdown">
+复制
+</button> </div> <pre class="overflow-x-hidden whitespace-pre-wrap break-all rounded-lg bg-zinc-100 px-3 py-2 text-sm text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200" data-share-text="markdown">      </pre> </section> <section class="space-y-2"> <div class="flex items-center justify-between gap-3"> <h3 class="text-sm font-medium text-zinc-700 dark:text-zinc-300">标题 + 链接</h3> <button type="button" class="rounded-md border border-zinc-300 px-3 py-1.5 text-sm transition hover:border-zinc-400 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:border-zinc-500 dark:hover:bg-zinc-800" data-share-copy="plain">
+复制
+</button> </div> <pre class="overflow-x-hidden whitespace-pre-wrap break-all rounded-lg bg-zinc-100 px-3 py-2 text-sm text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200" data-share-text="plain">      </pre> </section> <p data-share-status class="min-h-5 text-sm text-emerald-600 dark:text-emerald-400" aria-live="polite"></p> </div> </dialog> <script type="module" src="/blog-preview/previews/pr-464/_astro/_...slug_.astro_astro_type_script_index_0_lang.Bbz5kgQv.js"></script>
