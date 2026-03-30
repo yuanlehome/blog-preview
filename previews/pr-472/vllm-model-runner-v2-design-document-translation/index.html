@@ -563,12 +563,12 @@ state.apply_write()
 <p>我们希望对 MRV2 后续的改动和新增功能维持更高的代码质量标准。</p>
 <p>尤其是在逐步补齐 V1 尚有而 MRV2 仍未完成的功能时，我们会坚持一个原则：必须放回新设计的上下文里，从第一性原理重新思考，而不是为了尽快“有东西可用”就直接把 V1 的实现搬过来。</p>
 <p>理想情况下，我们宁可在前期多花一些时间，把方案统一得更干净、更优雅，也愿意通过 PR 反复打磨，而不是匆忙把功能合进去。前面提到的模块化，将会是必须守住的底线。</p>
-<p>一个典型例子是 pooling model。尤其是它是否应该像 V1 那样和 generative model 做紧耦合统一，还是应该进一步分离，甚至这种分离是否还应该延伸到 scheduler 层，这些都值得重新思考。</p> <div class="grid md:grid-cols-2 gap-4 mt-10"> <div></div> <a href="/blog-preview/previews/pr-472/how-i-built-my-blog-system/" class="block p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-sky-500 text-right"> <div class="text-xs uppercase text-zinc-500">Next</div> <div class="font-semibold">我是怎么借助 AI Agent，把这个 Astro Blog 做成一套内容系统的</div> </a> </div>  <section id="comments" class="mt-12" data-comments> <div class="rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 p-6 md:p-8"> <script src="https://giscus.app/client.js" data-repo="yuanlehome/blog" data-repo-id="R_kgDOQu2Jjw" data-category="General" data-category-id="DIC_kwDOQu2Jj84C0QDN" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="bottom" data-theme="transparent" data-lang="zh-CN" crossorigin="anonymous" async></script> </div> </section> <script>(() => {
+<p>一个典型例子是 pooling model。尤其是它是否应该像 V1 那样和 generative model 做紧耦合统一，还是应该进一步分离，甚至这种分离是否还应该延伸到 scheduler 层，这些都值得重新思考。</p> <div class="grid md:grid-cols-2 gap-4 mt-10"> <div></div> <a href="/blog-preview/previews/pr-472/how-i-built-my-blog-system/" class="block p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-sky-500 text-right"> <div class="text-xs uppercase text-zinc-500">Next</div> <div class="font-semibold">我是怎么借助 AI Agent，把这个 Astro Blog 做成一套内容系统的</div> </a> </div>  <section id="comments" class="mt-12" data-comments> <div class="rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 p-6 md:p-8"> <script src="https://giscus.app/client.js" data-repo="yuanlehome/blog" data-repo-id="R_kgDOQu2Jjw" data-category="General" data-category-id="DIC_kwDOQu2Jj84C0QDN" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="bottom" data-theme="transparent_dark" data-lang="zh-CN" crossorigin="anonymous" async></script> </div> </section> <script>(() => {
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
 
   // Theme mapping for Giscus from config
   const themeMap = {"light":"light","dark":"dark"};
-  const configuredTheme = "transparent";
+  const configuredTheme = "transparent_dark";
   const resolveGiscusTheme = (effectiveTheme) => {
     if (configuredTheme !== 'preferred_color_scheme') {
       return configuredTheme;
