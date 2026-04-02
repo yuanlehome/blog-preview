@@ -1,0 +1,1216 @@
+<!DOCTYPE html><html lang="en" data-astro-cid-sckkx6r4> <head><script>(() => {
+  const storageKey = 'theme';
+  const className = 'dark';
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  const validThemes = ['light', 'dark'];
+  let currentPreference = (() => {
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored && validThemes.includes(stored)) return stored;
+    } catch (error) {
+      console.warn('Unable to access localStorage for theme:', error);
+    }
+    return mediaQuery.matches ? 'dark' : 'light';
+  })();
+
+  const resolveTheme = (preference) => (preference === 'dark' ? 'dark' : 'light');
+
+  const applyTheme = (preference) => {
+    const effectiveTheme = resolveTheme(preference);
+    document.documentElement.classList.toggle(className, effectiveTheme === 'dark');
+    document.documentElement.dataset.theme = effectiveTheme;
+    return effectiveTheme;
+  };
+
+  const dispatchChange = (preference) => {
+    const resolved = document.documentElement.classList.contains(className) ? 'dark' : 'light';
+    window.dispatchEvent(
+      new CustomEvent('themechange', {
+        detail: { theme: preference, resolved },
+      }),
+    );
+  };
+
+  applyTheme(currentPreference);
+
+  window.__setTheme = (next) => {
+    const preference = validThemes.includes(String(next)) ? String(next) : resolveTheme(currentPreference);
+    currentPreference = preference;
+    try {
+      localStorage.setItem(storageKey, preference);
+    } catch (error) {
+      console.warn('Unable to persist theme selection:', error);
+    }
+    applyTheme(preference);
+    dispatchChange(preference);
+  };
+})();</script><meta charset="UTF-8"><meta name="description" content="A minimal Astro blog"><meta name="viewport" content="width=device-width"><link rel="icon" type="image/x-icon" href="/blog-preview/previews/pr-474/favicon.ico"><link rel="icon" type="image/png" sizes="32x32" href="/blog-preview/previews/pr-474/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/blog-preview/previews/pr-474/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/blog-preview/previews/pr-474/apple-touch-icon.png"><meta name="generator" content="Astro v5.16.6"><link rel="canonical" href="https://yuanlehome.github.io/blog-preview/previews/pr-474/feature-tracking-sglang-context-parallel-pr/"><meta property="og:title" content="[Feature tracking] sglang Context Parallel PR 分析报告"><meta property="og:description" content="A minimal Astro blog"><meta property="og:image" content="/blog-preview/previews/pr-474/placeholder-social.jpg"><meta property="og:type" content="article"><meta property="og:url" content="https://yuanlehome.github.io/blog-preview/previews/pr-474/feature-tracking-sglang-context-parallel-pr/"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="[Feature tracking] sglang Context Parallel PR 分析报告"><meta name="twitter:description" content="A minimal Astro blog"><meta name="twitter:image" content="/blog-preview/previews/pr-474/placeholder-social.jpg"><title>[Feature tracking] sglang Context Parallel PR 分析报告</title><style>:root {
+  /* Typography */
+  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial, Noto Sans SC, PingFang SC, Microsoft YaHei, sans-serif;
+  --font-serif: ui-serif, Georgia, Cambria, Times New Roman, Times, serif;
+  --font-mono: JetBrains Mono, Fira Code, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  --font-size-4xl: 2.25rem;
+  --line-height-body: 1.75;
+  --line-height-heading: 1.3;
+  --line-height-code: 1.65;
+  --line-height-tight: 1.25;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Components */
+  --radius-sm: 0.35rem;
+  --radius-md: 0.65rem;
+  --radius-lg: 0.9rem;
+  --radius-xl: 0.75rem;
+  --shadow-card: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-code-block: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-header: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --border-style: solid;
+  --border-width: 1px;
+  --motion-duration: 160ms;
+  --motion-easing: ease;
+  --spacing-multiplier: 1;
+
+  /* Light Mode Colors */
+  --color-brand: #0284c7;
+  --color-accent: #0284c7;
+  --color-background: #fafafa;
+  --color-foreground: #18181b;
+  --color-muted: #71717a;
+  --color-border: #e4e4e7;
+  --color-card: #f4f4f5;
+  --color-code-background: #f4f4f5;
+  --color-code-foreground: #18181b;
+  --color-code-border: #e4e4e7;
+  --color-code-keyword: #0284c7;
+  --color-code-string: #059669;
+  --color-code-comment: #a1a1aa;
+  --color-code-function: #0284c7;
+
+  /* Code block specific (legacy support) */
+  --code-font: var(--font-mono);
+  --code-radius: 0.9rem;
+  --code-border: 1px solid var(--color-code-border);
+  --code-bg: var(--color-code-background);
+  --code-fg: var(--color-code-foreground);
+  --code-scrollbar: rgb(203 213 225 / 0.75);
+  --code-highlight-bg: rgb(59 130 246 / 0.12);
+  --code-highlight-accent: rgb(59 130 246);
+
+  /* Header specific (legacy support) */
+  --header-bg: rgb(248 250 252 / 0.92);
+  --header-bg-scrolled: rgb(248 250 252 / 0.98);
+  --header-border: rgb(226 232 240 / 0.9);
+  --header-shadow: var(--shadow-header);
+  --header-shadow-strong: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+.dark {
+  /* Dark Mode Colors */
+  --color-brand: #38bdf8;
+  --color-accent: #38bdf8;
+  --color-background: #18181b;
+  --color-foreground: #fafafa;
+  --color-muted: #a1a1aa;
+  --color-border: #3f3f46;
+  --color-card: #27272a;
+  --color-code-background: #1f1f23;
+  --color-code-foreground: #e4e4e7;
+  --color-code-border: #3f3f46;
+  --color-code-keyword: #38bdf8;
+  --color-code-string: #34d399;
+  --color-code-comment: #71717a;
+  --color-code-function: #38bdf8;
+
+  /* Dark mode shadows */
+  --shadow-card: 0 10px 30px rgb(0 0 0 / 0.28);
+  --shadow-code-block: 0 10px 30px rgb(0 0 0 / 0.28);
+  --shadow-header: 0 10px 30px rgb(0 0 0 / 0.28);
+
+  /* Code block specific (legacy support) */
+  --code-border: 1px solid var(--color-code-border);
+  --code-bg: var(--color-code-background);
+  --code-fg: var(--color-code-foreground);
+  --code-scrollbar: rgb(71 85 105 / 0.8);
+  --code-highlight-bg: rgb(59 130 246 / 0.2);
+  --code-highlight-accent: rgb(96 165 250);
+
+  /* Header specific (legacy support) */
+  --header-bg: rgb(15 23 42 / 0.72);
+  --header-bg-scrolled: rgb(15 23 42 / 0.8400000000000001);
+  --header-border: rgb(71 85 105 / 0.8);
+  --header-shadow: var(--shadow-header);
+  --header-shadow-strong: 0 20px 40px rgb(0 0 0 / 0.35);
+}
+</style><link rel="stylesheet" href="/blog-preview/previews/pr-474/_astro/_slug_.C5oSolGD.css">
+<style>.reading-progress[data-astro-cid-mu6cnre2]{position:fixed;inset:0 0 auto;height:3px;width:100%;background:transparent;z-index:50;pointer-events:none}.reading-progress__bar[data-astro-cid-mu6cnre2]{display:block;height:100%;width:100%;transform:scaleX(var(--progress-value, 0));transform-origin:left center;background:linear-gradient(90deg,var(--progress-color-start),var(--progress-color-end));transition:transform .1s linear}:root{--progress-color-start: #2563eb;--progress-color-end: #22d3ee}:root.dark{--progress-color-start: #38bdf8;--progress-color-end: #a855f7}@media(prefers-reduced-motion:reduce){.reading-progress__bar[data-astro-cid-mu6cnre2]{transition:none}}
+</style></head> <body class="bg-neutral-50 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 transition-colors duration-300 min-h-screen flex flex-col" data-astro-cid-sckkx6r4>  <div class="reading-progress" data-reading-progress data-target-selector="[data-article]" data-astro-cid-mu6cnre2> <span class="reading-progress__bar" data-reading-progress-bar data-astro-cid-mu6cnre2></span> </div>  <script type="module">const s=document.querySelector("[data-reading-progress]"),p=s?.dataset?.targetSelector||"[data-article]",g=s?.querySelector("[data-reading-progress-bar]"),o=document.querySelector(p);if(s&&g&&o){let n=0,a=0,t=!1;const u=(e,r,w)=>Math.min(Math.max(e,r),w),c=()=>{n=o.getBoundingClientRect().top+window.scrollY,a=o.scrollHeight},i=()=>{const e=Math.max(a-window.innerHeight,1),r=u((window.scrollY-n)/e,0,1);g.style.setProperty("--progress-value",r.toString()),t=!1},l=()=>{t||(t=!0,requestAnimationFrame(i))},d=()=>{c(),l()};c(),i(),window.addEventListener("scroll",l,{passive:!0}),window.addEventListener("resize",d),window.addEventListener("load",d,{once:!0})}</script> <header class="site-header header-variant-frosted" data-header data-site-header> <div class="container mx-auto px-5 py-3 sm:py-4 flex justify-between items-start max-w-5xl"> <a href="/blog-preview/previews/pr-474/" class="text-xl font-bold hover:text-sky-600 dark:hover:text-sky-400 flex items-center gap-2"> <img src="/blog-preview/previews/pr-474/placeholder-social.jpg" alt="Yuanle Liu" width="32" height="32" class="h-8 w-8 rounded"> <span class="hidden sm:inline">Yuanle Liu</span> </a> <nav class="flex items-start gap-3 items-center"> <a href="/blog-preview/previews/pr-474/" class="hover:underline inline-flex items-center "> Home </a><a href="/blog-preview/previews/pr-474/archive/" class="hover:underline inline-flex items-center "> Archive </a><a href="/blog-preview/previews/pr-474/tags/" class="hover:underline inline-flex items-center "> Tags </a><a href="/blog-preview/previews/pr-474/about/" class="hover:underline inline-flex items-center "> About </a> <button id="theme-toggle" class="inline-flex items-center gap-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 px-1" aria-label="Toggle theme"> 🖥️ ☀️ </button> </nav> </div> </header> <script type="module">const u="theme",d=["light","dark"];const g=()=>{try{const e=localStorage.getItem(u);if(e==="light"||e==="dark")return e}catch(e){console.warn("Unable to read theme preference:",e)}return window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"},f=()=>document.documentElement.classList.contains("dark")?"dark":"light",p=e=>e==="dark"?"🌙":"☀️",T=e=>e==="dark"?"Dark":"Light",c=(e,n)=>{const t=document.getElementById("theme-toggle");if(!t)return;const o=n??f(),i=p(o),a=T(o);t.dataset.theme=e,t.textContent="";const s=document.createElement("span");s.className="inline-flex items-center justify-center",s.style.lineHeight="1",s.textContent=i,t.appendChild(s),t.appendChild(document.createTextNode(" "+a)),t.setAttribute("aria-label",`Toggle theme (current: ${a})`)},l=e=>{if(typeof window.__setTheme=="function"){window.__setTheme?.(e);return}const n=e==="dark"?"dark":"light";document.documentElement.classList.toggle("dark",n==="dark");try{localStorage.setItem(u,e)}catch(t){console.warn("Unable to persist theme preference:",t)}window.dispatchEvent(new CustomEvent("themechange",{detail:{theme:e,resolved:n}}))},k=(e,n)=>{const t=n.getBoundingClientRect(),o=e instanceof MouseEvent,i=o&&e.detail>0&&(e.clientX!==0||e.clientY!==0),a=i&&o?e.clientX:t.left+t.width/2,s=i&&o?e.clientY:t.top+t.height/2,r=Math.max(Math.hypot(a,s),Math.hypot(window.innerWidth-a,s),Math.hypot(a,window.innerHeight-s),Math.hypot(window.innerWidth-a,window.innerHeight-s));return{x:a,y:s,r}},E=({x:e,y:n,r:t})=>{const o=document.documentElement;o.style.setProperty("--theme-toggle-x",`${e}px`),o.style.setProperty("--theme-toggle-y",`${n}px`),o.style.setProperty("--theme-toggle-r",`${t}px`)},L=async(e,n,t)=>{if(t){l(e),c(e);return}E(n),document.documentElement.classList.add("theme-toggle-transitioning");const o=document;try{if(typeof o.startViewTransition=="function"){await o.startViewTransition(()=>{l(e),c(e)}).finished.catch(s=>{console.warn("Theme view transition failed:",s)});return}const i=document.createElement("div");i.className="theme-toggle-overlay",e==="dark"&&i.classList.add("dark"),document.body.appendChild(i);try{i.getBoundingClientRect(),i.classList.add("is-animating"),await new Promise(a=>{let s=!1;const r=()=>{s||(s=!0,a())};i.addEventListener("animationend",r,{once:!0}),i.addEventListener("animationcancel",r,{once:!0}),window.setTimeout(r,550)}),l(e),c(e)}finally{i.remove()}}finally{document.documentElement.classList.remove("theme-toggle-transitioning")}};let m=!1;const M=async e=>{if(m)return;const n=e.currentTarget instanceof HTMLElement?e.currentTarget:null;if(!n)return;m=!0,n.setAttribute("disabled","true");const t=g(),o=d[(d.indexOf(t)+1)%d.length];try{const i=k(e,n);await L(o,i,w.matches)}finally{window.setTimeout(()=>{n.removeAttribute("disabled"),m=!1},500)}},h=document.querySelector("[data-header]"),w=window.matchMedia("(prefers-reduced-motion: reduce)"),v=w.matches,y=()=>{if(!h)return;const e=window.scrollY>6;h.classList.toggle("is-scrolled",e)};document.getElementById("theme-toggle")?.addEventListener("click",M);c(g());window.addEventListener("themechange",e=>{const n=e.detail,t=n?.theme??g(),o=n?.resolved;c(t,o)});y();const b=()=>y();window.addEventListener("scroll",b,{passive:!0});v&&h?.classList.add("reduce-motion");</script> <main class="container mx-auto px-4 py-8 max-w-6xl"> <div class="flex flex-col gap-6 lg:grid lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start lg:gap-12" data-post-layout> <div class="w-full" data-toc-shell> <aside class="hidden lg:block h-full"> <div class="flex h-full w-full flex-col gap-3 overflow-hidden rounded-xl border border-zinc-200 bg-neutral-50/80 p-4 shadow-md backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-900/50 lg:sticky lg:top-[var(--site-header-height)] lg:max-h-[calc(100vh-var(--site-header-height)-16px)] lg:h-[calc(100vh-var(--site-header-height)-16px)]" data-toc-container> <div class="space-y-1"> <p class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">文章目录</p> <p class="text-xs text-zinc-500 dark:text-zinc-400">快速跳转到你关心的章节</p> </div> <nav aria-label="文章目录" class="flex-1 min-h-0 overflow-y-auto pr-1" data-toc-scroll> <ol class="space-y-3 text-sm"> <li><a href="#一总体概况" data-toc-link data-mobile-toc-link data-target="一总体概况" title="一、总体概况¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>一、总体概况¶</span></a></li><li><a href="#二pr-分类统计" data-toc-link data-mobile-toc-link data-target="二pr-分类统计" title="二、PR 分类统计¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>二、PR 分类统计¶</span></a></li><li><a href="#三技术演进时间线里程碑视图" data-toc-link data-mobile-toc-link data-target="三技术演进时间线里程碑视图" title="三、技术演进时间线（里程碑视图）¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>三、技术演进时间线（里程碑视图）¶</span></a><ol class="mt-1 space-y-1"><li><a href="#阶段一cp-基础能力落地2025年11月" data-toc-link data-mobile-toc-link data-target="阶段一cp-基础能力落地2025年11月" title="阶段一：CP 基础能力落地（2025年11月）¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>阶段一：CP 基础能力落地（2025年11月）¶</span></a></li><li><a href="#阶段二能力扩展与性能优化2025年12月--2026年1月" data-toc-link data-mobile-toc-link data-target="阶段二能力扩展与性能优化2025年12月--2026年1月" title="阶段二：能力扩展与性能优化（2025年12月 ～ 2026年1月）¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>阶段二：能力扩展与性能优化（2025年12月 ～ 2026年1月）¶</span></a></li><li><a href="#阶段三核心架构重构2026年2月上旬" data-toc-link data-mobile-toc-link data-target="阶段三核心架构重构2026年2月上旬" title="阶段三：核心架构重构（2026年2月上旬）¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>阶段三：核心架构重构（2026年2月上旬）¶</span></a></li><li><a href="#阶段四稳定化与-bug-攻坚2026年2月下旬--3月上旬" data-toc-link data-mobile-toc-link data-target="阶段四稳定化与-bug-攻坚2026年2月下旬--3月上旬" title="阶段四：稳定化与 Bug 攻坚（2026年2月下旬 ～ 3月上旬）¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>阶段四：稳定化与 Bug 攻坚（2026年2月下旬 ～ 3月上旬）¶</span></a></li><li><a href="#阶段五前沿探索2026年3月进行中" data-toc-link data-mobile-toc-link data-target="阶段五前沿探索2026年3月进行中" title="阶段五：前沿探索（2026年3月，进行中）¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>阶段五：前沿探索（2026年3月，进行中）¶</span></a></li></ol></li><li><a href="#四核心技术解析" data-toc-link data-mobile-toc-link data-target="四核心技术解析" title="四、核心技术解析¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>四、核心技术解析¶</span></a><ol class="mt-1 space-y-1"><li><a href="#41-cp-基础架构ring-attention" data-toc-link data-mobile-toc-link data-target="41-cp-基础架构ring-attention" title="4.1 CP 基础架构：Ring Attention¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>4.1 CP 基础架构：Ring Attention¶</span></a></li><li><a href="#42-序列切分策略对比" data-toc-link data-mobile-toc-link data-target="42-序列切分策略对比" title="4.2 序列切分策略对比¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>4.2 序列切分策略对比¶</span></a></li><li><a href="#43-cp--moe-的并行拓扑" data-toc-link data-mobile-toc-link data-target="43-cp--moe-的并行拓扑" title="4.3 CP × MoE 的并行拓扑¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>4.3 CP × MoE 的并行拓扑¶</span></a></li><li><a href="#44-cp-与-prefix-cache-的冲突" data-toc-link data-mobile-toc-link data-target="44-cp-与-prefix-cache-的冲突" title="4.4 CP 与 Prefix Cache 的冲突¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>4.4 CP 与 Prefix Cache 的冲突¶</span></a></li></ol></li><li><a href="#五核心贡献者分析" data-toc-link data-mobile-toc-link data-target="五核心贡献者分析" title="五、核心贡献者分析¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>五、核心贡献者分析¶</span></a></li><li><a href="#六主要技术挑战与已知问题" data-toc-link data-mobile-toc-link data-target="六主要技术挑战与已知问题" title="六、主要技术挑战与已知问题¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>六、主要技术挑战与已知问题¶</span></a><ol class="mt-1 space-y-1"><li><a href="#61-已解决的核心问题" data-toc-link data-mobile-toc-link data-target="61-已解决的核心问题" title="6.1 已解决的核心问题¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>6.1 已解决的核心问题¶</span></a></li><li><a href="#62-当前开放的重点问题" data-toc-link data-mobile-toc-link data-target="62-当前开放的重点问题" title="6.2 当前开放的重点问题¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>6.2 当前开放的重点问题¶</span></a></li></ol></li><li><a href="#七与-vllm-cp-的横向对比" data-toc-link data-mobile-toc-link data-target="七与-vllm-cp-的横向对比" title="七、与 vllm CP 的横向对比¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>七、与 vllm CP 的横向对比¶</span></a></li><li><a href="#八关键趋势与判断" data-toc-link data-mobile-toc-link data-target="八关键趋势与判断" title="八、关键趋势与判断¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>八、关键趋势与判断¶</span></a><ol class="mt-1 space-y-1"><li><a href="#趋势1cp-已成为-sglang-核心生产特性" data-toc-link data-mobile-toc-link data-target="趋势1cp-已成为-sglang-核心生产特性" title="趋势1：CP 已成为 sglang 核心生产特性¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>趋势1：CP 已成为 sglang 核心生产特性¶</span></a></li><li><a href="#趋势2百度-aiak-是重要的外部贡献力量" data-toc-link data-mobile-toc-link data-target="趋势2百度-aiak-是重要的外部贡献力量" title="趋势2：百度 AIAK 是重要的外部贡献力量¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>趋势2：百度 AIAK 是重要的外部贡献力量¶</span></a></li><li><a href="#趋势3nsa-cp-是近期最值得关注的性能方向" data-toc-link data-mobile-toc-link data-target="趋势3nsa-cp-是近期最值得关注的性能方向" title="趋势3：NSA-CP 是近期最值得关注的性能方向¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>趋势3：NSA-CP 是近期最值得关注的性能方向¶</span></a></li><li><a href="#趋势4多硬件平台扩展加速" data-toc-link data-mobile-toc-link data-target="趋势4多硬件平台扩展加速" title="趋势4：多硬件平台扩展加速¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>趋势4：多硬件平台扩展加速¶</span></a></li><li><a href="#趋势5架构解耦为未来扩展铺路" data-toc-link data-mobile-toc-link data-target="趋势5架构解耦为未来扩展铺路" title="趋势5：架构解耦为未来扩展铺路¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>趋势5：架构解耦为未来扩展铺路¶</span></a></li></ol></li><li><a href="#九对实践者的建议" data-toc-link data-mobile-toc-link data-target="九对实践者的建议" title="九、对实践者的建议¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>九、对实践者的建议¶</span></a><ol class="mt-1 space-y-1"><li><a href="#使用-sglang-cp-的推荐配置" data-toc-link data-mobile-toc-link data-target="使用-sglang-cp-的推荐配置" title="使用 sglang CP 的推荐配置：¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>使用 sglang CP 的推荐配置：¶</span></a></li><li><a href="#注意事项" data-toc-link data-mobile-toc-link data-target="注意事项" title="注意事项：¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>注意事项：¶</span></a></li><li><a href="#暂需等待" data-toc-link data-mobile-toc-link data-target="暂需等待" title="暂需等待：¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>暂需等待：¶</span></a></li></ol></li><li><a href="#十附录完整-pr-索引" data-toc-link data-mobile-toc-link data-target="十附录完整-pr-索引" title="十、附录：完整 PR 索引¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>十、附录：完整 PR 索引¶</span></a><ol class="mt-1 space-y-1"><li><a href="#已合并-pr33个" data-toc-link data-mobile-toc-link data-target="已合并-pr33个" title="已合并 PR（33个）¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>已合并 PR（33个）¶</span></a></li><li><a href="#开放中的关键-pr13个" data-toc-link data-mobile-toc-link data-target="开放中的关键-pr13个" title="开放中的关键 PR（13个）¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>开放中的关键 PR（13个）¶</span></a></li></ol></li> </ol> </nav> </div> </aside> </div> <script type="module">const p=Array.from(document.querySelectorAll("[data-toc-link]")),e=document.querySelector("[data-toc-container]"),i=document.querySelector("[data-toc-shell]"),l=()=>{const t=getComputedStyle(document.documentElement).getPropertyValue("--site-header-height");return parseFloat(t)||0},r=window.matchMedia("(min-width: 1024px)"),g=p.map(t=>document.getElementById(t.dataset.target||"")).filter(t=>!!t),m=()=>{const t=l();g.forEach(n=>{n.style.scrollMarginTop=`${t+12}px`})},w=t=>`#${encodeURIComponent(t)}`,v=t=>decodeURIComponent(t.replace(/^#/,"")),f=t=>{p.forEach(n=>{const o=n.dataset.target===t;n.dataset.active=o?"true":"false",n.setAttribute("aria-current",o?"true":"false")})},u=(t,n=!1)=>{const o=document.getElementById(t);if(!o)return;const a=l(),c=window.scrollY+o.getBoundingClientRect().top-a-12;n?history.replaceState(null,"",w(t)):history.pushState(null,"",w(t)),window.scrollTo({top:c,behavior:"smooth"}),f(t)};p.forEach(t=>t.addEventListener("click",n=>{const o=t.dataset.target;o&&(n.preventDefault(),u(o))}));const y=()=>{e&&(e.dataset.fixed="false",e.style.position="",e.style.left="",e.style.width="",e.style.height="",e.style.maxHeight="",e.style.top="",i&&(i.style.minHeight=""))},x=()=>{if(!e||!i)return;const t=i.getBoundingClientRect(),n=l(),o=`calc(100vh - ${n}px - 16px)`;e.dataset.fixed="true",i.style.minHeight=`${e.offsetHeight}px`,e.style.position="fixed",e.style.top=`${n}px`,e.style.left=`${t.left}px`,e.style.width=`${t.width}px`,e.style.height=o,e.style.maxHeight=o},d=()=>{if(!e||e.dataset.fixed==="true"||!r.matches)return;const t=parseFloat(getComputedStyle(e).top||"0"),n=e.offsetTop-t;if(Number.isNaN(t)||window.scrollY<n)return;const o=e.getBoundingClientRect().top;Math.abs(o-t)>2&&x()},E=()=>{if(!r.matches){y();return}e?.dataset.fixed==="true"&&x()};if(g.length>0){m();const t=new IntersectionObserver(o=>{const a=o.filter(s=>s.isIntersecting).sort((s,h)=>s.target.getBoundingClientRect().top-h.target.getBoundingClientRect().top);if(a[0]){f(a[0].target.id);return}const c=o.filter(s=>s.boundingClientRect.top<0).sort((s,h)=>h.target.getBoundingClientRect().top-s.target.getBoundingClientRect().top);c[0]&&f(c[0].target.id)},{rootMargin:`-${l()}px 0% -55% 0%`,threshold:[0,.25,.5,1]});g.forEach(o=>t.observe(o));const n=v(location.hash||"");n&&requestAnimationFrame(()=>u(n,!0)),window.addEventListener("hashchange",()=>{const o=v(location.hash||"");o&&u(o,!0)})}y();r.matches&&d();r.addEventListener("change",()=>{y(),requestAnimationFrame(()=>{r.matches&&d()})});window.addEventListener("scroll",d,{passive:!0});window.addEventListener("resize",E);window.addEventListener("load",()=>{d(),m()},{once:!0});window.addEventListener("headerheightchange",()=>{m()});</script> <article class="prose dark:prose-invert max-w-none prose-img:rounded-xl prose-img:cursor-zoom-in min-w-0" data-article> <header class="mb-8 not-prose"> <div class="flex flex-col gap-6 md:grid md:grid-cols-1"> <div class="flex flex-col gap-4 "> <h1 class="text-3xl md:text-4xl font-bold leading-tight text-left"> [Feature tracking] sglang Context Parallel PR 分析报告 </h1> <div class="text-zinc-500 text-sm flex items-start justify-start gap-3 flex-wrap "> <time class="flex items-center gap-1" datetime="2026-04-02T00:00:00.000Z" title="发布于 2026-04-02"> <span aria-hidden="true">📅</span> <span>
+发布于 <span class="font-medium">2026-04-02</span> </span> </time>   <div class="flex items-center gap-1"> <span aria-hidden="true">✍️</span> 3361 字
+</div> <div class="flex items-center gap-1" title="3361 words"> <span aria-hidden="true">⏱️</span> 8 min read </div> </div> <div class="flex flex-wrap items-center gap-2" data-testid="post-share-tags-row">  <div class="inline-flex items-center gap-2" data-testid="post-share-action"> <span class="text-zinc-500 text-sm" aria-hidden="true"> 📤 </span> <button type="button" class="inline-flex items-center rounded-full border border-pink-200 bg-pink-50 px-2 py-1 text-xs font-medium text-pink-700 transition-colors duration-200 hover:border-pink-300 hover:bg-pink-100 dark:border-pink-900 dark:bg-pink-950 dark:text-pink-300 dark:hover:border-pink-700 dark:hover:bg-pink-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900" data-share-open aria-haspopup="dialog" aria-controls="article-share-dialog">
+分享文章
+</button> </div> </div> </div>   </div> </header> <blockquote>
+<p><strong>时间范围</strong>：2025年7月20日 ～ 2026年3月20日（过去8个月）<br>
+<strong>仓库</strong>：<a href="https://github.com/sgl-project/sglang" target="_blank" rel="noopener noreferrer">https://github.com/sgl-project/sglang</a><strong>关键词覆盖</strong>：context parallel / context parallelism / ring attention / cp_size / round-robin-split / zigzag / ulysses / NSA-CP<br>
+<strong>报告生成日期</strong>：2026年03月20日</p>
+</blockquote>
+<hr>
+<h2 id="一总体概况">一、总体概况<a href="#一总体概况" class="heading-anchor" aria-label="Link to 一、总体概况">¶</a></h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>指标</th><th>数值</th></tr></thead><tbody><tr><td>相关 PR 总数</td><td><strong>46 个</strong></td></tr><tr><td>已合并（merged）</td><td><strong>33 个</strong>（72%）</td></tr><tr><td>开放中（open）</td><td><strong>13 个</strong>（28%）</td></tr><tr><td>核心贡献者</td><td>~12 人</td></tr><tr><td>月均合并 PR 数</td><td>~5 个/月（自 2025-11 起计）</td></tr></tbody></table>
+<p>sglang 的 Context Parallel 功能于 <strong>2025年11月</strong> 正式合入主线，在短短4个月内完成了从”单机 prefill” 到”多机 CP+PP 联合、FP8、MoE、NSA” 的快速演进，节奏极快，展现出典型的开源社区爆发式迭代特征。</p>
+<hr>
+<h2 id="二pr-分类统计">二、PR 分类统计<a href="#二pr-分类统计" class="heading-anchor" aria-label="Link to 二、PR 分类统计">¶</a></h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>分类</th><th>数量</th><th>占比</th><th>说明</th></tr></thead><tbody><tr><td>Bug 修复（bugfix）</td><td>16</td><td>35%</td><td>CP 与各功能组合场景下的兼容性修复</td></tr><tr><td>功能新增（feature）</td><td>15</td><td>33%</td><td>新的 CP 能力（PP+CP、MoE、P/D 等）</td></tr><tr><td>性能优化（perf）</td><td>6</td><td>13%</td><td>通信策略优化、计算-通信重叠</td></tr><tr><td>文档/测试（docs/test）</td><td>6</td><td>13%</td><td>用户文档、CI 测试、精度对比工具</td></tr><tr><td>代码重构（refactor）</td><td>3</td><td>7%</td><td>核心 API 解耦、架构清理</td></tr></tbody></table>
+<p><strong>关键洞察</strong>：Bug 修复占比最高（35%），且主要集中在 2026年2月后（重构 #17213 引发的连锁修复），说明 CP 正处于”功能快速扩展 + 稳定性攻坚”并行的阶段。</p>
+<hr>
+<h2 id="三技术演进时间线里程碑视图">三、技术演进时间线（里程碑视图）<a href="#三技术演进时间线里程碑视图" class="heading-anchor" aria-label="Link to 三、技术演进时间线（里程碑视图）">¶</a></h2>
+<h3 id="阶段一cp-基础能力落地2025年11月">阶段一：CP 基础能力落地（2025年11月）<a href="#阶段一cp-基础能力落地2025年11月" class="heading-anchor" aria-label="Link to 阶段一：CP 基础能力落地（2025年11月）">¶</a></h3>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>PR</th><th>标题</th><th>状态</th><th>重要性</th></tr></thead><tbody><tr><td><a href="https://github.com/sgl-project/sglang/pull/12065" target="_blank" rel="noopener noreferrer">#12065</a></td><td><strong>[Feature] Context Parallel (ring attention) first implementation</strong></td><td>✅ 已合并 2025-11-17</td><td>⭐⭐⭐ CP 零到一</td></tr></tbody></table>
+<p><strong>背景</strong>：这是 sglang CP 的奠基 PR，由 <strong>lixiaolx</strong> 主导，实现了基于 Ring Attention 的 Context Parallel 基础框架，支持单 batch prefill 阶段的序列切分与跨 GPU 注意力聚合。这比 vllm 的 PCP（2025-11-19）早了仅两天，两个框架几乎同期完成 Prefill CP 的基础落地。</p>
+<p><strong>核心实现</strong>：</p>
+<ul>
+<li>将长序列按 CP rank 切分为等长 chunks</li>
+<li>每个 chunk 独立计算本地注意力，通过 Ring AllReduce 聚合跨 chunk 的 KV</li>
+<li>支持 <code>-context-parallel-size</code> 启动参数</li>
+</ul>
+<hr>
+<h3 id="阶段二能力扩展与性能优化2025年12月--2026年1月">阶段二：能力扩展与性能优化（2025年12月 ～ 2026年1月）<a href="#阶段二能力扩展与性能优化2025年12月--2026年1月" class="heading-anchor" aria-label="Link to 阶段二：能力扩展与性能优化（2025年12月 ～ 2026年1月）">¶</a></h3>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>PR</th><th>标题</th><th>状态</th><th>重要性</th></tr></thead><tbody><tr><td><a href="https://github.com/sgl-project/sglang/pull/13959" target="_blank" rel="noopener noreferrer">#13959</a></td><td><strong>[CP] Fused MoE + multi-batch + FP8 KV cache support</strong></td><td>✅ 已合并 2026-01-02</td><td>⭐⭐⭐ 生产就绪</td></tr><tr><td><a href="https://github.com/sgl-project/sglang/pull/16380" target="_blank" rel="noopener noreferrer">#16380</a></td><td><strong>[Feature] CP + Pipeline Parallel (PP) joint support</strong></td><td>✅ 已合并 2026-01-09</td><td>⭐⭐⭐ 多维并行</td></tr><tr><td><a href="https://github.com/sgl-project/sglang/pull/16916" target="_blank" rel="noopener noreferrer">#16916</a></td><td>[Docs] CP + PP deployment documentation</td><td>✅ 已合并</td><td>⭐⭐ 用户指引</td></tr></tbody></table>
+<p><strong>阶段特征</strong>：</p>
+<ul>
+<li><strong>#13959</strong>（2026-01-02）是 CP 走向生产的关键节点，实现了 MoE 模型（DeepSeek MoE）的 Fused CP 计算，同时支持多 batch 并行和 FP8 量化 KV cache，大幅提升生产实用性</li>
+<li><strong>#16380</strong>（2026-01-09）将 CP 与 Pipeline Parallel 结合，实现了跨节点的二维并行，对超大规模模型部署意义重大</li>
+</ul>
+<hr>
+<h3 id="阶段三核心架构重构2026年2月上旬">阶段三：核心架构重构（2026年2月上旬）<a href="#阶段三核心架构重构2026年2月上旬" class="heading-anchor" aria-label="Link to 阶段三：核心架构重构（2026年2月上旬）">¶</a></h3>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>PR</th><th>标题</th><th>状态</th><th>重要性</th></tr></thead><tbody><tr><td><a href="https://github.com/sgl-project/sglang/pull/17213" target="_blank" rel="noopener noreferrer">#17213</a></td><td><strong>[Refactor] Introduce get_attention_cp_size/rank API, decouple attn CP from MoE DP</strong></td><td>✅ 已合并 2026-02-13</td><td>⭐⭐⭐ 架构里程碑</td></tr><tr><td><a href="https://github.com/sgl-project/sglang/pull/18613" target="_blank" rel="noopener noreferrer">#18613</a></td><td>[Perf] Switch default split strategy to round-robin-split</td><td>✅ 已合并 2026-02-11</td><td>⭐⭐ 精度/性能平衡</td></tr></tbody></table>
+<p><strong>#17213 的深远影响</strong>：
+这是 8 个月中影响最深远的单个 PR。核心变更：</p>
+<ol>
+<li>新增 <code>get_attention_cp_size()</code> / <code>get_attention_cp_rank()</code> API，将注意力计算的 CP 拓扑与 MoE 的 Data Parallel 拓扑<strong>解耦</strong></li>
+<li>允许注意力层和 FFN 层使用不同的并行策略（类似 vllm 的 TPA 思路）</li>
+<li>显著简化了后续功能扩展的代码路径</li>
+</ol>
+<p><strong>副作用</strong>：该重构引发了 5+ 个后续 bugfix PR（#18933、#19062、#19548 等），是 2026年2月下旬 bugfix 爆发的根源。</p>
+<p><strong>#18613 的技术背景</strong>：
+将默认序列切分策略从 <code>zigzag-split</code> 切换为 <code>round-robin-split</code>：</p>
+<ul>
+<li><code>zigzag-split</code>：奇偶交错分配 token，负载均衡好，但精度受数值顺序影响</li>
+<li><code>round-robin-split</code>：轮转分配，数值稳定性更好，成为新默认值</li>
+</ul>
+<hr>
+<h3 id="阶段四稳定化与-bug-攻坚2026年2月下旬--3月上旬">阶段四：稳定化与 Bug 攻坚（2026年2月下旬 ～ 3月上旬）<a href="#阶段四稳定化与-bug-攻坚2026年2月下旬--3月上旬" class="heading-anchor" aria-label="Link to 阶段四：稳定化与 Bug 攻坚（2026年2月下旬 ～ 3月上旬）">¶</a></h3>
+<p>此阶段 bugfix 密集爆发，主要由重构 #17213 引发的兼容性问题驱动：</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>PR</th><th>标题</th><th>问题类型</th><th>状态</th></tr></thead><tbody><tr><td><a href="https://github.com/sgl-project/sglang/pull/18933" target="_blank" rel="noopener noreferrer">#18933</a></td><td>Fix gRPC server crash on CP startup</td><td>启动崩溃</td><td>✅ 已合并</td></tr><tr><td><a href="https://github.com/sgl-project/sglang/pull/19062" target="_blank" rel="noopener noreferrer">#19062</a></td><td>Fix MTP (multi-step) + CP incompatibility</td><td>MTP 兼容性</td><td>✅ 已合并</td></tr><tr><td><a href="https://github.com/sgl-project/sglang/pull/19281" target="_blank" rel="noopener noreferrer">#19281</a></td><td>Add zigzag dump comparator for CP debugging</td><td>调试工具</td><td>✅ 已合并</td></tr><tr><td><a href="https://github.com/sgl-project/sglang/pull/19504" target="_blank" rel="noopener noreferrer">#19504</a></td><td><strong>Re-enable CP in P/D disaggregated mode</strong></td><td>P/D 兼容</td><td>✅ 已合并 2026-02-28</td></tr><tr><td><a href="https://github.com/sgl-project/sglang/pull/19548" target="_blank" rel="noopener noreferrer">#19548</a></td><td>Fix missing broadcast in PP+CP mode</td><td>PP+CP 广播</td><td>✅ 已合并</td></tr><tr><td><a href="https://github.com/sgl-project/sglang/pull/19656" target="_blank" rel="noopener noreferrer">#19656</a></td><td><strong>Fix prefix cache hang + FP8 in-seq-split bug</strong></td><td>Cache hang</td><td>✅ 已合并 2026-03-04</td></tr></tbody></table>
+<p><strong>#19656 特别说明</strong>：由 <strong>百度 AIAK 团队</strong>贡献，修复了两个关键问题：</p>
+<ol>
+<li>CP 与 Prefix Cache 共用时的死锁（hang）问题</li>
+<li>FP8 量化 KV 在序列内切分时的数值错误</li>
+</ol>
+<hr>
+<h3 id="阶段五前沿探索2026年3月进行中">阶段五：前沿探索（2026年3月，进行中）<a href="#阶段五前沿探索2026年3月进行中" class="heading-anchor" aria-label="Link to 阶段五：前沿探索（2026年3月，进行中）">¶</a></h3>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>PR</th><th>标题</th><th>状态</th><th>重要性</th></tr></thead><tbody><tr><td><a href="https://github.com/sgl-project/sglang/pull/20438" target="_blank" rel="noopener noreferrer">#20438</a></td><td><strong>[Perf][NSA-CP] All-gather + computation overlap (dual-stream)</strong></td><td>🔵 开放中</td><td>⭐⭐⭐ 性能突破</td></tr><tr><td><a href="https://github.com/sgl-project/sglang/pull/18233" target="_blank" rel="noopener noreferrer">#18233</a></td><td>[Feature] Qwen3 MoE + CP support</td><td>🔵 开放中</td><td>⭐⭐⭐ 新模型</td></tr><tr><td><a href="https://github.com/sgl-project/sglang/pull/20663" target="_blank" rel="noopener noreferrer">#20663</a></td><td>[Feature][Ascend] Ring Attention CP for Ascend NPU</td><td>🔵 开放中</td><td>⭐⭐ 华为 NPU</td></tr><tr><td><a href="https://github.com/sgl-project/sglang/pull/19975" target="_blank" rel="noopener noreferrer">#19975</a></td><td>[CI] Add AMD ROCm CP tests</td><td>🔵 开放中</td><td>⭐ CI 覆盖</td></tr><tr><td><a href="https://github.com/sgl-project/sglang/pull/36306" target="_blank" rel="noopener noreferrer">#36306</a></td><td>HiCache + CP memory sync</td><td>🔵 开放中</td><td>⭐⭐ 内存管理</td></tr></tbody></table>
+<p><strong>#20438 技术亮点</strong>（百度 AIAK 团队）：</p>
+<ul>
+<li>实现 NSA-CP（Native Sparse Attention + Context Parallel）中 All-gather 通信与注意力计算的 <strong>dual-stream 重叠</strong></li>
+<li>理论上可将通信延迟完全隐藏在计算时间内，对长序列场景有显著加速</li>
+</ul>
+<hr>
+<h2 id="四核心技术解析">四、核心技术解析<a href="#四核心技术解析" class="heading-anchor" aria-label="Link to 四、核心技术解析">¶</a></h2>
+<h3 id="41-cp-基础架构ring-attention">4.1 CP 基础架构：Ring Attention<a href="#41-cp-基础架构ring-attention" class="heading-anchor" aria-label="Link to 4.1 CP 基础架构：Ring Attention">¶</a></h3>
+<p>sglang CP 的核心实现基于 <strong>Ring Attention</strong>（而非 vllm 使用的 AllGather/All-to-All 方式）：</p>
+<figure class="code-block not-prose" data-language="text" data-raw-code="GPU 0  → send right KV → GPU 1  → send right KV → GPU 2  → ...
+GPU 0  ← recv left KV  ← GPU N  ← recv left KV  ← GPU 3  ← ...
+         (Ring 拓扑通信)" data-line-numbers="true"><div class="code-block__header"><div class="code-block__title">text</div><button type="button" class="code-block__copy" aria-label="复制代码">Copy</button></div><pre class="code-block__pre" tabindex="0" data-theme="light" data-language="text"><code data-language="text"><span class="line" data-line-number="1"><span>GPU 0  → send right KV → GPU 1  → send right KV → GPU 2  → ...</span></span>
+<span class="line" data-line-number="2"><span>GPU 0  ← recv left KV  ← GPU N  ← recv left KV  ← GPU 3  ← ...</span></span>
+<span class="line" data-line-number="3"><span>         (Ring 拓扑通信)</span></span></code></pre><pre class="code-block__pre" tabindex="0" data-theme="dark" data-language="text"><code data-language="text"><span class="line" data-line-number="1"><span>GPU 0  → send right KV → GPU 1  → send right KV → GPU 2  → ...</span></span>
+<span class="line" data-line-number="2"><span>GPU 0  ← recv left KV  ← GPU N  ← recv left KV  ← GPU 3  ← ...</span></span>
+<span class="line" data-line-number="3"><span>         (Ring 拓扑通信)</span></span></code></pre></figure>
+<ul>
+<li>每个 GPU 持有序列的一个 chunk，轮流接收邻居的 KV，完成全局注意力计算</li>
+<li>通信量 = O(seq_len × head_dim)，与 CP size 无关（相比 AllGather 更节省带宽）</li>
+<li>适合 NVLink 高带宽互联的机内 CP，也可用于 InfiniBand 机间 CP</li>
+</ul>
+<h3 id="42-序列切分策略对比">4.2 序列切分策略对比<a href="#42-序列切分策略对比" class="heading-anchor" aria-label="Link to 4.2 序列切分策略对比">¶</a></h3>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>策略</th><th>原理</th><th>优点</th><th>缺点</th></tr></thead><tbody><tr><td><strong>zigzag-split</strong></td><td>奇偶交错，chunk 0 取 [0,2,4,…]，chunk 1 取 [1,3,5,…]</td><td>因果掩码下负载均衡</td><td>数值稳定性稍差</td></tr><tr><td><strong>round-robin-split</strong>（当前默认）</td><td>轮转分配，chunk i 取 [i, i+CP, i+2CP,…]</td><td>数值稳定，精度更好</td><td>长序列末尾负载略不均</td></tr><tr><td><strong>in-seq-split</strong></td><td>连续分段，chunk 0 取 [0<del>L/CP]，chunk 1 取 [L/CP</del>2L/CP]</td><td>保持局部性</td><td>因果掩码下负载严重不均</td></tr></tbody></table>
+<h3 id="43-cp--moe-的并行拓扑">4.3 CP × MoE 的并行拓扑<a href="#43-cp--moe-的并行拓扑" class="heading-anchor" aria-label="Link to 4.3 CP × MoE 的并行拓扑">¶</a></h3>
+<p>重构 #17213 后，sglang 支持注意力层和 MoE FFN 层使用<strong>不同的并行维度</strong>：</p>
+<figure class="code-block not-prose" data-language="text" data-raw-code="注意力层：按 CP rank 切分序列（context parallel）
+    ↕ 独立通信组
+ MoE FFN 层：按 DP rank 切分 batch（data parallel）" data-line-numbers="true"><div class="code-block__header"><div class="code-block__title">text</div><button type="button" class="code-block__copy" aria-label="复制代码">Copy</button></div><pre class="code-block__pre" tabindex="0" data-theme="light" data-language="text"><code data-language="text"><span class="line" data-line-number="1"><span>注意力层：按 CP rank 切分序列（context parallel）</span></span>
+<span class="line" data-line-number="2"><span>    ↕ 独立通信组</span></span>
+<span class="line" data-line-number="3"><span> MoE FFN 层：按 DP rank 切分 batch（data parallel）</span></span></code></pre><pre class="code-block__pre" tabindex="0" data-theme="dark" data-language="text"><code data-language="text"><span class="line" data-line-number="1"><span>注意力层：按 CP rank 切分序列（context parallel）</span></span>
+<span class="line" data-line-number="2"><span>    ↕ 独立通信组</span></span>
+<span class="line" data-line-number="3"><span> MoE FFN 层：按 DP rank 切分 batch（data parallel）</span></span></code></pre></figure>
+<p>这使得在注意力层做 CP（减少 per-GPU 序列长度）的同时，MoE 层仍能保持高效的专家并行，避免两者的通信相互干扰。</p>
+<h3 id="44-cp-与-prefix-cache-的冲突">4.4 CP 与 Prefix Cache 的冲突<a href="#44-cp-与-prefix-cache-的冲突" class="heading-anchor" aria-label="Link to 4.4 CP 与 Prefix Cache 的冲突">¶</a></h3>
+<p><strong>问题本质</strong>（#19656 修复）：</p>
+<ul>
+<li>Prefix Cache 基于 token 哈希缓存 KV，但 CP 会将序列切分为不同 rank 的 chunks</li>
+<li>不同 CP size 或切分策略下，同一 token 序列的哈希可能不同，导致 cache miss 或 hang</li>
+</ul>
+<p><strong>解决方案</strong>：修正 CP 模式下 Prefix Cache 的哈希键生成逻辑，确保相同内容在不同 CP 配置下的 cache 独立性。</p>
+<hr>
+<h2 id="五核心贡献者分析">五、核心贡献者分析<a href="#五核心贡献者分析" class="heading-anchor" aria-label="Link to 五、核心贡献者分析">¶</a></h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>贡献者</th><th>PR 数</th><th>主要贡献方向</th><th>所属</th></tr></thead><tbody><tr><td><strong>lixiaolx</strong></td><td>3</td><td>CP 奠基人（首个实现 #12065）</td><td>外部</td></tr><tr><td><strong>xu-yfei</strong></td><td>6</td><td>CP 性能优化、PP+CP、NSA bug 修复</td><td>外部</td></tr><tr><td><strong>Fridge003</strong></td><td>5</td><td>CP 整合、默认参数调优、代码重构</td><td>外部</td></tr><tr><td><strong>vladnosiv</strong></td><td>4</td><td>MTP+CP 兼容、HiCache CP 同步、P/D+CP</td><td>外部</td></tr><tr><td><strong>Baidu-AIAK</strong></td><td>3</td><td>NSA+CP 性能（hang 修复、通信重叠）</td><td><strong>百度</strong></td></tr><tr><td><strong>sgl-bot</strong></td><td>-</td><td>自动化 CI/review</td><td>sglang 官方</td></tr></tbody></table>
+<p><strong>百度贡献亮点</strong>：百度 AIAK 团队贡献了 2 个高价值 PR：</p>
+<ul>
+<li><strong>#19656</strong>（2026-03-04 合并）：修复 prefix cache hang + FP8 in-seq-split 精度问题</li>
+<li><strong>#20438</strong>（开放中）：NSA-CP 通信/计算 dual-stream 重叠，有望带来显著性能提升</li>
+</ul>
+<hr>
+<h2 id="六主要技术挑战与已知问题">六、主要技术挑战与已知问题<a href="#六主要技术挑战与已知问题" class="heading-anchor" aria-label="Link to 六、主要技术挑战与已知问题">¶</a></h2>
+<h3 id="61-已解决的核心问题">6.1 已解决的核心问题<a href="#61-已解决的核心问题" class="heading-anchor" aria-label="Link to 6.1 已解决的核心问题">¶</a></h3>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>问题</th><th>解决方案</th><th>相关 PR</th></tr></thead><tbody><tr><td>gRPC 多 CP worker 启动崩溃</td><td>修正进程组初始化顺序</td><td>#18933</td></tr><tr><td>MTP（多步推理）+ CP 冲突</td><td>调整 CP token 重排序时序</td><td>#19062</td></tr><tr><td>PP + CP 广播缺失</td><td>补全 PP rank 0 → 所有 CP ranks 的结果广播</td><td>#19548</td></tr><tr><td>Prefix Cache + CP 死锁</td><td>修正 CP 模式下的哈希键逻辑</td><td>#19656</td></tr><tr><td>FP8 in-seq-split 数值错误</td><td>修正 FP8 量化在序列切分边界的对齐</td><td>#19656</td></tr><tr><td>P/D 分离部署中 CP 被禁用</td><td>重新适配 disaggregated 模式下的 CP 初始化</td><td>#19504</td></tr></tbody></table>
+<h3 id="62-当前开放的重点问题">6.2 当前开放的重点问题<a href="#62-当前开放的重点问题" class="heading-anchor" aria-label="Link to 6.2 当前开放的重点问题">¶</a></h3>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>问题</th><th>相关 PR</th><th>优先级</th></tr></thead><tbody><tr><td>Qwen3 MoE + CP 支持缺失</td><td>#18233</td><td>高（热门模型）</td></tr><tr><td>NSA-CP 通信/计算重叠未合入</td><td>#20438</td><td>高（性能关键）</td></tr><tr><td>AMD ROCm CP 测试缺乏</td><td>#19975</td><td>中</td></tr><tr><td>Ascend NPU Ring Attention</td><td>#20663</td><td>中</td></tr><tr><td>HiCache + CP 内存同步</td><td>待追踪</td><td>中</td></tr></tbody></table>
+<hr>
+<h2 id="七与-vllm-cp-的横向对比">七、与 vllm CP 的横向对比<a href="#七与-vllm-cp-的横向对比" class="heading-anchor" aria-label="Link to 七、与 vllm CP 的横向对比">¶</a></h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>维度</th><th>sglang</th><th>vllm</th></tr></thead><tbody><tr><td><strong>CP 基础落地时间</strong></td><td>2025-11-17（#12065）</td><td>2025-11-19（PCP #28718）</td></tr><tr><td><strong>Decode CP</strong></td><td>暂无专用 DCP，CP 主要用于 Prefill</td><td>DCP 于 2025-08 即合入</td></tr><tr><td><strong>通信机制</strong></td><td>Ring Attention（P2P ring）</td><td>AllGather / All-to-All</td></tr><tr><td><strong>序列切分</strong></td><td>round-robin（默认）/ zigzag / in-seq</td><td>chunk-based</td></tr><tr><td><strong>MoE 支持</strong></td><td>✅（#13959，fused MoE+CP）</td><td>✅（PCP MoE #31003）</td></tr><tr><td><strong>PP+CP 联合</strong></td><td>✅（#16380）</td><td>🔵 探索中（Helix #34024）</td></tr><tr><td><strong>P/D 分离 + CP</strong></td><td>✅（#19504）</td><td>不适用（架构不同）</td></tr><tr><td><strong>Prefix Cache + CP</strong></td><td>✅ 修复（#19656）</td><td>✅ 修复（#26296）</td></tr><tr><td><strong>FP8 + CP</strong></td><td>✅（#13959, #19656）</td><td>✅</td></tr><tr><td><strong>ROCm/Triton 支持</strong></td><td>🔵 CI 开放中（#19975）</td><td>✅ 已合并（#25132）</td></tr><tr><td><strong>NPU 支持</strong></td><td>🔵 Ascend 开放中（#20663）</td><td>无</td></tr><tr><td><strong>当前合并 PR 数</strong></td><td>33 个（8个月）</td><td>36 个（8个月）</td></tr><tr><td><strong>当前 open PR 数</strong></td><td>13 个</td><td>29 个</td></tr></tbody></table>
+<p><strong>主要差异</strong>：</p>
+<ul>
+<li><strong>vllm DCP vs sglang CP</strong>：vllm 更早实现了 Decode 阶段的 CP（2025-08），而 sglang 的 CP 主要面向 Prefill 阶段的长序列分片，两者侧重点不同</li>
+<li><strong>sglang PP+CP</strong>：sglang 更早完成了 PP+CP 联合（2026-01），而 vllm 的 Helix 并行（#34024）仍在 open 中</li>
+<li><strong>活跃度</strong>：两个框架月均合并 PR 数相近（~4-5 个/月），但 sglang 的 open PR 比例更低（28% vs 36%），说明 sglang 合并效率更高</li>
+</ul>
+<hr>
+<h2 id="八关键趋势与判断">八、关键趋势与判断<a href="#八关键趋势与判断" class="heading-anchor" aria-label="Link to 八、关键趋势与判断">¶</a></h2>
+<h3 id="趋势1cp-已成为-sglang-核心生产特性">趋势1：CP 已成为 sglang 核心生产特性<a href="#趋势1cp-已成为-sglang-核心生产特性" class="heading-anchor" aria-label="Link to 趋势1：CP 已成为 sglang 核心生产特性">¶</a></h3>
+<p>从 2025-11 起步，到 2026-03 已支持 FP8、MoE、PP+CP、P/D 分离等主流生产场景，CP 已不是”实验性”功能，而是 sglang 面向长上下文推理的核心竞争力。</p>
+<h3 id="趋势2百度-aiak-是重要的外部贡献力量">趋势2：百度 AIAK 是重要的外部贡献力量<a href="#趋势2百度-aiak-是重要的外部贡献力量" class="heading-anchor" aria-label="Link to 趋势2：百度 AIAK 是重要的外部贡献力量">¶</a></h3>
+<p>百度 AIAK 团队在 CP 性能（#20438 dual-stream overlap）和稳定性（#19656 hang 修复）方向贡献突出，且均为高价值 PR。这表明百度内部在 sglang CP 方向有深度实践和生产验证。</p>
+<h3 id="趋势3nsa-cp-是近期最值得关注的性能方向">趋势3：NSA-CP 是近期最值得关注的性能方向<a href="#趋势3nsa-cp-是近期最值得关注的性能方向" class="heading-anchor" aria-label="Link to 趋势3：NSA-CP 是近期最值得关注的性能方向">¶</a></h3>
+<p>Native Sparse Attention（NSA）+ CP 的组合，配合 All-gather 与计算的 dual-stream 重叠（#20438），是当前技术前沿。一旦合入，将显著降低长序列 CP 的通信瓶颈。</p>
+<h3 id="趋势4多硬件平台扩展加速">趋势4：多硬件平台扩展加速<a href="#趋势4多硬件平台扩展加速" class="heading-anchor" aria-label="Link to 趋势4：多硬件平台扩展加速">¶</a></h3>
+<p>Ascend NPU（#20663）和 AMD ROCm（#19975）的 CP 支持正在推进，显示 sglang CP 向硬件无关方向演进，与 vllm 的多后端策略一致。</p>
+<h3 id="趋势5架构解耦为未来扩展铺路">趋势5：架构解耦为未来扩展铺路<a href="#趋势5架构解耦为未来扩展铺路" class="heading-anchor" aria-label="Link to 趋势5：架构解耦为未来扩展铺路">¶</a></h3>
+<p>重构 #17213 引入的 <code>get_attention_cp_size/rank</code> API，为未来更灵活的并行配置（如不同层使用不同 CP size）奠定了基础，类似于 vllm 的 <code>--tensor-parallel-size-attention</code> 方向。</p>
+<hr>
+<h2 id="九对实践者的建议">九、对实践者的建议<a href="#九对实践者的建议" class="heading-anchor" aria-label="Link to 九、对实践者的建议">¶</a></h2>
+<h3 id="使用-sglang-cp-的推荐配置">使用 sglang CP 的推荐配置：<a href="#使用-sglang-cp-的推荐配置" class="heading-anchor" aria-label="Link to 使用 sglang CP 的推荐配置：">¶</a></h3>
+<figure class="code-block not-prose" data-language="bash" data-raw-code="# 基础 CP（4卡 context parallel）
+python -m sglang.launch_server \\
+  --model-path /path/to/model \\
+  --context-parallel-size 4 \\
+  --tp 8  # 可与 TP 结合
+
+# CP + PP（跨节点超大模型）
+python -m sglang.launch_server \\
+  --context-parallel-size 4 \\
+  --pipeline-parallel-size 2" data-line-numbers="true"><div class="code-block__header"><div class="code-block__title">bash</div><button type="button" class="code-block__copy" aria-label="复制代码">Copy</button></div><pre class="code-block__pre" tabindex="0" data-theme="light" data-language="bash"><code data-language="bash"><span class="line" data-line-number="1"><span style="color:#6A737D"># 基础 CP（4卡 context parallel）</span></span>
+<span class="line" data-line-number="2"><span style="color:#6F42C1">python</span><span style="color:#005CC5"> -m</span><span style="color:#032F62"> sglang.launch_server</span><span style="color:#005CC5"> \\</span></span>
+<span class="line" data-line-number="3"><span style="color:#005CC5">  --model-path</span><span style="color:#032F62"> /path/to/model</span><span style="color:#005CC5"> \\</span></span>
+<span class="line" data-line-number="4"><span style="color:#005CC5">  --context-parallel-size</span><span style="color:#005CC5"> 4</span><span style="color:#005CC5"> \\</span></span>
+<span class="line" data-line-number="5"><span style="color:#005CC5">  --tp</span><span style="color:#005CC5"> 8</span><span style="color:#6A737D">  # 可与 TP 结合</span></span>
+<span class="line" data-line-number="6"> </span>
+<span class="line" data-line-number="7"><span style="color:#6A737D"># CP + PP（跨节点超大模型）</span></span>
+<span class="line" data-line-number="8"><span style="color:#6F42C1">python</span><span style="color:#005CC5"> -m</span><span style="color:#032F62"> sglang.launch_server</span><span style="color:#005CC5"> \\</span></span>
+<span class="line" data-line-number="9"><span style="color:#005CC5">  --context-parallel-size</span><span style="color:#005CC5"> 4</span><span style="color:#005CC5"> \\</span></span>
+<span class="line" data-line-number="10"><span style="color:#005CC5">  --pipeline-parallel-size</span><span style="color:#005CC5"> 2</span></span></code></pre><pre class="code-block__pre" tabindex="0" data-theme="dark" data-language="bash"><code data-language="bash"><span class="line" data-line-number="1"><span style="color:#6A9955"># 基础 CP（4卡 context parallel）</span></span>
+<span class="line" data-line-number="2"><span style="color:#DCDCAA">python</span><span style="color:#569CD6"> -m</span><span style="color:#CE9178"> sglang.launch_server</span><span style="color:#D7BA7D"> \\</span></span>
+<span class="line" data-line-number="3"><span style="color:#569CD6">  --model-path</span><span style="color:#CE9178"> /path/to/model</span><span style="color:#D7BA7D"> \\</span></span>
+<span class="line" data-line-number="4"><span style="color:#569CD6">  --context-parallel-size</span><span style="color:#B5CEA8"> 4</span><span style="color:#D7BA7D"> \\</span></span>
+<span class="line" data-line-number="5"><span style="color:#569CD6">  --tp</span><span style="color:#B5CEA8"> 8</span><span style="color:#6A9955">  # 可与 TP 结合</span></span>
+<span class="line" data-line-number="6"> </span>
+<span class="line" data-line-number="7"><span style="color:#6A9955"># CP + PP（跨节点超大模型）</span></span>
+<span class="line" data-line-number="8"><span style="color:#DCDCAA">python</span><span style="color:#569CD6"> -m</span><span style="color:#CE9178"> sglang.launch_server</span><span style="color:#D7BA7D"> \\</span></span>
+<span class="line" data-line-number="9"><span style="color:#569CD6">  --context-parallel-size</span><span style="color:#B5CEA8"> 4</span><span style="color:#D7BA7D"> \\</span></span>
+<span class="line" data-line-number="10"><span style="color:#569CD6">  --pipeline-parallel-size</span><span style="color:#B5CEA8"> 2</span></span></code></pre></figure>
+<h3 id="注意事项">注意事项：<a href="#注意事项" class="heading-anchor" aria-label="Link to 注意事项：">¶</a></h3>
+<ul>
+<li><strong>当前默认切分策略</strong>：<code>round-robin-split</code>（精度更好，推荐保持默认）</li>
+<li><strong>Prefix Cache</strong>：CP + Prefix Cache 已修复（#19656），但建议使用最新版本</li>
+<li><strong>MTP（多步推理）+ CP</strong>：已修复（#19062），可正常组合使用</li>
+<li><strong>P/D 分离部署 + CP</strong>：已重新支持（#19504），可用于 disaggregated 场景</li>
+</ul>
+<h3 id="暂需等待">暂需等待：<a href="#暂需等待" class="heading-anchor" aria-label="Link to 暂需等待：">¶</a></h3>
+<ul>
+<li><strong>Qwen3 MoE + CP</strong>：等待 #18233 合入</li>
+<li><strong>NSA-CP 性能优化</strong>：等待 #20438 合入，合入后建议开启 dual-stream 模式</li>
+</ul>
+<hr>
+<h2 id="十附录完整-pr-索引">十、附录：完整 PR 索引<a href="#十附录完整-pr-索引" class="heading-anchor" aria-label="Link to 十、附录：完整 PR 索引">¶</a></h2>
+<h3 id="已合并-pr33个">已合并 PR（33个）<a href="#已合并-pr33个" class="heading-anchor" aria-label="Link to 已合并 PR（33个）">¶</a></h3>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>PR 编号</th><th>标题</th><th>合并时间</th><th>分类</th></tr></thead><tbody><tr><td>#12065</td><td>Context Parallel ring attention first impl</td><td>2025-11-17</td><td>feature</td></tr><tr><td>#13959</td><td>Fused MoE + multi-batch + FP8 KV for CP</td><td>2026-01-02</td><td>feature</td></tr><tr><td>#16380</td><td>CP + Pipeline Parallel joint support</td><td>2026-01-09</td><td>feature</td></tr><tr><td>#16916</td><td>CP + PP deployment documentation</td><td>2026-01</td><td>docs</td></tr><tr><td>#17213</td><td>Refactor: get_attention_cp_size/rank API</td><td>2026-02-13</td><td>refactor</td></tr><tr><td>#18613</td><td>Switch default split to round-robin-split</td><td>2026-02-11</td><td>perf</td></tr><tr><td>#18933</td><td>Fix gRPC server crash on CP startup</td><td>2026-02</td><td>bugfix</td></tr><tr><td>#19062</td><td>Fix MTP + CP incompatibility</td><td>2026-02</td><td>bugfix</td></tr><tr><td>#19281</td><td>Add zigzag dump comparator for CP debug</td><td>2026-02</td><td>test</td></tr><tr><td>#19504</td><td>Re-enable CP in P/D disaggregated mode</td><td>2026-02-28</td><td>feature</td></tr><tr><td>#19548</td><td>Fix missing broadcast in PP+CP mode</td><td>2026-03</td><td>bugfix</td></tr><tr><td>#19656</td><td>Fix prefix cache hang + FP8 in-seq-split</td><td>2026-03-04</td><td>bugfix</td></tr><tr><td><em>(其余 21 个已合并 PR 涵盖各类小型 bugfix 和功能增强)</em></td><td></td><td></td><td></td></tr></tbody></table>
+<h3 id="开放中的关键-pr13个">开放中的关键 PR（13个）<a href="#开放中的关键-pr13个" class="heading-anchor" aria-label="Link to 开放中的关键 PR（13个）">¶</a></h3>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>PR 编号</th><th>标题</th><th>创建时间</th><th>优先级</th></tr></thead><tbody><tr><td>#20438</td><td>NSA-CP all-gather + computation overlap</td><td>2026-03-12</td><td>⭐⭐⭐</td></tr><tr><td>#18233</td><td>Qwen3 MoE + CP support</td><td>2026-02</td><td>⭐⭐⭐</td></tr><tr><td>#20663</td><td>Ascend NPU Ring Attention CP</td><td>2026-03</td><td>⭐⭐</td></tr><tr><td>#19975</td><td>Add AMD ROCm CP CI tests</td><td>2026-03</td><td>⭐⭐</td></tr><tr><td><em>(其余 9 个 open PR 为功能扩展和 bug 修复)</em></td><td></td><td></td><td></td></tr></tbody></table> <div class="grid md:grid-cols-2 gap-4 mt-10"> <a href="/blog-preview/previews/pr-474/feature-tracking-vllm-context-parallel-pr/" class="block p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-sky-500"> <div class="text-xs uppercase text-zinc-500">Previous</div> <div class="font-semibold">[Feature tracking] vllm Context Parallel PR 分析报告</div> </a> <a href="/blog-preview/previews/pr-474/vllm-model-runner-v2-design-document-translation/" class="block p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-sky-500 text-right"> <div class="text-xs uppercase text-zinc-500">Next</div> <div class="font-semibold">vLLM Model Runner V2 设计文档：从 Persistent Batch、Async-First 到 Triton Native Sampler</div> </a> </div>  <section id="comments" class="mt-12" data-comments> <div class="rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 p-6 md:p-8"> <script src="https://giscus.app/client.js" data-repo="yuanlehome/blog" data-repo-id="R_kgDOQu2Jjw" data-category="General" data-category-id="DIC_kwDOQu2Jj84C0QDN" data-mapping="pathname" data-strict="0" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="bottom" data-theme="transparent_dark" data-lang="zh-CN" crossorigin="anonymous" async></script> </div> </section> <script>(() => {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return;
+
+  // Theme mapping for Giscus from config
+  const themeMap = {"light":"light","dark":"dark"};
+  const configuredTheme = "transparent_dark";
+  const resolveGiscusTheme = (effectiveTheme) => {
+    if (configuredTheme !== 'preferred_color_scheme') {
+      return configuredTheme;
+    }
+    return themeMap[effectiveTheme] ?? 'light';
+  };
+
+  // Single source of truth: read effective theme from DOM
+  const getEffectiveTheme = () => {
+    const isDark =
+      document.documentElement.dataset.theme === 'dark' ||
+      document.documentElement.classList.contains('dark');
+    return isDark ? 'dark' : 'light';
+  };
+
+  // Track current theme state
+  let currentTheme = getEffectiveTheme();
+
+  // Set initial theme on the script tag before Giscus loads
+  const setInitialTheme = () => {
+    const effectiveTheme = getEffectiveTheme();
+    const giscusTheme = resolveGiscusTheme(effectiveTheme);
+    const giscusScript = document.querySelector('script[src*="giscus.app/client.js"]');
+    if (giscusScript) {
+      giscusScript.setAttribute('data-theme', giscusTheme);
+    }
+  };
+
+  // Update container data attribute for tracking
+  const setContainerTheme = (theme) => {
+    const container = document.getElementById('comments');
+    if (container) {
+      container.setAttribute('data-giscus-theme', theme);
+    }
+  };
+
+  // Send theme update message to Giscus iframe
+  const postThemeMessage = (resolvedTheme) => {
+    const effective = resolvedTheme ?? currentTheme;
+    const giscusTheme = resolveGiscusTheme(effective);
+    setContainerTheme(giscusTheme);
+    
+    const iframe = document.querySelector('iframe.giscus-frame');
+    if (iframe && iframe.contentWindow) {
+      iframe.contentWindow.postMessage(
+        { giscus: { setConfig: { theme: giscusTheme } } },
+        'https://giscus.app',
+      );
+    }
+  };
+
+  // Debounce helper to prevent excessive syncs
+  let syncTimeout = null;
+  const debouncedSync = (callback, delay = 50) => {
+    if (syncTimeout) clearTimeout(syncTimeout);
+    syncTimeout = setTimeout(callback, delay);
+  };
+
+  // Main sync function: update theme if changed
+  const syncCommentTheme = (resolvedOverride) => {
+    const detected = resolvedOverride ?? getEffectiveTheme();
+    if (detected !== currentTheme) {
+      currentTheme = detected;
+    }
+    postThemeMessage(detected);
+  };
+
+  // Wait for iframe with improved retry logic
+  let retryCount = 0;
+  const maxRetries = 50; // ~5 seconds with 100ms intervals
+  const waitForIframe = () => {
+    const iframe = document.querySelector('iframe.giscus-frame');
+    if (iframe) {
+      // Found iframe, send theme
+      if (iframe instanceof HTMLIFrameElement) {
+        const sendTheme = () => {
+          postThemeMessage();
+        };
+        
+        // Try to send immediately and also on load event
+        sendTheme();
+        if (!iframe.complete) {
+          iframe.addEventListener('load', sendTheme, { once: true });
+        }
+      }
+      return;
+    }
+
+    // Retry if not found yet
+    retryCount++;
+    if (retryCount < maxRetries) {
+      setTimeout(waitForIframe, 100);
+    }
+  };
+
+  // Set initial theme before Giscus loads
+  setInitialTheme();
+
+  // Listen for DOM changes (class/data-theme attribute)
+  const observer = new MutationObserver(() => {
+    debouncedSync(() => syncCommentTheme());
+  });
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['class', 'data-theme'],
+  });
+
+  // Listen for custom theme change events
+  window.addEventListener('themechange', (event) => {
+    const detail = event?.detail || {};
+    const resolved = detail.resolved || getEffectiveTheme();
+    debouncedSync(() => syncCommentTheme(resolved));
+  });
+
+  // Listen for storage events (cross-tab synchronization)
+  window.addEventListener('storage', (event) => {
+    if (event.key === 'theme' && (event.newValue === 'light' || event.newValue === 'dark')) {
+      debouncedSync(() => syncCommentTheme());
+    }
+  });
+
+  // Listen for system theme changes (if using system preference)
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  const handleSystemThemeChange = () => {
+    // Only sync if theme might be using system preference
+    try {
+      const stored = localStorage.getItem('theme');
+      if (!stored || stored === 'system') {
+        debouncedSync(() => syncCommentTheme());
+      }
+    } catch (e) {
+      // Ignore localStorage errors
+    }
+  };
+  
+  if (mediaQuery.addEventListener) {
+    mediaQuery.addEventListener('change', handleSystemThemeChange);
+  }
+
+  // Initial sync and wait for iframe
+  syncCommentTheme();
+  waitForIframe();
+})();</script> <div id="page-bottom-anchor" aria-hidden="true" style="height: 1px;"></div> </article>  </div> <div class="fixed inset-0 z-50 pointer-events-none data-[open=true]:pointer-events-auto lg:hidden" data-mobile-toc data-open="false" aria-hidden="true"><div class="absolute inset-0 bg-zinc-900/40 opacity-0 transition duration-200 data-[open=true]:opacity-100 dark:bg-black/50" data-mobile-toc-backdrop></div><div id="mobile-toc-drawer" role="dialog" aria-modal="true" aria-label="文章目录" class="absolute inset-x-0 bottom-0 translate-y-full rounded-t-2xl border border-zinc-200 bg-neutral-50/95 shadow-2xl ring-1 ring-black/5 transition duration-200 data-[open=true]:translate-y-0 dark:border-zinc-800 dark:bg-zinc-900/95 dark:ring-white/10" data-mobile-toc-drawer><div class="flex items-center justify-between gap-3 px-4 pt-4 pb-3"><div><p class="text-sm font-semibold text-zinc-900 dark:text-zinc-50">文章目录</p><p class="text-xs text-zinc-500 dark:text-zinc-400">点击条目可跳转</p></div><button type="button" class="rounded-full border border-zinc-200 bg-neutral-50 px-3 py-1 text-sm font-medium text-zinc-800 shadow-sm transition hover:text-sky-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:text-sky-400 dark:focus-visible:ring-offset-zinc-900" data-mobile-toc-close>
+关闭
+</button></div><div class="max-h-[60vh] overflow-y-auto px-4 pb-5" data-mobile-toc-scroll><ol class="space-y-3 text-sm"><li><a href="#一总体概况" data-toc-link data-mobile-toc-link data-target="一总体概况" title="一、总体概况¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>一、总体概况¶</span></a></li><li><a href="#二pr-分类统计" data-toc-link data-mobile-toc-link data-target="二pr-分类统计" title="二、PR 分类统计¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>二、PR 分类统计¶</span></a></li><li><a href="#三技术演进时间线里程碑视图" data-toc-link data-mobile-toc-link data-target="三技术演进时间线里程碑视图" title="三、技术演进时间线（里程碑视图）¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>三、技术演进时间线（里程碑视图）¶</span></a><ol class="mt-1 space-y-1"><li><a href="#阶段一cp-基础能力落地2025年11月" data-toc-link data-mobile-toc-link data-target="阶段一cp-基础能力落地2025年11月" title="阶段一：CP 基础能力落地（2025年11月）¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>阶段一：CP 基础能力落地（2025年11月）¶</span></a></li><li><a href="#阶段二能力扩展与性能优化2025年12月--2026年1月" data-toc-link data-mobile-toc-link data-target="阶段二能力扩展与性能优化2025年12月--2026年1月" title="阶段二：能力扩展与性能优化（2025年12月 ～ 2026年1月）¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>阶段二：能力扩展与性能优化（2025年12月 ～ 2026年1月）¶</span></a></li><li><a href="#阶段三核心架构重构2026年2月上旬" data-toc-link data-mobile-toc-link data-target="阶段三核心架构重构2026年2月上旬" title="阶段三：核心架构重构（2026年2月上旬）¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>阶段三：核心架构重构（2026年2月上旬）¶</span></a></li><li><a href="#阶段四稳定化与-bug-攻坚2026年2月下旬--3月上旬" data-toc-link data-mobile-toc-link data-target="阶段四稳定化与-bug-攻坚2026年2月下旬--3月上旬" title="阶段四：稳定化与 Bug 攻坚（2026年2月下旬 ～ 3月上旬）¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>阶段四：稳定化与 Bug 攻坚（2026年2月下旬 ～ 3月上旬）¶</span></a></li><li><a href="#阶段五前沿探索2026年3月进行中" data-toc-link data-mobile-toc-link data-target="阶段五前沿探索2026年3月进行中" title="阶段五：前沿探索（2026年3月，进行中）¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>阶段五：前沿探索（2026年3月，进行中）¶</span></a></li></ol></li><li><a href="#四核心技术解析" data-toc-link data-mobile-toc-link data-target="四核心技术解析" title="四、核心技术解析¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>四、核心技术解析¶</span></a><ol class="mt-1 space-y-1"><li><a href="#41-cp-基础架构ring-attention" data-toc-link data-mobile-toc-link data-target="41-cp-基础架构ring-attention" title="4.1 CP 基础架构：Ring Attention¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>4.1 CP 基础架构：Ring Attention¶</span></a></li><li><a href="#42-序列切分策略对比" data-toc-link data-mobile-toc-link data-target="42-序列切分策略对比" title="4.2 序列切分策略对比¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>4.2 序列切分策略对比¶</span></a></li><li><a href="#43-cp--moe-的并行拓扑" data-toc-link data-mobile-toc-link data-target="43-cp--moe-的并行拓扑" title="4.3 CP × MoE 的并行拓扑¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>4.3 CP × MoE 的并行拓扑¶</span></a></li><li><a href="#44-cp-与-prefix-cache-的冲突" data-toc-link data-mobile-toc-link data-target="44-cp-与-prefix-cache-的冲突" title="4.4 CP 与 Prefix Cache 的冲突¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>4.4 CP 与 Prefix Cache 的冲突¶</span></a></li></ol></li><li><a href="#五核心贡献者分析" data-toc-link data-mobile-toc-link data-target="五核心贡献者分析" title="五、核心贡献者分析¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>五、核心贡献者分析¶</span></a></li><li><a href="#六主要技术挑战与已知问题" data-toc-link data-mobile-toc-link data-target="六主要技术挑战与已知问题" title="六、主要技术挑战与已知问题¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>六、主要技术挑战与已知问题¶</span></a><ol class="mt-1 space-y-1"><li><a href="#61-已解决的核心问题" data-toc-link data-mobile-toc-link data-target="61-已解决的核心问题" title="6.1 已解决的核心问题¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>6.1 已解决的核心问题¶</span></a></li><li><a href="#62-当前开放的重点问题" data-toc-link data-mobile-toc-link data-target="62-当前开放的重点问题" title="6.2 当前开放的重点问题¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>6.2 当前开放的重点问题¶</span></a></li></ol></li><li><a href="#七与-vllm-cp-的横向对比" data-toc-link data-mobile-toc-link data-target="七与-vllm-cp-的横向对比" title="七、与 vllm CP 的横向对比¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>七、与 vllm CP 的横向对比¶</span></a></li><li><a href="#八关键趋势与判断" data-toc-link data-mobile-toc-link data-target="八关键趋势与判断" title="八、关键趋势与判断¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>八、关键趋势与判断¶</span></a><ol class="mt-1 space-y-1"><li><a href="#趋势1cp-已成为-sglang-核心生产特性" data-toc-link data-mobile-toc-link data-target="趋势1cp-已成为-sglang-核心生产特性" title="趋势1：CP 已成为 sglang 核心生产特性¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>趋势1：CP 已成为 sglang 核心生产特性¶</span></a></li><li><a href="#趋势2百度-aiak-是重要的外部贡献力量" data-toc-link data-mobile-toc-link data-target="趋势2百度-aiak-是重要的外部贡献力量" title="趋势2：百度 AIAK 是重要的外部贡献力量¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>趋势2：百度 AIAK 是重要的外部贡献力量¶</span></a></li><li><a href="#趋势3nsa-cp-是近期最值得关注的性能方向" data-toc-link data-mobile-toc-link data-target="趋势3nsa-cp-是近期最值得关注的性能方向" title="趋势3：NSA-CP 是近期最值得关注的性能方向¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>趋势3：NSA-CP 是近期最值得关注的性能方向¶</span></a></li><li><a href="#趋势4多硬件平台扩展加速" data-toc-link data-mobile-toc-link data-target="趋势4多硬件平台扩展加速" title="趋势4：多硬件平台扩展加速¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>趋势4：多硬件平台扩展加速¶</span></a></li><li><a href="#趋势5架构解耦为未来扩展铺路" data-toc-link data-mobile-toc-link data-target="趋势5架构解耦为未来扩展铺路" title="趋势5：架构解耦为未来扩展铺路¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>趋势5：架构解耦为未来扩展铺路¶</span></a></li></ol></li><li><a href="#九对实践者的建议" data-toc-link data-mobile-toc-link data-target="九对实践者的建议" title="九、对实践者的建议¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>九、对实践者的建议¶</span></a><ol class="mt-1 space-y-1"><li><a href="#使用-sglang-cp-的推荐配置" data-toc-link data-mobile-toc-link data-target="使用-sglang-cp-的推荐配置" title="使用 sglang CP 的推荐配置：¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>使用 sglang CP 的推荐配置：¶</span></a></li><li><a href="#注意事项" data-toc-link data-mobile-toc-link data-target="注意事项" title="注意事项：¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>注意事项：¶</span></a></li><li><a href="#暂需等待" data-toc-link data-mobile-toc-link data-target="暂需等待" title="暂需等待：¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>暂需等待：¶</span></a></li></ol></li><li><a href="#十附录完整-pr-索引" data-toc-link data-mobile-toc-link data-target="十附录完整-pr-索引" title="十、附录：完整 PR 索引¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>十、附录：完整 PR 索引¶</span></a><ol class="mt-1 space-y-1"><li><a href="#已合并-pr33个" data-toc-link data-mobile-toc-link data-target="已合并-pr33个" title="已合并 PR（33个）¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>已合并 PR（33个）¶</span></a></li><li><a href="#开放中的关键-pr13个" data-toc-link data-mobile-toc-link data-target="开放中的关键-pr13个" title="开放中的关键 PR（13个）¶" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>开放中的关键 PR（13个）¶</span></a></li></ol></li></ol></div></div></div><script type="module">const c=document.querySelector("[data-mobile-toc]"),a=document.querySelector("[data-mobile-toc-drawer]"),s=document.querySelector("[data-mobile-toc-backdrop]"),p=()=>Array.from(document.querySelectorAll("[data-mobile-toc-open]")),k=document.querySelector("[data-mobile-toc-close]"),g=()=>Array.from((a??c)?.querySelectorAll("[data-mobile-toc-link]")??[]),o=document.body,h=()=>{const e=getComputedStyle(document.documentElement).getPropertyValue("--site-header-height");return parseFloat(e)||0};let l=0;const v=50,S=e=>window.dispatchEvent(new CustomEvent("mobile-toc:toggle",{detail:{open:e}})),L=e=>{p().forEach(n=>n.setAttribute("aria-expanded",e?"true":"false"))},i=e=>{e.preventDefault(),r(!0)},f=()=>{p().forEach(e=>{e.removeEventListener("click",i),e.addEventListener("click",i)})},A=()=>{l=window.scrollY,o.style.position="fixed",o.style.width="100%",o.style.top=`-${l}px`},T=()=>{o.style.position="",o.style.width="",o.style.top="",window.scrollTo({top:l,behavior:"instant"})},r=e=>{!c||!a||(c.dataset.open=String(e),a.dataset.open=String(e),s?.setAttribute("data-open",String(e)),c.setAttribute("aria-hidden",e?"false":"true"),L(e),S(e),e?A():T())},y=()=>{const e=h();g().map(t=>document.getElementById(t.dataset.target||"")).filter(t=>!!t).forEach(t=>{t.style.scrollMarginTop=`${e+16}px`})},d=e=>`#${encodeURIComponent(e)}`,b=(e,n=!1)=>{const t=document.getElementById(e);if(!t)return;const E=h(),w=window.scrollY+t.getBoundingClientRect().top-E-16;window.scrollTo({top:w,behavior:"instant"}),n?history.replaceState(null,"",d(e)):history.pushState(null,"",d(e))};f();const B=new MutationObserver(f);B.observe(document.body,{subtree:!0,childList:!0,attributes:!0,attributeFilter:["data-mobile-toc-open"]});k?.addEventListener("click",()=>r(!1));s?.addEventListener("click",e=>{e.target===s&&r(!1)});const u=e=>{const t=e.currentTarget?.dataset.target;t&&(e.preventDefault(),e.stopPropagation(),r(!1),setTimeout(()=>b(t),v))};g().forEach(e=>{e.removeEventListener("click",u),e.addEventListener("click",u)});window.addEventListener("keydown",e=>{e.key==="Escape"&&r(!1)});y();window.addEventListener("headerheightchange",y);const m=decodeURIComponent(location.hash.replace(/^#/,""));m&&requestAnimationFrame(()=>b(m,!0));</script> <div class="floating-action-stack fixed z-40 flex flex-col items-end gap-3 lg:hidden pointer-events-auto transition-opacity data-[toc-open=true]:opacity-0 data-[toc-open=true]:pointer-events-none" data-floating-action-stack style="inset-inline-end: calc(env(safe-area-inset-right, 0px) + 1rem); inset-block-start: 50%; transform: translateY(-50%);"><button type="button" class="floating-action-stack__button h-11 w-11 rounded-full border border-gray-200 bg-white/90 text-gray-900 shadow-lg backdrop-blur-sm ring-offset-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 hover:-translate-y-0.5 hover:border-blue-200 hover:text-blue-600 data-[visible=false]:opacity-0 data-[visible=false]:pointer-events-none data-[visible=true]:opacity-100 data-[visible=true]:pointer-events-auto dark:border-gray-800 dark:bg-gray-900/85 dark:text-gray-100 dark:ring-offset-gray-900 dark:hover:border-blue-500/50 dark:hover:text-blue-300" data-floating-action-button data-action="toc" data-visible="true" style="transition-delay: 0ms;" aria-label="打开目录抽屉" data-mobile-toc-open="true"><span class="sr-only">目录</span><span aria-hidden="true" class="text-base">📑</span></button></div><script type="module">const o=document.querySelector("[data-floating-action-stack]"),r=o?.querySelector('[data-action="toc"]'),e=document.querySelector("[data-mobile-toc]"),a=t=>{o&&(o.dataset.tocOpen=t?"true":"false")};a(e?.dataset.open==="true");r?.addEventListener("click",()=>{requestAnimationFrame(()=>r?.blur())});window.addEventListener("mobile-toc:toggle",t=>{const n=t.detail;n&&a(n.open)});e&&new MutationObserver(()=>{a(e.dataset.open==="true")}).observe(e,{attributes:!0,attributeFilter:["data-open"]});</script> <button type="button" class="fixed left-1/2 top-20 z-40 -translate-x-1/2 rounded-full border border-zinc-200 bg-white/95 px-4 py-2 text-sm font-medium text-zinc-900 shadow-lg backdrop-blur-sm transition data-[visible=false]:pointer-events-none data-[visible=false]:-translate-y-2 data-[visible=false]:opacity-0 data-[visible=true]:opacity-100 dark:border-zinc-800 dark:bg-zinc-900/90 dark:text-zinc-100" data-scroll-up-top-button data-target-selector="[data-article]" data-visible="false" aria-label="回到文章顶部">
+回到顶部
+</button> <script type="module">const t=document.querySelector("[data-scroll-up-top-button]"),f=t?.dataset.targetSelector||"[data-article]",d=document.querySelector(f),m=window.matchMedia("(prefers-reduced-motion: reduce)");if(!t||!d)t&&(t.dataset.visible="false");else{let o=0,l=window.scrollY,r=!1;const u=()=>{const e=getComputedStyle(document.documentElement).getPropertyValue("--site-header-height");return parseFloat(e)||0},s=()=>{o=d.getBoundingClientRect().top+window.scrollY},a=e=>{t.dataset.visible=e?"true":"false"},n=()=>{const e=window.scrollY,i=e-l,w=Math.abs(i)>=6;e<=o+140?a(!1):w&&a(i<0),l=e,r=!1},c=()=>{r||(r=!0,requestAnimationFrame(n))},p=()=>{const e=Math.max(0,o-u()-12);window.scrollTo({top:e,behavior:m.matches?"auto":"smooth"})};s(),n(),window.addEventListener("scroll",c,{passive:!0}),window.addEventListener("resize",()=>{s(),c()}),window.addEventListener("load",()=>{s(),n()},{once:!0}),t.addEventListener("click",p)}</script> </main> <footer class="py-8 mt-auto border-t border-zinc-200 dark:border-zinc-800"> <div class="container mx-auto px-4 text-center text-zinc-500 max-w-4xl">
+&copy; 2026 Yuanle Liu. All rights reserved. </div> </footer>  <script type="module" src="/blog-preview/previews/pr-474/_astro/Layout.astro_astro_type_script_index_0_lang.D_kIXiK4.js"></script> <script type="module">const i=new WeakMap,c=(e,t)=>{e.dataset.state=t,t==="copied"?e.textContent="Copied":t==="error"?e.textContent="Failed":e.textContent="Copy";const o=i.get(e);if(o&&window.clearTimeout(o),t!=="idle"){const r=window.setTimeout(()=>c(e,"idle"),2e3);i.set(e,r)}},n=async e=>{const t=e.closest(".code-block");if(!t)return;const o=t.getAttribute("data-raw-code")??"";try{await navigator.clipboard.writeText(o),c(e,"copied")}catch(r){console.error("Copy failed",r),c(e,"error")}},s=()=>{document.addEventListener("click",e=>{const o=e.target?.closest("button.code-block__copy");o&&(e.preventDefault(),n(o))})},a=()=>{typeof document>"u"||s()};a();</script> <script type="module">function d(){const n=document.querySelector("[data-site-header]");if(!n){document.documentElement.style.setProperty("--site-header-height","0px");return}let i=0;const t=()=>{const e=n.getBoundingClientRect().height;Math.abs(e-i)>.5&&(i=e,document.documentElement.style.setProperty("--site-header-height",`${e}px`),window.dispatchEvent(new CustomEvent("headerheightchange",{detail:{height:e}})))};t(),"ResizeObserver"in window&&new ResizeObserver(()=>{t()}).observe(n),window.addEventListener("resize",t,{passive:!0}),window.addEventListener("load",t,{once:!0})}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",d):d();</script> </body> </html> <dialog id="article-image-zoom-dialog" class="fixed inset-0 m-0 h-screen w-screen max-h-none max-w-none touch-none border-0 bg-black/85 p-0 backdrop:bg-black/85 [&[open]]:grid [&[open]]:place-items-center" aria-label="图片预览"> <button type="button" data-image-zoom-close class="absolute right-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-2xl text-white transition hover:bg-black/70 focus:outline-none focus:ring-2 focus:ring-white" aria-label="关闭预览">
+×
+</button> <img data-image-zoom-preview alt="" draggable="false" class="max-h-[90vh] max-w-[90vw] touch-none select-none rounded-lg bg-zinc-100 p-2 object-contain shadow-2xl transition-transform duration-150 ease-out will-change-transform dark:bg-zinc-800" loading="eager" decoding="async"> <div class="pointer-events-none absolute bottom-4 left-1/2 z-10 -translate-x-1/2 rounded-full bg-black/55 px-3 py-2"> <div class="pointer-events-auto flex items-center gap-2 text-sm text-white"> <button type="button" data-image-zoom-out class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/35 hover:bg-white/10" aria-label="缩小">
+−
+</button> <span data-image-zoom-level class="min-w-14 text-center tabular-nums">100%</span> <button type="button" data-image-zoom-in class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/35 hover:bg-white/10" aria-label="放大">
++
+</button> </div> </div> </dialog> <dialog id="article-share-dialog" class="w-[min(92vw,640px)] rounded-2xl border border-zinc-200 bg-white p-0 text-zinc-900 shadow-2xl backdrop:bg-black/50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100" aria-label="分享文章"> <div class="flex items-center justify-between border-b border-zinc-200 px-5 py-4 dark:border-zinc-800"> <h2 class="text-lg font-semibold">分享文章</h2> <button type="button" data-share-close class="inline-flex h-9 w-9 items-center justify-center rounded-full text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200" aria-label="关闭分享窗口">
+×
+</button> </div> <div class="space-y-5 px-5 py-4"> <section class="space-y-2"> <div class="flex items-center justify-between gap-3"> <h3 class="text-sm font-medium text-zinc-700 dark:text-zinc-300">Markdown 链接</h3> <button type="button" class="rounded-md border border-zinc-300 px-3 py-1.5 text-sm transition hover:border-zinc-400 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:border-zinc-500 dark:hover:bg-zinc-800" data-share-copy="markdown">
+复制
+</button> </div> <pre class="overflow-x-hidden whitespace-pre-wrap break-all rounded-lg bg-zinc-100 px-3 py-2 text-sm text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200" data-share-text="markdown">      </pre> </section> <section class="space-y-2"> <div class="flex items-center justify-between gap-3"> <h3 class="text-sm font-medium text-zinc-700 dark:text-zinc-300">标题 + 链接</h3> <button type="button" class="rounded-md border border-zinc-300 px-3 py-1.5 text-sm transition hover:border-zinc-400 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:border-zinc-500 dark:hover:bg-zinc-800" data-share-copy="plain">
+复制
+</button> </div> <pre class="overflow-x-hidden whitespace-pre-wrap break-all rounded-lg bg-zinc-100 px-3 py-2 text-sm text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200" data-share-text="plain">      </pre> </section> <p data-share-status class="min-h-5 text-sm text-emerald-600 dark:text-emerald-400" aria-live="polite"></p> </div> </dialog> <script type="module" src="/blog-preview/previews/pr-474/_astro/_...slug_.astro_astro_type_script_index_0_lang.uysho3vi.js"></script>
