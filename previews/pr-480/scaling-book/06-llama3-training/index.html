@@ -1,0 +1,373 @@
+<!DOCTYPE html><html lang="en"> <head><script>(() => {
+  const storageKey = 'theme';
+  const className = 'dark';
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  const validThemes = ['light', 'dark'];
+  let currentPreference = (() => {
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored && validThemes.includes(stored)) return stored;
+    } catch (error) {
+      console.warn('Unable to access localStorage for theme:', error);
+    }
+    return mediaQuery.matches ? 'dark' : 'light';
+  })();
+
+  const resolveTheme = (preference) => (preference === 'dark' ? 'dark' : 'light');
+
+  const applyTheme = (preference) => {
+    const effectiveTheme = resolveTheme(preference);
+    document.documentElement.classList.toggle(className, effectiveTheme === 'dark');
+    document.documentElement.dataset.theme = effectiveTheme;
+    return effectiveTheme;
+  };
+
+  const dispatchChange = (preference) => {
+    const resolved = document.documentElement.classList.contains(className) ? 'dark' : 'light';
+    window.dispatchEvent(
+      new CustomEvent('themechange', {
+        detail: { theme: preference, resolved },
+      }),
+    );
+  };
+
+  applyTheme(currentPreference);
+
+  window.__setTheme = (next) => {
+    const preference = validThemes.includes(String(next)) ? String(next) : resolveTheme(currentPreference);
+    currentPreference = preference;
+    try {
+      localStorage.setItem(storageKey, preference);
+    } catch (error) {
+      console.warn('Unable to persist theme selection:', error);
+    }
+    applyTheme(preference);
+    dispatchChange(preference);
+  };
+})();</script><meta charset="UTF-8"><meta name="description" content="让我们运用上一章学到的知识，仔细研究如何在 TPU v5p 上训练 LLaMA 3 模型。这些模型有多大？不同配置下的训练成本有多高？它们如何分片？我们将通过一系列粗略估算，具体说明前面各章的结论如何映射到真实模型上。"><meta name="viewport" content="width=device-width"><link rel="icon" type="image/x-icon" href="/blog-preview/previews/pr-480/favicon.ico"><link rel="icon" type="image/png" sizes="32x32" href="/blog-preview/previews/pr-480/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/blog-preview/previews/pr-480/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/blog-preview/previews/pr-480/apple-touch-icon.png"><meta name="generator" content="Astro v5.16.6"><link rel="canonical" href="https://yuanlehome.github.io/blog-preview/previews/pr-480/scaling-book/06-llama3-training/"><meta property="og:title" content="在 TPU 上训练 LLaMA 3｜Scaling Book 中文版"><meta property="og:description" content="让我们运用上一章学到的知识，仔细研究如何在 TPU v5p 上训练 LLaMA 3 模型。这些模型有多大？不同配置下的训练成本有多高？它们如何分片？我们将通过一系列粗略估算，具体说明前面各章的结论如何映射到真实模型上。"><meta property="og:image" content="/blog-preview/previews/pr-480/placeholder-social.jpg"><meta property="og:type" content="article"><meta property="og:url" content="https://yuanlehome.github.io/blog-preview/previews/pr-480/scaling-book/06-llama3-training/"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="在 TPU 上训练 LLaMA 3｜Scaling Book 中文版"><meta name="twitter:description" content="让我们运用上一章学到的知识，仔细研究如何在 TPU v5p 上训练 LLaMA 3 模型。这些模型有多大？不同配置下的训练成本有多高？它们如何分片？我们将通过一系列粗略估算，具体说明前面各章的结论如何映射到真实模型上。"><meta name="twitter:image" content="/blog-preview/previews/pr-480/placeholder-social.jpg"><title>在 TPU 上训练 LLaMA 3｜Scaling Book 中文版</title><style>:root {
+  /* Typography */
+  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial, Noto Sans SC, PingFang SC, Microsoft YaHei, sans-serif;
+  --font-serif: ui-serif, Georgia, Cambria, Times New Roman, Times, serif;
+  --font-mono: JetBrains Mono, Fira Code, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  --font-size-4xl: 2.25rem;
+  --line-height-body: 1.75;
+  --line-height-heading: 1.3;
+  --line-height-code: 1.65;
+  --line-height-tight: 1.25;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Components */
+  --radius-sm: 0.35rem;
+  --radius-md: 0.65rem;
+  --radius-lg: 0.9rem;
+  --radius-xl: 0.75rem;
+  --shadow-card: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-code-block: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-header: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --border-style: solid;
+  --border-width: 1px;
+  --motion-duration: 160ms;
+  --motion-easing: ease;
+  --spacing-multiplier: 1;
+
+  /* Light Mode Colors */
+  --color-brand: #0284c7;
+  --color-accent: #0284c7;
+  --color-background: #fafafa;
+  --color-foreground: #18181b;
+  --color-muted: #71717a;
+  --color-border: #e4e4e7;
+  --color-card: #f4f4f5;
+  --color-code-background: #f4f4f5;
+  --color-code-foreground: #18181b;
+  --color-code-border: #e4e4e7;
+  --color-code-keyword: #0284c7;
+  --color-code-string: #059669;
+  --color-code-comment: #a1a1aa;
+  --color-code-function: #0284c7;
+
+  /* Code block specific (legacy support) */
+  --code-font: var(--font-mono);
+  --code-radius: 0.9rem;
+  --code-border: 1px solid var(--color-code-border);
+  --code-bg: var(--color-code-background);
+  --code-fg: var(--color-code-foreground);
+  --code-scrollbar: rgb(203 213 225 / 0.75);
+  --code-highlight-bg: rgb(59 130 246 / 0.12);
+  --code-highlight-accent: rgb(59 130 246);
+
+  /* Header specific (legacy support) */
+  --header-bg: rgb(248 250 252 / 0.92);
+  --header-bg-scrolled: rgb(248 250 252 / 0.98);
+  --header-border: rgb(226 232 240 / 0.9);
+  --header-shadow: var(--shadow-header);
+  --header-shadow-strong: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+.dark {
+  /* Dark Mode Colors */
+  --color-brand: #38bdf8;
+  --color-accent: #38bdf8;
+  --color-background: #18181b;
+  --color-foreground: #fafafa;
+  --color-muted: #a1a1aa;
+  --color-border: #3f3f46;
+  --color-card: #27272a;
+  --color-code-background: #1f1f23;
+  --color-code-foreground: #e4e4e7;
+  --color-code-border: #3f3f46;
+  --color-code-keyword: #38bdf8;
+  --color-code-string: #34d399;
+  --color-code-comment: #71717a;
+  --color-code-function: #38bdf8;
+
+  /* Dark mode shadows */
+  --shadow-card: 0 10px 30px rgb(0 0 0 / 0.28);
+  --shadow-code-block: 0 10px 30px rgb(0 0 0 / 0.28);
+  --shadow-header: 0 10px 30px rgb(0 0 0 / 0.28);
+
+  /* Code block specific (legacy support) */
+  --code-border: 1px solid var(--color-code-border);
+  --code-bg: var(--color-code-background);
+  --code-fg: var(--color-code-foreground);
+  --code-scrollbar: rgb(71 85 105 / 0.8);
+  --code-highlight-bg: rgb(59 130 246 / 0.2);
+  --code-highlight-accent: rgb(96 165 250);
+
+  /* Header specific (legacy support) */
+  --header-bg: rgb(15 23 42 / 0.72);
+  --header-bg-scrolled: rgb(15 23 42 / 0.8400000000000001);
+  --header-border: rgb(71 85 105 / 0.8);
+  --header-shadow: var(--shadow-header);
+  --header-shadow-strong: 0 20px 40px rgb(0 0 0 / 0.35);
+}
+</style><link rel="stylesheet" href="/blog-preview/previews/pr-480/_astro/_slug_.Cj2S-0Jt.css">
+<style>.reading-progress[data-astro-cid-mu6cnre2]{position:fixed;inset:0 0 auto;height:3px;width:100%;background:transparent;z-index:50;pointer-events:none}.reading-progress__bar[data-astro-cid-mu6cnre2]{display:block;height:100%;width:100%;transform:scaleX(var(--progress-value, 0));transform-origin:left center;background:linear-gradient(90deg,var(--progress-color-start),var(--progress-color-end));transition:transform .1s linear}:root{--progress-color-start: #2563eb;--progress-color-end: #22d3ee}:root.dark{--progress-color-start: #38bdf8;--progress-color-end: #a855f7}@media(prefers-reduced-motion:reduce){.reading-progress__bar[data-astro-cid-mu6cnre2]{transition:none}}
+[data-book-chapter]>span[id]{display:block;scroll-margin-top:calc(var(--site-header-height) + var(--page-space-top) + .75rem)}[data-book-chapter] img:is([src$="/pointwise-product.gif"],[src$="/roofline-plot-q3.png"],[src$="/cores.png"],[src$="/ici-wraparound.png"],[src$="/challenge-problem.png"],[src$="/systolic-array2.gif"],[src$="/systolic-array-bad.gif"],[src$="/sharding-colored1.png"],[src$="/sharding-colored2.png"],[src$="/sharding-colored3.png"],[src$="/sharding-colored4.png"],[src$="/sharding-colored6.png"],[src$="/all-gather-bandwidth.png"],[src$="/moe.png"],[src$="/paged-attention.png"],[src$="/batch-scaling-latency.png"],[src$="/batch-scaling-throughput.png"],[src$="/2d-weight-stationary.png"],[src$="/tiling2.png"],[src$="/blackwell-sm.png"],[src$="/b200-node.png"]){max-width:min(100%,500px);margin-inline:auto}:root.dark [data-book-chapter] img[src$="/mixed-fsdp-comms-2.png"]{padding:.75rem;border:1px solid rgb(63 63 70 / .9);background:#fff;box-shadow:0 18px 40px #00000038}[data-book-chapter] a[href*="#ref-"]{display:inline-block;margin-inline:.08em;font-size:.72em;line-height:1;vertical-align:super;white-space:nowrap}[data-book-chapter] details{margin-block:1.5rem;overflow:hidden;border:1px solid rgb(212 212 216 / .9);border-radius:.9rem;background:#fafafab8;padding:.9rem 1rem}:root.dark [data-book-chapter] details{border-color:#3f3f46e6;background:#18181b94}[data-book-chapter] details>summary{cursor:pointer;font-weight:650;color:#0369a1}:root.dark [data-book-chapter] details>summary{color:#7dd3fc}[data-book-chapter] .algorithm{margin-block:1.5rem;border:1px dashed rgb(14 116 144 / .55);border-radius:.9rem;background:#ecfeff8c;padding:1rem 1.1rem}:root.dark [data-book-chapter] .algorithm{border-color:#22d3ee66;background:#08334440}[data-book-chapter] .algorithm>:first-child{margin-top:0}[data-book-chapter] .algorithm>:last-child{margin-bottom:0}[data-book-chapter] .scaling-book-plotly{width:100%;margin-block:2rem;overflow:hidden;border:1px solid rgb(212 212 216 / .9);border-radius:1rem;background:#fff;box-shadow:0 8px 24px #18181b14}:root.dark [data-book-chapter] .scaling-book-plotly{border-color:#3f3f46e6}[data-book-chapter] .scaling-book-plotly iframe{display:block;width:100%;height:min(70vh,34rem);min-height:25rem;border:0;background:#fff}@media(max-width:640px){[data-book-chapter] table th,[data-book-chapter] table td{overflow-wrap:normal;word-break:normal}[data-book-chapter] table th{white-space:nowrap}[data-book-chapter] .scaling-book-plotly{height:28rem;min-height:28rem;aspect-ratio:auto!important;overflow-x:auto;overscroll-behavior-inline:contain;-webkit-overflow-scrolling:touch}[data-book-chapter] .scaling-book-plotly:before{position:sticky;left:0;z-index:1;display:flex;width:100%;height:2rem;align-items:center;padding-inline:.75rem;background:#f4f4f5f5;color:#52525b;content:"↔ 左右滑动查看完整交互图";font-size:.75rem;font-weight:600}[data-book-chapter] .scaling-book-plotly iframe{top:2rem!important;width:48rem!important;min-width:48rem;height:calc(100% - 2rem)!important}}
+</style></head> <body class="bg-neutral-50 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 min-h-screen flex flex-col">  <div class="reading-progress" data-reading-progress data-target-selector="[data-article]" data-astro-cid-mu6cnre2> <span class="reading-progress__bar" data-reading-progress-bar data-astro-cid-mu6cnre2></span> </div>  <script type="module">const s=document.querySelector("[data-reading-progress]"),p=s?.dataset?.targetSelector||"[data-article]",g=s?.querySelector("[data-reading-progress-bar]"),o=document.querySelector(p);if(s&&g&&o){let n=0,a=0,t=!1;const u=(e,r,w)=>Math.min(Math.max(e,r),w),c=()=>{n=o.getBoundingClientRect().top+window.scrollY,a=o.scrollHeight},i=()=>{const e=Math.max(a-window.innerHeight,1),r=u((window.scrollY-n)/e,0,1);g.style.setProperty("--progress-value",r.toString()),t=!1},l=()=>{t||(t=!0,requestAnimationFrame(i))},d=()=>{c(),l()};c(),i(),window.addEventListener("scroll",l,{passive:!0}),window.addEventListener("resize",d),window.addEventListener("load",d,{once:!0})}</script> <header class="site-header header-variant-frosted" data-header data-site-header> <div class="container mx-auto px-5 py-3 sm:py-4 flex justify-between items-start max-w-5xl"> <a href="/blog-preview/previews/pr-480/" class="text-xl font-bold hover:text-sky-600 dark:hover:text-sky-400 flex shrink-0 items-center gap-2"> <img src="/blog-preview/previews/pr-480/placeholder-social.jpg" alt="Yuanle Liu" width="32" height="32" class="h-8 w-8 rounded"> <span class="hidden sm:inline">Yuanle Liu</span> </a> <nav class="flex items-start items-center gap-1 text-sm sm:gap-3 sm:text-base"> <a href="/blog-preview/previews/pr-480/" class="hover:underline inline-flex items-center "> Home </a><a href="/blog-preview/previews/pr-480/columns/" class="hover:underline inline-flex items-center text-sky-600 dark:text-sky-400 font-semibold" aria-current="page"> Columns </a><a href="/blog-preview/previews/pr-480/archive/" class="hover:underline inline-flex items-center "> Archive </a><a href="/blog-preview/previews/pr-480/tags/" class="hover:underline inline-flex items-center "> Tags </a><a href="/blog-preview/previews/pr-480/about/" class="hover:underline inline-flex items-center "> About </a> <button id="theme-toggle" class="inline-flex items-center gap-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 px-1" aria-label="Toggle theme"> 🖥️ ☀️ </button> </nav> </div> </header> <div class="site-header-spacer" aria-hidden="true"></div> <script type="module">const u="theme",l=["light","dark"];const g=()=>{try{const e=localStorage.getItem(u);if(e==="light"||e==="dark")return e}catch(e){console.warn("Unable to read theme preference:",e)}return window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"},f=()=>document.documentElement.classList.contains("dark")?"dark":"light",p=e=>e==="dark"?"🌙":"☀️",k=e=>e==="dark"?"Dark":"Light",c=(e,n)=>{const t=document.getElementById("theme-toggle");if(!t)return;const o=n??f(),s=p(o),a=k(o);t.dataset.theme=e,t.textContent="";const i=document.createElement("span");i.className="inline-flex items-center justify-center",i.style.lineHeight="1",i.textContent=s,t.appendChild(i);const r=document.createElement("span");r.className="hidden sm:inline",r.textContent=a,t.appendChild(r),t.setAttribute("aria-label",`Toggle theme (current: ${a})`)},d=e=>{if(typeof window.__setTheme=="function"){window.__setTheme?.(e);return}const n=e==="dark"?"dark":"light";document.documentElement.classList.toggle("dark",n==="dark");try{localStorage.setItem(u,e)}catch(t){console.warn("Unable to persist theme preference:",t)}window.dispatchEvent(new CustomEvent("themechange",{detail:{theme:e,resolved:n}}))},E=(e,n)=>{const t=n.getBoundingClientRect(),o=e instanceof MouseEvent,s=o&&e.detail>0&&(e.clientX!==0||e.clientY!==0),a=s&&o?e.clientX:t.left+t.width/2,i=s&&o?e.clientY:t.top+t.height/2,r=Math.max(Math.hypot(a,i),Math.hypot(window.innerWidth-a,i),Math.hypot(a,window.innerHeight-i),Math.hypot(window.innerWidth-a,window.innerHeight-i));return{x:a,y:i,r}},T=({x:e,y:n,r:t})=>{const o=document.documentElement;o.style.setProperty("--theme-toggle-x",`${e}px`),o.style.setProperty("--theme-toggle-y",`${n}px`),o.style.setProperty("--theme-toggle-r",`${t}px`)},L=async(e,n,t)=>{if(t){d(e),c(e);return}T(n),document.documentElement.classList.add("theme-toggle-transitioning");const o=document;try{if(typeof o.startViewTransition=="function"){await o.startViewTransition(()=>{d(e),c(e)}).finished.catch(i=>{console.warn("Theme view transition failed:",i)});return}const s=document.createElement("div");s.className="theme-toggle-overlay",e==="dark"&&s.classList.add("dark"),document.body.appendChild(s);try{s.getBoundingClientRect(),s.classList.add("is-animating"),await new Promise(a=>{let i=!1;const r=()=>{i||(i=!0,a())};s.addEventListener("animationend",r,{once:!0}),s.addEventListener("animationcancel",r,{once:!0}),window.setTimeout(r,550)}),d(e),c(e)}finally{s.remove()}}finally{document.documentElement.classList.remove("theme-toggle-transitioning")}};let m=!1;const M=async e=>{if(m)return;const n=e.currentTarget instanceof HTMLElement?e.currentTarget:null;if(!n)return;m=!0,n.setAttribute("disabled","true");const t=g(),o=l[(l.indexOf(t)+1)%l.length];try{const s=E(e,n);await L(o,s,w.matches)}finally{window.setTimeout(()=>{n.removeAttribute("disabled"),m=!1},500)}},h=document.querySelector("[data-header]"),w=window.matchMedia("(prefers-reduced-motion: reduce)"),v=w.matches,y=()=>{if(!h)return;const e=window.scrollY>6;h.classList.toggle("is-scrolled",e)};document.getElementById("theme-toggle")?.addEventListener("click",M);c(g());window.addEventListener("themechange",e=>{const n=e.detail,t=n?.theme??g(),o=n?.resolved;c(t,o)});y();const b=()=>y();window.addEventListener("scroll",b,{passive:!0});v&&h?.classList.add("reduce-motion");</script> <main class="page-shell page-shell-mobile-fab-safe container mx-auto max-w-7xl px-4"> <div class="page-stack lg:grid lg:grid-cols-[18rem_minmax(0,54rem)] lg:items-start lg:justify-center lg:gap-8" data-book-layout> <div class="min-w-0 lg:sticky lg:self-start" style="top: calc(var(--site-header-height) + var(--page-space-top, 0px));" data-book-sidebar> <details class="rounded-xl border border-zinc-200 bg-neutral-50/80 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/60 lg:hidden"> <summary class="cursor-pointer select-none px-4 py-3 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+全书目录
+</summary> <nav class="max-h-[60vh] overflow-y-auto border-t border-zinc-200 p-3 dark:border-zinc-800"> <ol class="space-y-1" aria-label="Scaling Book 章节目录"> <li> <a href="/blog-preview/previews/pr-480/scaling-book/00-introduction/" class="flex items-start gap-2 rounded-lg px-3 py-2 text-sm transition text-zinc-700 hover:bg-zinc-100 hover:text-sky-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-sky-300"> <span class="shrink-0 text-xs leading-5 text-zinc-500 dark:text-zinc-400"> 导论 </span> <span>导论</span> </a> </li><li> <a href="/blog-preview/previews/pr-480/scaling-book/01-roofline/" class="flex items-start gap-2 rounded-lg px-3 py-2 text-sm transition text-zinc-700 hover:bg-zinc-100 hover:text-sky-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-sky-300"> <span class="shrink-0 text-xs leading-5 text-zinc-500 dark:text-zinc-400"> 第 1 章 </span> <span>Roofline 模型详解</span> </a> </li><li> <a href="/blog-preview/previews/pr-480/scaling-book/02-tpus/" class="flex items-start gap-2 rounded-lg px-3 py-2 text-sm transition text-zinc-700 hover:bg-zinc-100 hover:text-sky-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-sky-300"> <span class="shrink-0 text-xs leading-5 text-zinc-500 dark:text-zinc-400"> 第 2 章 </span> <span>如何理解 TPU</span> </a> </li><li> <a href="/blog-preview/previews/pr-480/scaling-book/03-sharding/" class="flex items-start gap-2 rounded-lg px-3 py-2 text-sm transition text-zinc-700 hover:bg-zinc-100 hover:text-sky-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-sky-300"> <span class="shrink-0 text-xs leading-5 text-zinc-500 dark:text-zinc-400"> 第 3 章 </span> <span>分片矩阵及其乘法</span> </a> </li><li> <a href="/blog-preview/previews/pr-480/scaling-book/04-transformers/" class="flex items-start gap-2 rounded-lg px-3 py-2 text-sm transition text-zinc-700 hover:bg-zinc-100 hover:text-sky-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-sky-300"> <span class="shrink-0 text-xs leading-5 text-zinc-500 dark:text-zinc-400"> 第 4 章 </span> <span>你需要掌握的全部 Transformer 数学</span> </a> </li><li> <a href="/blog-preview/previews/pr-480/scaling-book/05-training/" class="flex items-start gap-2 rounded-lg px-3 py-2 text-sm transition text-zinc-700 hover:bg-zinc-100 hover:text-sky-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-sky-300"> <span class="shrink-0 text-xs leading-5 text-zinc-500 dark:text-zinc-400"> 第 5 章 </span> <span>如何并行化 Transformer 训练</span> </a> </li><li> <a href="/blog-preview/previews/pr-480/scaling-book/06-llama3-training/" aria-current="page" class="flex items-start gap-2 rounded-lg px-3 py-2 text-sm transition bg-sky-100 font-semibold text-sky-800 dark:bg-sky-950 dark:text-sky-300"> <span class="shrink-0 text-xs leading-5 text-zinc-500 dark:text-zinc-400"> 第 6 章 </span> <span>在 TPU 上训练 LLaMA 3</span> </a> </li><li> <a href="/blog-preview/previews/pr-480/scaling-book/07-inference/" class="flex items-start gap-2 rounded-lg px-3 py-2 text-sm transition text-zinc-700 hover:bg-zinc-100 hover:text-sky-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-sky-300"> <span class="shrink-0 text-xs leading-5 text-zinc-500 dark:text-zinc-400"> 第 7 章 </span> <span>Transformer 推理详解</span> </a> </li><li> <a href="/blog-preview/previews/pr-480/scaling-book/08-llama3-inference/" class="flex items-start gap-2 rounded-lg px-3 py-2 text-sm transition text-zinc-700 hover:bg-zinc-100 hover:text-sky-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-sky-300"> <span class="shrink-0 text-xs leading-5 text-zinc-500 dark:text-zinc-400"> 第 8 章 </span> <span>在 TPU 上部署 LLaMA 3-70B 服务</span> </a> </li><li> <a href="/blog-preview/previews/pr-480/scaling-book/09-profiling/" class="flex items-start gap-2 rounded-lg px-3 py-2 text-sm transition text-zinc-700 hover:bg-zinc-100 hover:text-sky-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-sky-300"> <span class="shrink-0 text-xs leading-5 text-zinc-500 dark:text-zinc-400"> 第 9 章 </span> <span>如何对 TPU 程序进行性能剖析</span> </a> </li><li> <a href="/blog-preview/previews/pr-480/scaling-book/10-jax/" class="flex items-start gap-2 rounded-lg px-3 py-2 text-sm transition text-zinc-700 hover:bg-zinc-100 hover:text-sky-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-sky-300"> <span class="shrink-0 text-xs leading-5 text-zinc-500 dark:text-zinc-400"> 第 10 章 </span> <span>使用 JAX 为 TPU 编程</span> </a> </li><li> <a href="/blog-preview/previews/pr-480/scaling-book/11-conclusion/" class="flex items-start gap-2 rounded-lg px-3 py-2 text-sm transition text-zinc-700 hover:bg-zinc-100 hover:text-sky-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-sky-300"> <span class="shrink-0 text-xs leading-5 text-zinc-500 dark:text-zinc-400"> 第 11 章 </span> <span>总结与延伸阅读</span> </a> </li><li> <a href="/blog-preview/previews/pr-480/scaling-book/12-gpus/" class="flex items-start gap-2 rounded-lg px-3 py-2 text-sm transition text-zinc-700 hover:bg-zinc-100 hover:text-sky-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-sky-300"> <span class="shrink-0 text-xs leading-5 text-zinc-500 dark:text-zinc-400"> 第 12 章 </span> <span>如何理解 GPU</span> </a> </li> </ol> </nav> </details> <aside class="hidden lg:block"> <div class="flex max-h-[inherit] flex-col overflow-hidden rounded-xl border border-zinc-200 bg-neutral-50/85 shadow-md backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-900/60" style="max-height: calc(100dvh - var(--site-header-height) - var(--page-space-top, 0px) - 1rem);"> <div class="border-b border-zinc-200 px-4 py-4 dark:border-zinc-800"> <a href="/blog-preview/previews/pr-480/scaling-book/" class="text-sm font-semibold text-zinc-900 transition hover:text-sky-600 dark:text-zinc-100 dark:hover:text-sky-400">
+Scaling Book 中文版
+</a> <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">全书 13 章</p> </div> <nav class="min-h-0 flex-1 overflow-y-auto p-3" aria-label="Scaling Book 章节目录"> <ol class="space-y-1"> <li> <a href="/blog-preview/previews/pr-480/scaling-book/00-introduction/" class="block rounded-lg px-3 py-2 text-sm leading-snug transition text-zinc-700 hover:bg-zinc-100 hover:text-sky-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-sky-300"> <span class="mb-0.5 block text-[0.68rem] uppercase tracking-wide text-zinc-500 dark:text-zinc-400"> 导论 </span> 导论 </a>  </li><li> <a href="/blog-preview/previews/pr-480/scaling-book/01-roofline/" class="block rounded-lg px-3 py-2 text-sm leading-snug transition text-zinc-700 hover:bg-zinc-100 hover:text-sky-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-sky-300"> <span class="mb-0.5 block text-[0.68rem] uppercase tracking-wide text-zinc-500 dark:text-zinc-400"> 第 1 章 </span> Roofline 模型详解 </a>  </li><li> <a href="/blog-preview/previews/pr-480/scaling-book/02-tpus/" class="block rounded-lg px-3 py-2 text-sm leading-snug transition text-zinc-700 hover:bg-zinc-100 hover:text-sky-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-sky-300"> <span class="mb-0.5 block text-[0.68rem] uppercase tracking-wide text-zinc-500 dark:text-zinc-400"> 第 2 章 </span> 如何理解 TPU </a>  </li><li> <a href="/blog-preview/previews/pr-480/scaling-book/03-sharding/" class="block rounded-lg px-3 py-2 text-sm leading-snug transition text-zinc-700 hover:bg-zinc-100 hover:text-sky-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-sky-300"> <span class="mb-0.5 block text-[0.68rem] uppercase tracking-wide text-zinc-500 dark:text-zinc-400"> 第 3 章 </span> 分片矩阵及其乘法 </a>  </li><li> <a href="/blog-preview/previews/pr-480/scaling-book/04-transformers/" class="block rounded-lg px-3 py-2 text-sm leading-snug transition text-zinc-700 hover:bg-zinc-100 hover:text-sky-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-sky-300"> <span class="mb-0.5 block text-[0.68rem] uppercase tracking-wide text-zinc-500 dark:text-zinc-400"> 第 4 章 </span> 你需要掌握的全部 Transformer 数学 </a>  </li><li> <a href="/blog-preview/previews/pr-480/scaling-book/05-training/" class="block rounded-lg px-3 py-2 text-sm leading-snug transition text-zinc-700 hover:bg-zinc-100 hover:text-sky-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-sky-300"> <span class="mb-0.5 block text-[0.68rem] uppercase tracking-wide text-zinc-500 dark:text-zinc-400"> 第 5 章 </span> 如何并行化 Transformer 训练 </a>  </li><li> <a href="/blog-preview/previews/pr-480/scaling-book/06-llama3-training/" aria-current="page" class="block rounded-lg px-3 py-2 text-sm leading-snug transition bg-sky-100 font-semibold text-sky-800 dark:bg-sky-950 dark:text-sky-300"> <span class="mb-0.5 block text-[0.68rem] uppercase tracking-wide text-zinc-500 dark:text-zinc-400"> 第 6 章 </span> 在 TPU 上训练 LLaMA 3 </a> <ol class="my-2 ml-3 space-y-1 border-l border-zinc-200 pl-3 dark:border-zinc-700"> <li> <a href="#llama-3-是什么样的" class="block py-1 text-xs leading-snug text-zinc-500 transition hover:text-sky-600 dark:text-zinc-400 dark:hover:text-sky-400 pl-3"> LLaMA 3 是什么样的？ </a> </li><li> <a href="#计算参数量与-flops" class="block py-1 text-xs leading-snug text-zinc-500 transition hover:text-sky-600 dark:text-zinc-400 dark:hover:text-sky-400 pl-3"> 计算参数量与 FLOPs </a> </li><li> <a href="#如何为训练分片-llama-3-70b" class="block py-1 text-xs leading-snug text-zinc-500 transition hover:text-sky-600 dark:text-zinc-400 dark:hover:text-sky-400 pl-3"> 如何为训练分片 LLaMA 3-70B </a> </li><li> <a href="#习题" class="block py-1 text-xs leading-snug text-zinc-500 transition hover:text-sky-600 dark:text-zinc-400 dark:hover:text-sky-400 "> 习题 </a> </li><li> <a href="#第-6-节到此结束第-7-节介绍-transformer-推理请点击-此处-" class="block py-1 text-xs leading-snug text-zinc-500 transition hover:text-sky-600 dark:text-zinc-400 dark:hover:text-sky-400 pl-3"> 第 6 节到此结束。第 7 节介绍 Transformer 推理，请点击此处。 </a> </li> </ol> </li><li> <a href="/blog-preview/previews/pr-480/scaling-book/07-inference/" class="block rounded-lg px-3 py-2 text-sm leading-snug transition text-zinc-700 hover:bg-zinc-100 hover:text-sky-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-sky-300"> <span class="mb-0.5 block text-[0.68rem] uppercase tracking-wide text-zinc-500 dark:text-zinc-400"> 第 7 章 </span> Transformer 推理详解 </a>  </li><li> <a href="/blog-preview/previews/pr-480/scaling-book/08-llama3-inference/" class="block rounded-lg px-3 py-2 text-sm leading-snug transition text-zinc-700 hover:bg-zinc-100 hover:text-sky-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-sky-300"> <span class="mb-0.5 block text-[0.68rem] uppercase tracking-wide text-zinc-500 dark:text-zinc-400"> 第 8 章 </span> 在 TPU 上部署 LLaMA 3-70B 服务 </a>  </li><li> <a href="/blog-preview/previews/pr-480/scaling-book/09-profiling/" class="block rounded-lg px-3 py-2 text-sm leading-snug transition text-zinc-700 hover:bg-zinc-100 hover:text-sky-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-sky-300"> <span class="mb-0.5 block text-[0.68rem] uppercase tracking-wide text-zinc-500 dark:text-zinc-400"> 第 9 章 </span> 如何对 TPU 程序进行性能剖析 </a>  </li><li> <a href="/blog-preview/previews/pr-480/scaling-book/10-jax/" class="block rounded-lg px-3 py-2 text-sm leading-snug transition text-zinc-700 hover:bg-zinc-100 hover:text-sky-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-sky-300"> <span class="mb-0.5 block text-[0.68rem] uppercase tracking-wide text-zinc-500 dark:text-zinc-400"> 第 10 章 </span> 使用 JAX 为 TPU 编程 </a>  </li><li> <a href="/blog-preview/previews/pr-480/scaling-book/11-conclusion/" class="block rounded-lg px-3 py-2 text-sm leading-snug transition text-zinc-700 hover:bg-zinc-100 hover:text-sky-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-sky-300"> <span class="mb-0.5 block text-[0.68rem] uppercase tracking-wide text-zinc-500 dark:text-zinc-400"> 第 11 章 </span> 总结与延伸阅读 </a>  </li><li> <a href="/blog-preview/previews/pr-480/scaling-book/12-gpus/" class="block rounded-lg px-3 py-2 text-sm leading-snug transition text-zinc-700 hover:bg-zinc-100 hover:text-sky-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-sky-300"> <span class="mb-0.5 block text-[0.68rem] uppercase tracking-wide text-zinc-500 dark:text-zinc-400"> 第 12 章 </span> 如何理解 GPU </a>  </li> </ol> </nav> </div> </aside> </div> <article class="prose min-w-0 max-w-none dark:prose-invert prose-img:rounded-xl" data-article data-book-chapter> <header class="page-heading not-prose"> <nav class="text-sm text-zinc-500 dark:text-zinc-400" aria-label="面包屑导航"> <a href="/blog-preview/previews/pr-480/columns/" class="transition hover:text-sky-600 dark:hover:text-sky-400">
+专栏
+</a> <span class="mx-2" aria-hidden="true">/</span> <a href="/blog-preview/previews/pr-480/scaling-book/" class="transition hover:text-sky-600 dark:hover:text-sky-400"> Scaling Book 中文版 </a> <span class="mx-2" aria-hidden="true">/</span> <span aria-current="page">第 6 章</span> </nav> <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-zinc-200 bg-neutral-50/75 px-4 py-3 text-sm text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900/55 dark:text-zinc-400"> <span class="font-semibold text-zinc-800 dark:text-zinc-200">第 6 章</span> <span>2542 字 · 6 min read</span> <a href="https://github.com/jax-ml/scaling-book/blob/44109cacac9c5a9809a81c68ae4d45d7d2632ea6/applied-training.md" target="_blank" rel="noopener noreferrer" class="font-medium text-sky-700 transition hover:text-sky-800 dark:text-sky-300 dark:hover:text-sky-200">
+查看本章英文源码 ↗
+</a> </div> </header> <p><span id="training-llama-3-on-tpus"></span></p>
+<h1 id="在-tpu-上训练-llama-3">在 TPU 上训练 LLaMA 3<a href="#在-tpu-上训练-llama-3" class="heading-anchor" aria-label="Link to 在 TPU 上训练 LLaMA 3"></a></h1>
+<p><em>本节的目标，是把上一节的结果应用到一个非常实际的问题上：训练 LLaMA 3 模型家族（羊群）。与前几节不同，我们希望你自己完成其中大量工作。因此，我们隐藏了每一部分的答案，让你可以先自行尝试。拿起笔，动手算一遍吧！</em></p>
+<p><span id="what-does-llama-3-look-like"></span></p>
+<h3 id="llama-3-是什么样的">LLaMA 3 是什么样的？<a href="#llama-3-是什么样的" class="heading-anchor" aria-label="Link to LLaMA 3 是什么样的？"></a></h3>
+<p>LLaMA-3 模型家族<a href="../#ref-llama3">[llama3]</a>包含 3 个主要模型：LLaMA 3 8B、70B 和 405B。我们将主要关注 70B，把 8B 和 405B 留给你在末尾的习题部分探索。下面是 LLaMA 3-70B 的架构，取自 LLaMA 的 <a href="https://huggingface.co/meta-llama/Meta-Llama-3-70B/blob/main/config.json" target="_blank" rel="noopener noreferrer">HuggingFace 页面</a>。</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th><strong>超参数</strong></th><th><strong>值</strong></th></tr></thead><tbody><tr><td><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>n</mi><mtext>layers</mtext></msub></mrow><annotation encoding="application/x-tex">n_\text{layers}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7167em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal">n</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord text mtight"><span class="mord mtight">layers</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span> (L)</td><td>80</td></tr><tr><td><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>d</mi><mtext>model</mtext></msub></mrow><annotation encoding="application/x-tex">d_\text{model}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8444em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal">d</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord text mtight"><span class="mord mtight">model</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> (D)</td><td>8,192</td></tr><tr><td><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>d</mi><mrow><mi>f</mi><mi>f</mi></mrow></msub></mrow><annotation encoding="application/x-tex">d_{ff}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9805em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal">d</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.10764em;">ff</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span> (F)</td><td>28,672</td></tr><tr><td><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>n</mi><mtext>heads</mtext></msub></mrow><annotation encoding="application/x-tex">n_\text{heads}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.5806em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal">n</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord text mtight"><span class="mord mtight">heads</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> (N)</td><td>64</td></tr><tr><td><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>n</mi><mtext>kv_heads</mtext></msub></mrow><annotation encoding="application/x-tex">n_\text{kv\_heads}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7976em;vertical-align:-0.367em;"></span><span class="mord"><span class="mord mathnormal">n</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord text mtight"><span class="mord mtight">kv_heads</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.367em;"><span></span></span></span></span></span></span></span></span></span> (K)</td><td>8</td></tr><tr><td><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>d</mi><mtext>qkv</mtext></msub></mrow><annotation encoding="application/x-tex">d_\text{qkv}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9805em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal">d</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord text mtight"><span class="mord mtight">qkv</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span> (H)</td><td>128</td></tr><tr><td><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>n</mi><mtext>embeddings</mtext></msub></mrow><annotation encoding="application/x-tex">n_\text{embeddings}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7167em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal">n</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord text mtight"><span class="mord mtight">embeddings</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span> (V)</td><td>128,256</td></tr></tbody></table>
+<p>为了强调这些信息有多么容易找到，下面直接给出配置本身及其对应关系：</p>
+<p><img src="/blog-preview/previews/pr-480/images/scaling-book/img/llama-json.png" alt=""></p>
+<p><em>为许多不同的开源 LLM 制作一张包含这些数值的大表很有用，这样就能快速比较它们所做的设计选择。</em></p>
+<p><span id="counting-parameters-and-flops"></span></p>
+<h3 id="计算参数量与-flops">计算参数量与 FLOPs<a href="#计算参数量与-flops" class="heading-anchor" aria-label="Link to 计算参数量与 FLOPs"></a></h3>
+<p><strong>问题：</strong>根据这张表，能否算出 LLaMA 3-70B 的参数量？🤫 让我们应用<a href="../04-transformers/#all-the-transformer-math-you-need-to-know">第 4 节</a>的内容，看看能不能得到 70B！</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>参数</th><th>公式</th><th>数量</th></tr></thead><tbody><tr><td>FFW 参数</td><td>d_model * d_ff * 3（分别用于 SwiGLU 的门控、升维和降维投影）* n_layers</td><td>8,192 * 8,192 * 3.5 * 3 * 80 = <strong>56.3e9</strong></td></tr><tr><td>词表参数</td><td>2（输入嵌入和输出嵌入）* n_embeddings * d_model</td><td>2 * 128,256 * 8,192 = <strong>2.1e9</strong></td></tr><tr><td>注意力参数</td><td>n_layers * [ 2（用于 q 嵌入和拼接后的输出投影）* d_model * n_heads * d_qkv + 2（用于 k 和 v）* d_model * n_kv_heads * d_qkv]</td><td>80 * (2 * 8,192 * 64 * 128 + 2 * 8,192 * 8 * 128) = <strong>12e9</strong></td></tr><tr><td></td><td></td><td>56.3e9 + 2.1e9 + 12e9 = <strong>70.4e9</strong></td></tr></tbody></table>
+<p>很好！我们得到了预期的数值。你会注意到，与预期一致，FFW 参数完全主导了总参数量，不过注意力所占的部分也不可忽略。</p>
+<p><strong>要点</strong>：MLP 块中的 3 个大型权重矩阵远大于 Transformer 中的所有其他数组，因此在推理模型内存或 FLOPs 时，通常几乎可以忽略其他所有参数。对于 LLaMA 3-70B，它们占 700 亿参数中的 560 亿。</p>
+<p>现在来看看 FLOPs！<em>请记住<a href="../04-transformers/#all-the-transformer-math-you-need-to-know">第 4 节</a>中关于训练的一般规则。</em></p>
+<p><strong>问题：</strong>LLaMA-3 在每个训练步中，对每个 token 会执行多少 FLOPs？<em>这有助于确定整个训练过程的成本。</em></p>
+<details>
+<summary>思考之后，点击此处查看答案！ </summary>
+<p><strong>答案</strong>：如<a href="../04-transformers/#all-the-transformer-math-you-need-to-know">第 4 节</a>所示，每个 token 大约执行 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>6</mn><mo>⋅</mo><mtext>param count</mtext></mrow><annotation encoding="application/x-tex">6 \cdot \text{param count}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">6</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.8095em;vertical-align:-0.1944em;"></span><span class="mord text"><span class="mord">param count</span></span></span></span></span> FLOPs，所以这里约为 <code>6 * 70e9 = 4.2e11</code> FLOPs / token。也就是每个 token 每步大约半个 TFLOP。假设我们受计算限制，并且 FLOPs 利用率完美，那么在单块 TPU v5p 芯片上应当大约需要 <code>4.2e11 / 4.59E+14 = 1ms</code>。</p>
+</details>
+<p><strong>问题：</strong>LLaMA 3 的训练数据约有 15 万亿个 token。总共需要多少 FLOPs？</p>
+<details>
+<summary>思考之后，点击此处查看答案！ </summary>
+<p><strong>答案</strong>：很简单，总量就是 <code>4.2e11 * 15e12 = 6.3e24 FLOPs</code>。即 6.3 yottaFLOPs。真不少！如果只用一个 TPU，需要 <code>6.3e24 / 4.59E+14 = 435 years</code>。这也同样很久！</p>
+</details>
+<p><strong>问题：</strong>假设要在一个完整的 TPU v5p pod 上训练，它包含 16x20x28 = 8960 块芯片。如果使用 bfloat16、MFU 为 40%，并假设计算受限，训练需要多长时间？</p>
+<details>
+<summary>思考之后，点击此处查看答案！ </summary>
+<p><strong>答案</strong>：我们知道，每块 TPU v5p 每秒可以执行 4.59e14 FLOPs。在 40% MFU 下，大约需要 <code>T = 6.3e24 / (8960 * 4.59e14 * 0.4) = 3.8e6 seconds</code>。<strong>也就是大约 44 天！</strong>假设确实能达到 40% MFU，这个时间相当合理。</p>
+</details>
+<p><strong>问题：</strong>LLaMA 3-70B 预训练时的批大小约为 400 万个 token。使用这个批大小进行训练，最少需要多少个 TPU？<em>你可以假设参数采用 bfloat16、优化器状态采用 float32，并且每层设置 4 个梯度检查点。</em></p>
+<details>
+<summary>思考之后，点击此处查看答案！ </summary>
+<p><strong>答案</strong>：这个问题主要是在问内存使用量，因为它是可用算力的唯一硬性约束。训练期间，HBM 主要有三种用途：模型参数、优化器状态和梯度检查点。如果假设权重采用 bfloat16、优化器状态采用 float32，并使用一种<em>非常</em>保守的梯度检查点方案（每层 4 次），则有：</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>项目</th><th align="right">计算</th><th align="right">估算内存</th></tr></thead><tbody><tr><td><strong>参数</strong></td><td align="right">2 * 70GB</td><td align="right">~140GB</td></tr><tr><td><strong>优化器状态</strong></td><td align="right">8 * 70GB</td><td align="right">~560GB</td></tr><tr><td><strong>梯度检查点</strong></td><td align="right">2 * 8192 * 4e6 * 4 * 80</td><td align="right">~20.9TB</td></tr><tr><td><strong>总计</strong></td><td align="right"></td><td align="right">~21.6TB</td></tr></tbody></table>
+<p>这里的总量约为 21.6TB。你会发现，即使使用非常保守的检查点方案，梯度检查点仍然强烈主导内存用量。严格说来，我们可以减少到每层 1 个检查点，也可以进行微批处理，但以上数值是个合理的估计。按这些假设，每块 TPU v5p 有 96GB HBM，因此需要 <code>21.6e12 / 96e9 = 225</code> 块 TPU。其实并不算多！</p>
+<p><em>为什么不这样做？</em>因为那会需要 <code>44 days * 8960 / 225 = 1752 days</code> 才能完成训练，接近五年。<strong>这可太久了。</strong>尽管如此，它仍清楚地说明：使用这些大型集群，并不是因为受到内存限制，而是因为我们需要额外的 FLOPs。</p>
+</details>
+<p><strong>问题：</strong>在与上一题相同的假设下，如果使用 8960 块 TPU v5p 芯片，每块芯片会使用多少内存？</p>
+<details>
+<summary>思考之后，点击此处查看答案！ </summary>
+<p><strong>答案</strong>：总内存仍约为 21.6TB，所以每块芯片会使用约 2.4GB，基本可以忽略不计。即使使用激进得多的检查点方案，例如每层 12 个检查点，每块芯片仍然只会用到 8GB。在这样的训练规模下，我们离内存受限还远得很。</p>
+</details>
+<p><strong>要点</strong>：从技术上讲，即使是非常大的模型，也可以在非常小的拓扑上训练，但代价是可能要花很长时间。算出一次训练运行的总 FLOPs 后，我们就能根据适中的 MFU 和已知拓扑，粗略估计训练时间。</p>
+<p><span id="how-to-shard-llama-3-70b-for-training"></span></p>
+<h3 id="如何为训练分片-llama-3-70b">如何为训练分片 LLaMA 3-70B<a href="#如何为训练分片-llama-3-70b" class="heading-anchor" aria-label="Link to 如何为训练分片 LLaMA 3-70B"></a></h3>
+<p>继续沿用上面的设置：假设要在包含 8960 块芯片的 TPU v5p pod 上，以 400 万个 token 的批大小（每批 1024 个长度为 4096 的序列）训练 LLaMA 3-70B。下面讨论这个模型的最佳分片策略。</p>
+<p><strong>问题：</strong>在上述假设下，能否只使用 FSDP 训练模型？首先，假设不能使用任何序列／上下文并行。<em>这应该是你最先想到的方案，因为它很简单，而且如果可行，就不会引入额外通信。</em></p>
+<details>
+<summary>思考之后，点击此处查看答案！ </summary>
+<p><strong>答案</strong>：这个答案会有点咬文嚼字。如上所述，LLaMA 3-70B 的初始训练使用长度为 4K 的序列，因此 400 万个 token 的批大小对应 1024 的<em>序列批大小</em>。这意味着纯数据并行／FSDP 实际上最多只能扩展到 1024 块芯片，<em>因为可供数据并行拆分的序列就只有这么多</em>。所以，如果把问题简单理解为“没有额外通信的完整数据并行是否可行”，答案是否定的。下一题将回答一个没那么咬文嚼字的版本。</p>
+</details>
+<p><strong>问题：</strong>放宽“不做任何序列分片”的要求。如果允许同时沿批轴<em>和</em>序列轴执行 FSDP，能否只使用 FSDP 在 8960 块芯片上训练 LLaMA 3-70B？</p>
+<details>
+<summary>思考之后，点击此处查看答案！ </summary>
+<p><strong>答案</strong>：现在也允许进行序列／上下文并行，就能扩展到大得多的规模。首先计算每设备批大小。如果进行 8960 路 FSDP，每个 TPU 的批大小最终为 <code>4 * 1024 * 1024 / 8960 = 468 tokens</code>。根据上一节，当 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext>per device batch size</mtext><mo>&#x3C;</mo><mn>2550</mn><mi mathvariant="normal">/</mi><msub><mi>M</mi><mi>X</mi></msub></mrow><annotation encoding="application/x-tex">\text{per device batch size} &#x3C; 2550 / M_X</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord text"><span class="mord">per device batch size</span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">&#x3C;</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord">2550/</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.10903em;">M</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.109em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.07847em;">X</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> 时，FSDP 会受到 ICI 限制。由于这里使用完整的三维 pod，可以分配 3 个轴，所以其下限为 850，而 468 远低于该值。<strong>因此答案是否定的，即使使用 3 个轴也不行。我们会明确地受通信限制。</strong></p>
+</details>
+<p><strong>问题：</strong>现在来看混合张量并行与 FSDP。是否存在某种组合，可以让我们保持计算受限？如果有，应分别使用多大程度的 FSDP 和张量并行？</p>
+<details>
+<summary>思考之后，点击此处查看答案！ </summary>
+<p><strong>答案</strong>：首先检查这是否可行。我们知道，如果每芯片批大小小于 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mn>2550</mn><mn>2</mn></msup><mi mathvariant="normal">/</mi><mn>2</mn><mi>F</mi><mo>=</mo><mn>113</mn></mrow><annotation encoding="application/x-tex">2550^2 / 2F = 113</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.0641em;vertical-align:-0.25em;"></span><span class="mord">255</span><span class="mord"><span class="mord">0</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8141em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span></span></span></span></span><span class="mord">/2</span><span class="mord mathnormal" style="margin-right:0.13889em;">F</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">113</span></span></span></span>，就会受通信限制。如上所见，我们略高于这个数值。所以太好了！接下来使用公式选择最优的 FSDP 程度：</p>
+<span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>X</mi><mrow><mi>o</mi><mi>p</mi><mi>t</mi></mrow></msub><mo>=</mo><msqrt><mfrac><mrow><mn>2</mn><mi>B</mi><mi>N</mi></mrow><mi>F</mi></mfrac></msqrt><mo>=</mo><msqrt><mfrac><mrow><mn>2</mn><mo>⋅</mo><mn>4.19</mn><mi>e</mi><mn>6</mn><mo>⋅</mo><mn>8960</mn></mrow><mn>28672</mn></mfrac></msqrt><mo>=</mo><mn>1618</mn></mrow><annotation encoding="application/x-tex">X_{opt} = \sqrt{\frac{2BN}{F}} = \sqrt{\frac{2 \cdot 4.19e6 \cdot 8960}{28672}} = 1618</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.07847em;">X</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.2806em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">o</span><span class="mord mathnormal mtight">pt</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:2.44em;vertical-align:-0.769em;"></span><span class="mord sqrt"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.671em;"><span class="svg-align" style="top:-4.4em;"><span class="pstrut" style="height:4.4em;"></span><span class="mord" style="padding-left:1em;"><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.3603em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.13889em;">F</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">2</span><span class="mord mathnormal" style="margin-right:0.10903em;">BN</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.686em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span></span></span><span style="top:-3.631em;"><span class="pstrut" style="height:4.4em;"></span><span class="hide-tail" style="min-width:1.02em;height:2.48em;"><svg xmlns="http://www.w3.org/2000/svg" width="400em" height="2.48em" viewBox="0 0 400000 2592" preserveAspectRatio="xMinYMin slice"><path d="M424,2478
+c-1.3,-0.7,-38.5,-172,-111.5,-514c-73,-342,-109.8,-513.3,-110.5,-514
+c0,-2,-10.7,14.3,-32,49c-4.7,7.3,-9.8,15.7,-15.5,25c-5.7,9.3,-9.8,16,-12.5,20
+s-5,7,-5,7c-4,-3.3,-8.3,-7.7,-13,-13s-13,-13,-13,-13s76,-122,76,-122s77,-121,77,-121
+s209,968,209,968c0,-2,84.7,-361.7,254,-1079c169.3,-717.3,254.7,-1077.7,256,-1081
+l0 -0c4,-6.7,10,-10,18,-10 H400000
+v40H1014.6
+s-87.3,378.7,-272.6,1166c-185.3,787.3,-279.3,1182.3,-282,1185
+c-2,6,-10,9,-24,9
+c-8,0,-12,-0.7,-12,-2z M1001 80
+h400000v40h-400000z"></path></svg></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.769em;"><span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:2.44em;vertical-align:-0.7884em;"></span><span class="mord sqrt"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.6516em;"><span class="svg-align" style="top:-4.4em;"><span class="pstrut" style="height:4.4em;"></span><span class="mord" style="padding-left:1em;"><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.3214em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">28672</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">2</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord">4.19</span><span class="mord mathnormal">e</span><span class="mord">6</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord">8960</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.686em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span></span></span><span style="top:-3.6116em;"><span class="pstrut" style="height:4.4em;"></span><span class="hide-tail" style="min-width:1.02em;height:2.48em;"><svg xmlns="http://www.w3.org/2000/svg" width="400em" height="2.48em" viewBox="0 0 400000 2592" preserveAspectRatio="xMinYMin slice"><path d="M424,2478
+c-1.3,-0.7,-38.5,-172,-111.5,-514c-73,-342,-109.8,-513.3,-110.5,-514
+c0,-2,-10.7,14.3,-32,49c-4.7,7.3,-9.8,15.7,-15.5,25c-5.7,9.3,-9.8,16,-12.5,20
+s-5,7,-5,7c-4,-3.3,-8.3,-7.7,-13,-13s-13,-13,-13,-13s76,-122,76,-122s77,-121,77,-121
+s209,968,209,968c0,-2,84.7,-361.7,254,-1079c169.3,-717.3,254.7,-1077.7,256,-1081
+l0 -0c4,-6.7,10,-10,18,-10 H400000
+v40H1014.6
+s-87.3,378.7,-272.6,1166c-185.3,787.3,-279.3,1182.3,-282,1185
+c-2,6,-10,9,-24,9
+c-8,0,-12,-0.7,-12,-2z M1001 80
+h400000v40h-400000z"></path></svg></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.7884em;"><span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">1618</span></span></span></span></span>
+<p>将其舍入到合理的 2 的倍数，得到大约 2048 路 FSDP 和 4 路张量并行。效果应该会很好！</p>
+</details>
+<p><strong>要点</strong>：我们可以在一个完整的 TPU v5p pod 上，以 400 万个 token 的批大小，混合使用数据并行（1024 路）、序列并行（2 路）和张量并行（4 路）训练 LLaMA-3，而不会受到通信限制。若尝试使用纯 FSDP 或 FSDP + 序列并行，则会受通信限制。上一节推导出的方程非常实用。</p>
+<p><span id="worked-problems"></span></p>
+<h2 id="习题">习题<a href="#习题" class="heading-anchor" aria-label="Link to 习题"></a></h2>
+<p><strong>问题 1［将 LLaMA 70B 扩展到更多芯片］：</strong>假设要以相同的批大小，在 4 个 pod 上训练 LLaMA 3-70B。应采用什么并行方案？会受计算限制还是通信限制？训练大约需要多长时间？<em>务必使用正确的 Roofline 上限。</em></p>
+<p><strong>问题 2［LLaMA 405B］：</strong></p>
+<p>(a) 使用 LLaMA 3-405B 的<a href="https://huggingface.co/meta-llama/Llama-3.1-405B/blob/main/config.json" target="_blank" rel="noopener noreferrer">配置</a>（这是门控模型，因此可能需要登录并申请访问权限才能查看），像上面一样制作一张包含所有关键超参数的表。该模型总共有多少参数？每个训练步需要多少 FLOPs？如果用 15T 个 token 训练，会执行多少 FLOPs？</p>
+<p>(b) 假设要在 8 个 TPU v5p pod 上训练。应采用什么并行方案？训练需要多长时间？会受计算限制还是通信限制？</p>
+<p><span id="thats-all-for-section-6-for-section-7-about-transformer-inference-click-here"></span></p>
+<h3 id="第-6-节到此结束第-7-节介绍-transformer-推理请点击-此处-">第 6 节到此结束。第 7 节介绍 Transformer 推理，请点击<a href="../07-inference/#all-about-transformer-inference">此处</a>。<a href="#第-6-节到此结束第-7-节介绍-transformer-推理请点击-此处-" class="heading-anchor" aria-label="Link to 第 6 节到此结束。第 7 节介绍 Transformer 推理，请点击 此处 。"></a></h3> <nav class="not-prose mt-12 grid gap-4 sm:grid-cols-2" aria-label="相邻章节"> <a href="/blog-preview/previews/pr-480/scaling-book/05-training/" class="group rounded-xl border border-zinc-200 bg-neutral-50/70 p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-sky-400 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:border-sky-600"> <span class="text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+← 上一章
+</span> <span class="mt-2 block font-semibold text-zinc-900 group-hover:text-sky-700 dark:text-zinc-100 dark:group-hover:text-sky-300"> 如何并行化 Transformer 训练 </span> </a> <a href="/blog-preview/previews/pr-480/scaling-book/07-inference/" class="group rounded-xl border border-zinc-200 bg-neutral-50/70 p-4 text-right shadow-sm transition hover:-translate-y-0.5 hover:border-sky-400 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:border-sky-600"> <span class="text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+下一章 →
+</span> <span class="mt-2 block font-semibold text-zinc-900 group-hover:text-sky-700 dark:text-zinc-100 dark:group-hover:text-sky-300"> Transformer 推理详解 </span> </a> </nav> <div id="page-bottom-anchor" aria-hidden="true" style="height: 1px;"></div> </article> </div> <div class="fixed inset-0 z-50 pointer-events-none data-[open=true]:pointer-events-auto lg:hidden" data-mobile-toc data-open="false" aria-hidden="true"><div class="absolute inset-0 bg-zinc-900/40 opacity-0 transition duration-200 data-[open=true]:opacity-100 dark:bg-black/50" data-mobile-toc-backdrop></div><div id="mobile-toc-drawer" role="dialog" aria-modal="true" aria-label="文章目录" class="mobile-drawer-panel absolute inset-x-0 bottom-0 translate-y-full rounded-t-[1.75rem] border border-zinc-200 bg-neutral-50/95 shadow-2xl ring-1 ring-black/5 transition duration-200 data-[open=true]:translate-y-0 dark:border-zinc-800 dark:bg-zinc-900/95 dark:ring-white/10" data-mobile-toc-drawer><div class="mobile-drawer-handle bg-zinc-300/70 dark:bg-zinc-700/80"></div><div class="mobile-drawer-header"><div><p class="text-sm font-semibold text-zinc-900 dark:text-zinc-50">文章目录</p><p class="text-xs text-zinc-500 dark:text-zinc-400">点击条目可跳转</p></div><button type="button" class="mobile-drawer-close inline-flex items-center justify-center rounded-full border border-zinc-200 bg-neutral-50 text-sm font-medium text-zinc-800 shadow-sm transition hover:text-sky-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:text-sky-400 dark:focus-visible:ring-offset-zinc-900" data-mobile-toc-close>
+关闭
+</button></div><div class="mobile-drawer-scroll" data-mobile-toc-scroll><ol class="space-y-3 text-sm"><li><a href="#llama-3-是什么样的" data-toc-link data-mobile-toc-link data-target="llama-3-是什么样的" title="LLaMA 3 是什么样的？" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>LLaMA 3 是什么样的？</span></a></li><li><a href="#计算参数量与-flops" data-toc-link data-mobile-toc-link data-target="计算参数量与-flops" title="计算参数量与 FLOPs" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>计算参数量与 FLOPs</span></a></li><li><a href="#如何为训练分片-llama-3-70b" data-toc-link data-mobile-toc-link data-target="如何为训练分片-llama-3-70b" title="如何为训练分片 LLaMA 3-70B" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>如何为训练分片 LLaMA 3-70B</span></a></li><li><a href="#习题" data-toc-link data-mobile-toc-link data-target="习题" title="习题" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>习题</span></a><ol class="mt-1 space-y-1"><li><a href="#第-6-节到此结束第-7-节介绍-transformer-推理请点击-此处-" data-toc-link data-mobile-toc-link data-target="第-6-节到此结束第-7-节介绍-transformer-推理请点击-此处-" title="第 6 节到此结束。第 7 节介绍 Transformer 推理，请点击此处。" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>第 6 节到此结束。第 7 节介绍 Transformer 推理，请点击此处。</span></a></li></ol></li></ol></div></div></div><script type="module">const T=({moveThreshold:e=12,scrollThreshold:i=6,getScrollY:o=()=>typeof window>"u"?0:window.scrollY}={})=>{let n=null,r=null;const k=t=>{r&&t-r.finishedAt>800&&(r=null)};return{handlePointerDown(t){t.pointerType==="touch"&&(n={pointerId:t.pointerId,startX:t.clientX,startY:t.clientY,startScrollY:o(),moved:!1},r=null)},handlePointerMove(t){if(!n||t.pointerId!==n.pointerId)return;const d=t.clientX-n.startX,O=t.clientY-n.startY;Math.hypot(d,O)>=e&&(n.moved=!0)},handleScroll(t){n&&Math.abs(t-n.startScrollY)>=i&&(n.moved=!0)},handlePointerUp(t){!n||t.pointerId!==n.pointerId||(r={finishedAt:t.timeStamp,moved:n.moved},n=null)},handlePointerCancel(t){!n||t.pointerId!==n.pointerId||(r={finishedAt:t.timeStamp,moved:!0},n=null)},shouldHandleClick(t){if(k(t.timeStamp),!r)return!0;const d=!r.moved;return r=null,d}}},c=document.querySelector("[data-mobile-toc]"),u=document.querySelector("[data-mobile-toc-drawer]"),p=document.querySelector("[data-mobile-toc-backdrop]"),w=()=>Array.from(document.querySelectorAll("[data-mobile-toc-open]")),C=document.querySelector("[data-mobile-toc-close]"),y=()=>Array.from((u??c)?.querySelectorAll("[data-mobile-toc-link]")??[]),l=document.body,s=T(),D=()=>{const e=getComputedStyle(document.documentElement).getPropertyValue("--site-header-height");return parseFloat(e)||0},b=()=>{const e=getComputedStyle(document.documentElement).getPropertyValue("--page-space-top");return parseFloat(e)||0},S=()=>D()+b();let h=0;const I=50,P=e=>window.dispatchEvent(new CustomEvent("mobile-toc:toggle",{detail:{open:e}})),A=e=>{w().forEach(i=>i.setAttribute("aria-expanded",e?"true":"false"))},f=e=>{if(e instanceof MouseEvent&&!s.shouldHandleClick(e)){e.preventDefault();return}e.preventDefault(),a(!0)},m=e=>{s.handlePointerDown(e)},_=e=>{s.handlePointerMove(e)},H=()=>{s.handleScroll(window.scrollY)},M=e=>{s.handlePointerUp(e)},Y=e=>{s.handlePointerCancel(e)},L=()=>{w().forEach(e=>{e.removeEventListener("pointerdown",m),e.removeEventListener("click",f),e.addEventListener("pointerdown",m,{passive:!0}),e.addEventListener("click",f),e.style.touchAction="pan-y"})},R=()=>{h=window.scrollY,l.style.position="fixed",l.style.width="100%",l.style.top=`-${h}px`},B=()=>{l.style.position="",l.style.width="",l.style.top="",window.scrollTo({top:h,behavior:"instant"})},a=e=>{!c||!u||(c.dataset.open=String(e),u.dataset.open=String(e),p?.setAttribute("data-open",String(e)),c.setAttribute("aria-hidden",e?"false":"true"),A(e),P(e),e?R():B())},v=()=>{const e=S();y().map(o=>document.getElementById(o.dataset.target||"")).filter(o=>!!o).forEach(o=>{o.style.scrollMarginTop=`${e+16}px`})},g=e=>`#${encodeURIComponent(e)}`,U=(e,i=!1)=>{const o=document.getElementById(e);if(!o)return;const n=S(),r=window.scrollY+o.getBoundingClientRect().top-n-16;window.scrollTo({top:r,behavior:"instant"}),i?history.replaceState(null,"",g(e)):history.pushState(null,"",g(e))};L();const F=new MutationObserver(L);F.observe(document.body,{subtree:!0,childList:!0,attributes:!0,attributeFilter:["data-mobile-toc-open"]});window.addEventListener("pointermove",_,{passive:!0});window.addEventListener("scroll",H,{passive:!0});window.addEventListener("pointerup",M,{passive:!0});window.addEventListener("pointercancel",Y,{passive:!0});C?.addEventListener("click",()=>a(!1));p?.addEventListener("click",e=>{e.target===p&&a(!1)});const E=e=>{const o=e.currentTarget?.dataset.target;o&&(e.preventDefault(),e.stopPropagation(),a(!1),setTimeout(()=>U(o),I))};y().forEach(e=>{e.removeEventListener("click",E),e.addEventListener("click",E)});window.addEventListener("keydown",e=>{e.key==="Escape"&&a(!1)});v();window.addEventListener("headerheightchange",v);</script> <div class="floating-action-stack mobile-fab-stack fixed z-40 flex flex-col items-end gap-3 lg:hidden pointer-events-auto transition-opacity data-[toc-open=true]:opacity-0 data-[toc-open=true]:pointer-events-none" data-floating-action-stack><button type="button" class="floating-action-stack__button mobile-fab-button touch-pan-y inline-flex h-11 w-11 items-center justify-center rounded-full border border-zinc-200 bg-neutral-50/92 text-zinc-900 shadow-lg backdrop-blur-sm ring-offset-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 hover:-translate-y-0.5 hover:border-sky-200 hover:text-sky-600 data-[visible=false]:opacity-0 data-[visible=false]:pointer-events-none data-[visible=true]:opacity-100 data-[visible=true]:pointer-events-auto dark:border-zinc-800 dark:bg-zinc-900/88 dark:text-zinc-100 dark:ring-offset-zinc-900 dark:hover:border-sky-500/50 dark:hover:text-sky-300" data-floating-action-button data-action="toc" data-visible="true" style="transition-delay: 0ms;" aria-label="打开目录抽屉" data-mobile-toc-open="true"><span class="sr-only">目录</span><span aria-hidden="true" class="text-base leading-none">📑</span></button></div><script type="module">const o=document.querySelector("[data-floating-action-stack]"),r=o?.querySelector('[data-action="toc"]'),e=document.querySelector("[data-mobile-toc]"),a=t=>{o&&(o.dataset.tocOpen=t?"true":"false")};a(e?.dataset.open==="true");r?.addEventListener("click",()=>{requestAnimationFrame(()=>r?.blur())});window.addEventListener("mobile-toc:toggle",t=>{const n=t.detail;n&&a(n.open)});e&&new MutationObserver(()=>{a(e.dataset.open==="true")}).observe(e,{attributes:!0,attributeFilter:["data-open"]});</script> <button type="button" class="scroll-up-top-button fixed z-40 inline-flex h-12 w-12 items-center justify-center rounded-full border border-zinc-200 bg-neutral-50/92 text-zinc-900 shadow-lg backdrop-blur-sm transition data-[visible=false]:pointer-events-none data-[visible=false]:translate-y-2 data-[visible=false]:opacity-0 data-[visible=true]:opacity-100 dark:border-zinc-800 dark:bg-zinc-900/88 dark:text-zinc-100 lg:h-auto lg:w-auto lg:gap-2 lg:px-4 lg:py-2 lg:-translate-x-1/2 lg:data-[visible=false]:-translate-y-2" data-scroll-up-top-button data-target-selector="[data-book-chapter]" data-visible="false" style="--scroll-up-offset: calc(var(--mobile-fab-size) + var(--mobile-fab-gap));" aria-label="回到文章顶部"> <span aria-hidden="true" class="text-lg leading-none">↑</span> <span class="sr-only">回到顶部</span> <span aria-hidden="true" class="hidden lg:inline">回到顶部</span> </button> <script type="module">const t=document.querySelector("[data-scroll-up-top-button]"),w=t?.dataset.targetSelector||"[data-article]",d=document.querySelector(w),h=window.matchMedia("(prefers-reduced-motion: reduce)");if(!t||!d)t&&(t.dataset.visible="false");else{let o=0,n=window.scrollY,r=!1;const u=()=>{const e=getComputedStyle(document.documentElement).getPropertyValue("--site-header-height");return parseFloat(e)||0},p=()=>{const e=getComputedStyle(document.documentElement).getPropertyValue("--page-space-top");return parseFloat(e)||0},g=()=>u()+p(),s=()=>{o=d.getBoundingClientRect().top+window.scrollY},c=e=>{t.dataset.visible=e?"true":"false"},a=()=>{const e=window.scrollY,i=e-n,f=Math.abs(i)>=6;e<=o+140?c(!1):f&&c(i<0),n=e,r=!1},l=()=>{r||(r=!0,requestAnimationFrame(a))},m=()=>{const e=Math.max(0,o-g());window.scrollTo({top:e,behavior:h.matches?"auto":"smooth"})};s(),a(),window.addEventListener("scroll",l,{passive:!0}),window.addEventListener("resize",()=>{s(),l()}),window.addEventListener("load",()=>{s(),a()},{once:!0}),t.addEventListener("click",m)}</script> </main> <footer class="py-8 mt-auto border-t border-zinc-200 dark:border-zinc-800"> <div class="container mx-auto px-4 text-center text-zinc-500 max-w-4xl">
+&copy; 2026 Yuanle Liu. All rights reserved. </div> </footer>  <script type="module" src="/blog-preview/previews/pr-480/_astro/Layout.astro_astro_type_script_index_0_lang.BPB9lUd-.js"></script> <script type="module">const i=new WeakMap,c=(e,t)=>{e.dataset.state=t,t==="copied"?e.textContent="Copied":t==="error"?e.textContent="Failed":e.textContent="Copy";const o=i.get(e);if(o&&window.clearTimeout(o),t!=="idle"){const r=window.setTimeout(()=>c(e,"idle"),2e3);i.set(e,r)}},n=async e=>{const t=e.closest(".code-block");if(!t)return;const o=t.getAttribute("data-raw-code")??"";try{await navigator.clipboard.writeText(o),c(e,"copied")}catch(r){console.error("Copy failed",r),c(e,"error")}},s=()=>{document.addEventListener("click",e=>{const o=e.target?.closest("button.code-block__copy");o&&(e.preventDefault(),n(o))})},a=()=>{typeof document>"u"||s()};a();</script> <script type="module">function d(){const n=document.querySelector("[data-site-header]");if(!n){document.documentElement.style.setProperty("--site-header-height","0px");return}let i=0;const t=()=>{const e=n.getBoundingClientRect().height;Math.abs(e-i)>.5&&(i=e,document.documentElement.style.setProperty("--site-header-height",`${e}px`),window.dispatchEvent(new CustomEvent("headerheightchange",{detail:{height:e}})))};t(),"ResizeObserver"in window&&new ResizeObserver(()=>{t()}).observe(n),window.addEventListener("resize",t,{passive:!0}),window.addEventListener("load",t,{once:!0})}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",d):d();</script> </body> </html> 

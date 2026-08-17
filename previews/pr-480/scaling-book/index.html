@@ -1,0 +1,230 @@
+<!DOCTYPE html><html lang="en"> <head><script>(() => {
+  const storageKey = 'theme';
+  const className = 'dark';
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  const validThemes = ['light', 'dark'];
+  let currentPreference = (() => {
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored && validThemes.includes(stored)) return stored;
+    } catch (error) {
+      console.warn('Unable to access localStorage for theme:', error);
+    }
+    return mediaQuery.matches ? 'dark' : 'light';
+  })();
+
+  const resolveTheme = (preference) => (preference === 'dark' ? 'dark' : 'light');
+
+  const applyTheme = (preference) => {
+    const effectiveTheme = resolveTheme(preference);
+    document.documentElement.classList.toggle(className, effectiveTheme === 'dark');
+    document.documentElement.dataset.theme = effectiveTheme;
+    return effectiveTheme;
+  };
+
+  const dispatchChange = (preference) => {
+    const resolved = document.documentElement.classList.contains(className) ? 'dark' : 'light';
+    window.dispatchEvent(
+      new CustomEvent('themechange', {
+        detail: { theme: preference, resolved },
+      }),
+    );
+  };
+
+  applyTheme(currentPreference);
+
+  window.__setTheme = (next) => {
+    const preference = validThemes.includes(String(next)) ? String(next) : resolveTheme(currentPreference);
+    currentPreference = preference;
+    try {
+      localStorage.setItem(storageKey, preference);
+    } catch (error) {
+      console.warn('Unable to persist theme selection:', error);
+    }
+    applyTheme(preference);
+    dispatchChange(preference);
+  };
+})();</script><meta charset="UTF-8"><meta name="description" content="《How to Scale Your Model》完整中文翻译：从 Roofline、TPU 与分片矩阵，到 Transformer 训练、推理、JAX 性能分析和 GPU。"><meta name="viewport" content="width=device-width"><link rel="icon" type="image/x-icon" href="/blog-preview/previews/pr-480/favicon.ico"><link rel="icon" type="image/png" sizes="32x32" href="/blog-preview/previews/pr-480/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/blog-preview/previews/pr-480/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/blog-preview/previews/pr-480/apple-touch-icon.png"><meta name="generator" content="Astro v5.16.6"><link rel="canonical" href="https://yuanlehome.github.io/blog-preview/previews/pr-480/scaling-book/"><meta property="og:title" content="如何让模型高效扩展：TPU 上大语言模型的系统视角"><meta property="og:description" content="《How to Scale Your Model》完整中文翻译：从 Roofline、TPU 与分片矩阵，到 Transformer 训练、推理、JAX 性能分析和 GPU。"><meta property="og:image" content="/blog-preview/previews/pr-480/placeholder-social.jpg"><meta property="og:type" content="article"><meta property="og:url" content="https://yuanlehome.github.io/blog-preview/previews/pr-480/scaling-book/"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="如何让模型高效扩展：TPU 上大语言模型的系统视角"><meta name="twitter:description" content="《How to Scale Your Model》完整中文翻译：从 Roofline、TPU 与分片矩阵，到 Transformer 训练、推理、JAX 性能分析和 GPU。"><meta name="twitter:image" content="/blog-preview/previews/pr-480/placeholder-social.jpg"><title>如何让模型高效扩展：TPU 上大语言模型的系统视角</title><style>:root {
+  /* Typography */
+  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial, Noto Sans SC, PingFang SC, Microsoft YaHei, sans-serif;
+  --font-serif: ui-serif, Georgia, Cambria, Times New Roman, Times, serif;
+  --font-mono: JetBrains Mono, Fira Code, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  --font-size-4xl: 2.25rem;
+  --line-height-body: 1.75;
+  --line-height-heading: 1.3;
+  --line-height-code: 1.65;
+  --line-height-tight: 1.25;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Components */
+  --radius-sm: 0.35rem;
+  --radius-md: 0.65rem;
+  --radius-lg: 0.9rem;
+  --radius-xl: 0.75rem;
+  --shadow-card: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-code-block: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-header: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --border-style: solid;
+  --border-width: 1px;
+  --motion-duration: 160ms;
+  --motion-easing: ease;
+  --spacing-multiplier: 1;
+
+  /* Light Mode Colors */
+  --color-brand: #0284c7;
+  --color-accent: #0284c7;
+  --color-background: #fafafa;
+  --color-foreground: #18181b;
+  --color-muted: #71717a;
+  --color-border: #e4e4e7;
+  --color-card: #f4f4f5;
+  --color-code-background: #f4f4f5;
+  --color-code-foreground: #18181b;
+  --color-code-border: #e4e4e7;
+  --color-code-keyword: #0284c7;
+  --color-code-string: #059669;
+  --color-code-comment: #a1a1aa;
+  --color-code-function: #0284c7;
+
+  /* Code block specific (legacy support) */
+  --code-font: var(--font-mono);
+  --code-radius: 0.9rem;
+  --code-border: 1px solid var(--color-code-border);
+  --code-bg: var(--color-code-background);
+  --code-fg: var(--color-code-foreground);
+  --code-scrollbar: rgb(203 213 225 / 0.75);
+  --code-highlight-bg: rgb(59 130 246 / 0.12);
+  --code-highlight-accent: rgb(59 130 246);
+
+  /* Header specific (legacy support) */
+  --header-bg: rgb(248 250 252 / 0.92);
+  --header-bg-scrolled: rgb(248 250 252 / 0.98);
+  --header-border: rgb(226 232 240 / 0.9);
+  --header-shadow: var(--shadow-header);
+  --header-shadow-strong: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+.dark {
+  /* Dark Mode Colors */
+  --color-brand: #38bdf8;
+  --color-accent: #38bdf8;
+  --color-background: #18181b;
+  --color-foreground: #fafafa;
+  --color-muted: #a1a1aa;
+  --color-border: #3f3f46;
+  --color-card: #27272a;
+  --color-code-background: #1f1f23;
+  --color-code-foreground: #e4e4e7;
+  --color-code-border: #3f3f46;
+  --color-code-keyword: #38bdf8;
+  --color-code-string: #34d399;
+  --color-code-comment: #71717a;
+  --color-code-function: #38bdf8;
+
+  /* Dark mode shadows */
+  --shadow-card: 0 10px 30px rgb(0 0 0 / 0.28);
+  --shadow-code-block: 0 10px 30px rgb(0 0 0 / 0.28);
+  --shadow-header: 0 10px 30px rgb(0 0 0 / 0.28);
+
+  /* Code block specific (legacy support) */
+  --code-border: 1px solid var(--color-code-border);
+  --code-bg: var(--color-code-background);
+  --code-fg: var(--color-code-foreground);
+  --code-scrollbar: rgb(71 85 105 / 0.8);
+  --code-highlight-bg: rgb(59 130 246 / 0.2);
+  --code-highlight-accent: rgb(96 165 250);
+
+  /* Header specific (legacy support) */
+  --header-bg: rgb(15 23 42 / 0.72);
+  --header-bg-scrolled: rgb(15 23 42 / 0.8400000000000001);
+  --header-border: rgb(71 85 105 / 0.8);
+  --header-shadow: var(--shadow-header);
+  --header-shadow-strong: 0 20px 40px rgb(0 0 0 / 0.35);
+}
+</style><link rel="stylesheet" href="/blog-preview/previews/pr-480/_astro/_slug_.Cj2S-0Jt.css"></head> <body class="bg-neutral-50 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 min-h-screen flex flex-col">  <header class="site-header header-variant-frosted" data-header data-site-header> <div class="container mx-auto px-5 py-3 sm:py-4 flex justify-between items-start max-w-5xl"> <a href="/blog-preview/previews/pr-480/" class="text-xl font-bold hover:text-sky-600 dark:hover:text-sky-400 flex shrink-0 items-center gap-2"> <img src="/blog-preview/previews/pr-480/placeholder-social.jpg" alt="Yuanle Liu" width="32" height="32" class="h-8 w-8 rounded"> <span class="hidden sm:inline">Yuanle Liu</span> </a> <nav class="flex items-start items-center gap-1 text-sm sm:gap-3 sm:text-base"> <a href="/blog-preview/previews/pr-480/" class="hover:underline inline-flex items-center "> Home </a><a href="/blog-preview/previews/pr-480/columns/" class="hover:underline inline-flex items-center text-sky-600 dark:text-sky-400 font-semibold" aria-current="page"> Columns </a><a href="/blog-preview/previews/pr-480/archive/" class="hover:underline inline-flex items-center "> Archive </a><a href="/blog-preview/previews/pr-480/tags/" class="hover:underline inline-flex items-center "> Tags </a><a href="/blog-preview/previews/pr-480/about/" class="hover:underline inline-flex items-center "> About </a> <button id="theme-toggle" class="inline-flex items-center gap-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 px-1" aria-label="Toggle theme"> 🖥️ ☀️ </button> </nav> </div> </header> <div class="site-header-spacer" aria-hidden="true"></div> <script type="module">const u="theme",l=["light","dark"];const g=()=>{try{const e=localStorage.getItem(u);if(e==="light"||e==="dark")return e}catch(e){console.warn("Unable to read theme preference:",e)}return window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"},f=()=>document.documentElement.classList.contains("dark")?"dark":"light",p=e=>e==="dark"?"🌙":"☀️",k=e=>e==="dark"?"Dark":"Light",c=(e,n)=>{const t=document.getElementById("theme-toggle");if(!t)return;const o=n??f(),s=p(o),a=k(o);t.dataset.theme=e,t.textContent="";const i=document.createElement("span");i.className="inline-flex items-center justify-center",i.style.lineHeight="1",i.textContent=s,t.appendChild(i);const r=document.createElement("span");r.className="hidden sm:inline",r.textContent=a,t.appendChild(r),t.setAttribute("aria-label",`Toggle theme (current: ${a})`)},d=e=>{if(typeof window.__setTheme=="function"){window.__setTheme?.(e);return}const n=e==="dark"?"dark":"light";document.documentElement.classList.toggle("dark",n==="dark");try{localStorage.setItem(u,e)}catch(t){console.warn("Unable to persist theme preference:",t)}window.dispatchEvent(new CustomEvent("themechange",{detail:{theme:e,resolved:n}}))},E=(e,n)=>{const t=n.getBoundingClientRect(),o=e instanceof MouseEvent,s=o&&e.detail>0&&(e.clientX!==0||e.clientY!==0),a=s&&o?e.clientX:t.left+t.width/2,i=s&&o?e.clientY:t.top+t.height/2,r=Math.max(Math.hypot(a,i),Math.hypot(window.innerWidth-a,i),Math.hypot(a,window.innerHeight-i),Math.hypot(window.innerWidth-a,window.innerHeight-i));return{x:a,y:i,r}},T=({x:e,y:n,r:t})=>{const o=document.documentElement;o.style.setProperty("--theme-toggle-x",`${e}px`),o.style.setProperty("--theme-toggle-y",`${n}px`),o.style.setProperty("--theme-toggle-r",`${t}px`)},L=async(e,n,t)=>{if(t){d(e),c(e);return}T(n),document.documentElement.classList.add("theme-toggle-transitioning");const o=document;try{if(typeof o.startViewTransition=="function"){await o.startViewTransition(()=>{d(e),c(e)}).finished.catch(i=>{console.warn("Theme view transition failed:",i)});return}const s=document.createElement("div");s.className="theme-toggle-overlay",e==="dark"&&s.classList.add("dark"),document.body.appendChild(s);try{s.getBoundingClientRect(),s.classList.add("is-animating"),await new Promise(a=>{let i=!1;const r=()=>{i||(i=!0,a())};s.addEventListener("animationend",r,{once:!0}),s.addEventListener("animationcancel",r,{once:!0}),window.setTimeout(r,550)}),d(e),c(e)}finally{s.remove()}}finally{document.documentElement.classList.remove("theme-toggle-transitioning")}};let m=!1;const M=async e=>{if(m)return;const n=e.currentTarget instanceof HTMLElement?e.currentTarget:null;if(!n)return;m=!0,n.setAttribute("disabled","true");const t=g(),o=l[(l.indexOf(t)+1)%l.length];try{const s=E(e,n);await L(o,s,w.matches)}finally{window.setTimeout(()=>{n.removeAttribute("disabled"),m=!1},500)}},h=document.querySelector("[data-header]"),w=window.matchMedia("(prefers-reduced-motion: reduce)"),v=w.matches,y=()=>{if(!h)return;const e=window.scrollY>6;h.classList.toggle("is-scrolled",e)};document.getElementById("theme-toggle")?.addEventListener("click",M);c(g());window.addEventListener("themechange",e=>{const n=e.detail,t=n?.theme??g(),o=n?.resolved;c(t,o)});y();const b=()=>y();window.addEventListener("scroll",b,{passive:!0});v&&h?.classList.add("reduce-motion");</script> <main class="page-shell container mx-auto max-w-5xl px-4" data-book-index> <section class="overflow-hidden rounded-3xl border border-sky-200/80 bg-gradient-to-br from-sky-50 via-neutral-50 to-violet-50 p-6 shadow-lg dark:border-sky-900/70 dark:from-sky-950/50 dark:via-zinc-900 dark:to-violet-950/40 sm:p-9"> <div class="max-w-3xl"> <nav class="flex flex-wrap items-center gap-2 text-sm font-semibold text-sky-700 dark:text-sky-300" aria-label="面包屑导航"> <a href="/blog-preview/previews/pr-480/columns/" class="transition hover:text-sky-900 dark:hover:text-sky-100">
+专栏
+</a> <span aria-hidden="true">/</span> <span aria-current="page">Scaling Book 中文版</span> </nav> <h1 class="mt-4 text-3xl font-bold leading-tight text-zinc-950 dark:text-zinc-50 sm:text-5xl"> 如何让模型高效扩展：TPU 上大语言模型的系统视角 </h1> <p class="mt-5 text-base leading-8 text-zinc-700 dark:text-zinc-300 sm:text-lg">
+从单个加速器一路讲到大规模集群：用统一的系统视角理解 Roofline、TPU、分片矩阵、Transformer
+          训练与推理、JAX 性能剖析，以及 GPU 架构。
+</p> <div class="mt-7 flex flex-wrap gap-3"> <a href="/blog-preview/previews/pr-480/scaling-book/00-introduction/" class="rounded-full bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:bg-sky-500 dark:hover:bg-sky-400">
+从导论开始 →
+</a> <a href="https://jax-ml.github.io/scaling-book/" target="_blank" rel="noopener noreferrer" class="rounded-full border border-zinc-300 bg-white/70 px-5 py-2.5 text-sm font-semibold text-zinc-800 transition hover:border-sky-400 hover:text-sky-700 dark:border-zinc-700 dark:bg-zinc-900/60 dark:text-zinc-200 dark:hover:border-sky-600 dark:hover:text-sky-300">
+查看英文原书 ↗
+</a> </div> </div> </section> <section class="mt-12" aria-labelledby="chapters-heading"> <div> <p class="text-sm font-medium text-sky-700 dark:text-sky-300">目录</p> <h2 id="chapters-heading" class="mt-1 text-2xl font-bold sm:text-3xl">按章节阅读</h2> </div> <ol class="mt-6 grid grid-cols-[minmax(0,1fr)] gap-4 md:grid-cols-2"> <li class="min-w-0"> <a href="/blog-preview/previews/pr-480/scaling-book/00-introduction/" class="group flex h-full min-w-0 gap-4 rounded-2xl border border-zinc-200 bg-neutral-50/70 p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-sky-400 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:border-sky-600"> <span class="flex h-10 min-w-10 items-center justify-center rounded-xl bg-sky-100 px-2 text-xs font-bold text-sky-800 dark:bg-sky-950 dark:text-sky-300"> 0 </span> <span class="min-w-0"> <span class="block text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400"> 导论 </span> <span class="mt-1 block font-semibold leading-snug text-zinc-900 group-hover:text-sky-700 dark:text-zinc-100 dark:group-hover:text-sky-300"> 导论 </span> <span class="mt-2 block text-sm leading-6 text-zinc-600 [overflow-wrap:anywhere] dark:text-zinc-400"> 训练大语言模型常常给人一种炼金术般的感觉，但理解和优化模型性能并非一定如此。本书旨在揭开语言模型扩展科学的神秘面纱：TPU（以及 GPU）如何工作、它们如何彼此通信，LLM 如何在真实硬件上运行，以及如何在训练和推理期间并行化模型，使其在超大规模下仍能高效运行。如果你曾想过“训练这个 LLM 应该有多贵”“我自己部署这个模型需要多少内存”或“什么是 AllGather”，我们希望本书能对你有所帮助。 </span> </span> </a> </li><li class="min-w-0"> <a href="/blog-preview/previews/pr-480/scaling-book/01-roofline/" class="group flex h-full min-w-0 gap-4 rounded-2xl border border-zinc-200 bg-neutral-50/70 p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-sky-400 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:border-sky-600"> <span class="flex h-10 min-w-10 items-center justify-center rounded-xl bg-sky-100 px-2 text-xs font-bold text-sky-800 dark:bg-sky-950 dark:text-sky-300"> 1 </span> <span class="min-w-0"> <span class="block text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400"> 第 1 章 </span> <span class="mt-1 block font-semibold leading-snug text-zinc-900 group-hover:text-sky-700 dark:text-zinc-100 dark:group-hover:text-sky-300"> Roofline 模型详解 </span> <span class="mt-2 block text-sm leading-6 text-zinc-600 [overflow-wrap:anywhere] dark:text-zinc-400"> 在硬件上运行算法时，我们受到三项因素的限制：计算机执行数学运算的速度（OPs/秒）、用于搬运数据的可用带宽（字节/秒），以及用于存储数据的总内存容量（字节）。这些“Roofline”约束让我们能够为给定计算所需的时间确定上界和下界。 </span> </span> </a> </li><li class="min-w-0"> <a href="/blog-preview/previews/pr-480/scaling-book/02-tpus/" class="group flex h-full min-w-0 gap-4 rounded-2xl border border-zinc-200 bg-neutral-50/70 p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-sky-400 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:border-sky-600"> <span class="flex h-10 min-w-10 items-center justify-center rounded-xl bg-sky-100 px-2 text-xs font-bold text-sky-800 dark:bg-sky-950 dark:text-sky-300"> 2 </span> <span class="min-w-0"> <span class="block text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400"> 第 2 章 </span> <span class="mt-1 block font-semibold leading-snug text-zinc-900 group-hover:text-sky-700 dark:text-zinc-100 dark:group-hover:text-sky-300"> 如何理解 TPU </span> <span class="mt-2 block text-sm leading-6 text-zinc-600 [overflow-wrap:anywhere] dark:text-zinc-400"> 本章全面介绍 TPU 如何工作、它们如何通过网络连接以支持多芯片训练与推理，以及这些因素如何影响我们常用算法的性能。其中甚至也有一些对 GPU 用户很有价值的内容！ </span> </span> </a> </li><li class="min-w-0"> <a href="/blog-preview/previews/pr-480/scaling-book/03-sharding/" class="group flex h-full min-w-0 gap-4 rounded-2xl border border-zinc-200 bg-neutral-50/70 p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-sky-400 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:border-sky-600"> <span class="flex h-10 min-w-10 items-center justify-center rounded-xl bg-sky-100 px-2 text-xs font-bold text-sky-800 dark:bg-sky-950 dark:text-sky-300"> 3 </span> <span class="min-w-0"> <span class="block text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400"> 第 3 章 </span> <span class="mt-1 block font-semibold leading-snug text-zinc-900 group-hover:text-sky-700 dark:text-zinc-100 dark:group-hover:text-sky-300"> 分片矩阵及其乘法 </span> <span class="mt-2 block text-sm leading-6 text-zinc-600 [overflow-wrap:anywhere] dark:text-zinc-400"> 训练大型机器学习模型时，我们必须把参数或输入拆分（即“分片”）到许多加速器上。由于 LLM 主要由矩阵乘法构成，理解这个问题归根结底就是理解：当矩阵被拆分到不同设备上时，应当如何进行矩阵乘法。本章基于 TPU 通信原语的成本，建立一套简单的分片矩阵乘法理论。 </span> </span> </a> </li><li class="min-w-0"> <a href="/blog-preview/previews/pr-480/scaling-book/04-transformers/" class="group flex h-full min-w-0 gap-4 rounded-2xl border border-zinc-200 bg-neutral-50/70 p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-sky-400 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:border-sky-600"> <span class="flex h-10 min-w-10 items-center justify-center rounded-xl bg-sky-100 px-2 text-xs font-bold text-sky-800 dark:bg-sky-950 dark:text-sky-300"> 4 </span> <span class="min-w-0"> <span class="block text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400"> 第 4 章 </span> <span class="mt-1 block font-semibold leading-snug text-zinc-900 group-hover:text-sky-700 dark:text-zinc-100 dark:group-hover:text-sky-300"> 你需要掌握的全部 Transformer 数学 </span> <span class="mt-2 block text-sm leading-6 text-zinc-600 [overflow-wrap:anywhere] dark:text-zinc-400"> 本章将快速回顾 Transformer 架构，重点介绍如何计算 FLOPs、字节数以及其他值得关注的量。 </span> </span> </a> </li><li class="min-w-0"> <a href="/blog-preview/previews/pr-480/scaling-book/05-training/" class="group flex h-full min-w-0 gap-4 rounded-2xl border border-zinc-200 bg-neutral-50/70 p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-sky-400 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:border-sky-600"> <span class="flex h-10 min-w-10 items-center justify-center rounded-xl bg-sky-100 px-2 text-xs font-bold text-sky-800 dark:bg-sky-950 dark:text-sky-300"> 5 </span> <span class="min-w-0"> <span class="block text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400"> 第 5 章 </span> <span class="mt-1 block font-semibold leading-snug text-zinc-900 group-hover:text-sky-700 dark:text-zinc-100 dark:group-hover:text-sky-300"> 如何并行化 Transformer 训练 </span> <span class="mt-2 block text-sm leading-6 text-zinc-600 [overflow-wrap:anywhere] dark:text-zinc-400"> 本章讨论 LLM 训练期间使用的四种主要并行方案：数据并行、完全分片数据并行（FSDP）、张量并行和流水线并行。对于每一种方案，我们都会计算系统从什么时候开始受到通信瓶颈的限制。 </span> </span> </a> </li><li class="min-w-0"> <a href="/blog-preview/previews/pr-480/scaling-book/06-llama3-training/" class="group flex h-full min-w-0 gap-4 rounded-2xl border border-zinc-200 bg-neutral-50/70 p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-sky-400 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:border-sky-600"> <span class="flex h-10 min-w-10 items-center justify-center rounded-xl bg-sky-100 px-2 text-xs font-bold text-sky-800 dark:bg-sky-950 dark:text-sky-300"> 6 </span> <span class="min-w-0"> <span class="block text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400"> 第 6 章 </span> <span class="mt-1 block font-semibold leading-snug text-zinc-900 group-hover:text-sky-700 dark:text-zinc-100 dark:group-hover:text-sky-300"> 在 TPU 上训练 LLaMA 3 </span> <span class="mt-2 block text-sm leading-6 text-zinc-600 [overflow-wrap:anywhere] dark:text-zinc-400"> 让我们运用上一章学到的知识，仔细研究如何在 TPU v5p 上训练 LLaMA 3 模型。这些模型有多大？不同配置下的训练成本有多高？它们如何分片？我们将通过一系列粗略估算，具体说明前面各章的结论如何映射到真实模型上。 </span> </span> </a> </li><li class="min-w-0"> <a href="/blog-preview/previews/pr-480/scaling-book/07-inference/" class="group flex h-full min-w-0 gap-4 rounded-2xl border border-zinc-200 bg-neutral-50/70 p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-sky-400 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:border-sky-600"> <span class="flex h-10 min-w-10 items-center justify-center rounded-xl bg-sky-100 px-2 text-xs font-bold text-sky-800 dark:bg-sky-950 dark:text-sky-300"> 7 </span> <span class="min-w-0"> <span class="block text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400"> 第 7 章 </span> <span class="mt-1 block font-semibold leading-snug text-zinc-900 group-hover:text-sky-700 dark:text-zinc-100 dark:group-hover:text-sky-300"> Transformer 推理详解 </span> <span class="mt-2 block text-sm leading-6 text-zinc-600 [overflow-wrap:anywhere] dark:text-zinc-400"> 对 Transformer 执行推理可能与训练大不相同，部分原因在于推理增加了一个需要考虑的新因素：延迟。本章将从使用模型采样单个新 token 开始，一路讲到如何把大型 Transformer 高效扩展到多个加速器切片上，并将其作为推理引擎的一部分运行。 </span> </span> </a> </li><li class="min-w-0"> <a href="/blog-preview/previews/pr-480/scaling-book/08-llama3-inference/" class="group flex h-full min-w-0 gap-4 rounded-2xl border border-zinc-200 bg-neutral-50/70 p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-sky-400 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:border-sky-600"> <span class="flex h-10 min-w-10 items-center justify-center rounded-xl bg-sky-100 px-2 text-xs font-bold text-sky-800 dark:bg-sky-950 dark:text-sky-300"> 8 </span> <span class="min-w-0"> <span class="block text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400"> 第 8 章 </span> <span class="mt-1 block font-semibold leading-snug text-zinc-900 group-hover:text-sky-700 dark:text-zinc-100 dark:group-hover:text-sky-300"> 在 TPU 上部署 LLaMA 3-70B 服务 </span> <span class="mt-2 block text-sm leading-6 text-zinc-600 [overflow-wrap:anywhere] dark:text-zinc-400"> 让我们仔细研究如何在 TPU v5e 上部署 LLaMA 3-70B 模型。按照 Roofline 估算，部署不同模型的成本是多少？它们的 KV 缓存有多大？应该使用什么批大小？推理期间，参数和激活值如何分片？我们将通过一系列粗略估算，推导生产环境中的延迟与吞吐量。 </span> </span> </a> </li><li class="min-w-0"> <a href="/blog-preview/previews/pr-480/scaling-book/09-profiling/" class="group flex h-full min-w-0 gap-4 rounded-2xl border border-zinc-200 bg-neutral-50/70 p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-sky-400 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:border-sky-600"> <span class="flex h-10 min-w-10 items-center justify-center rounded-xl bg-sky-100 px-2 text-xs font-bold text-sky-800 dark:bg-sky-950 dark:text-sky-300"> 9 </span> <span class="min-w-0"> <span class="block text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400"> 第 9 章 </span> <span class="mt-1 block font-semibold leading-snug text-zinc-900 group-hover:text-sky-700 dark:text-zinc-100 dark:group-hover:text-sky-300"> 如何对 TPU 程序进行性能剖析 </span> <span class="mt-2 block text-sm leading-6 text-zinc-600 [overflow-wrap:anywhere] dark:text-zinc-400"> 到目前为止，本系列一直是纯理论的：基于硬件 Roofline 进行粗略估算。这种理解能带你走得很远，但大量优化最终取决于实践细节：XLA 编译器如何工作，以及当它未能得到理想结果时，如何使用 JAX/TensorBoard Profiler 等性能剖析工具判断应该做什么。本章将讨论这些内容。 </span> </span> </a> </li><li class="min-w-0"> <a href="/blog-preview/previews/pr-480/scaling-book/10-jax/" class="group flex h-full min-w-0 gap-4 rounded-2xl border border-zinc-200 bg-neutral-50/70 p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-sky-400 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:border-sky-600"> <span class="flex h-10 min-w-10 items-center justify-center rounded-xl bg-sky-100 px-2 text-xs font-bold text-sky-800 dark:bg-sky-950 dark:text-sky-300"> 10 </span> <span class="min-w-0"> <span class="block text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400"> 第 10 章 </span> <span class="mt-1 block font-semibold leading-snug text-zinc-900 group-hover:text-sky-700 dark:text-zinc-100 dark:group-hover:text-sky-300"> 使用 JAX 为 TPU 编程 </span> <span class="mt-2 block text-sm leading-6 text-zinc-600 [overflow-wrap:anywhere] dark:text-zinc-400"> 如何使用 JAX 高效地为 TPU 编程！本章的大量内容取自 JAX 的 shard_map JEP 文档（https://jax.readthedocs.io/en/latest/jep/14273-shard-map.html）。你可以在 Google Colab（https://colab.sandbox.google.com/）上使用免费的 TPU 运行本章代码示例。 </span> </span> </a> </li><li class="min-w-0"> <a href="/blog-preview/previews/pr-480/scaling-book/11-conclusion/" class="group flex h-full min-w-0 gap-4 rounded-2xl border border-zinc-200 bg-neutral-50/70 p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-sky-400 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:border-sky-600"> <span class="flex h-10 min-w-10 items-center justify-center rounded-xl bg-sky-100 px-2 text-xs font-bold text-sky-800 dark:bg-sky-950 dark:text-sky-300"> 11 </span> <span class="min-w-0"> <span class="block text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400"> 第 11 章 </span> <span class="mt-1 block font-semibold leading-snug text-zinc-900 group-hover:text-sky-700 dark:text-zinc-100 dark:group-hover:text-sky-300"> 总结与延伸阅读 </span> <span class="mt-2 block text-sm leading-6 text-zinc-600 [overflow-wrap:anywhere] dark:text-zinc-400"> 感谢阅读！本章还将提供一些参考资料，供你进一步学习。 </span> </span> </a> </li><li class="min-w-0"> <a href="/blog-preview/previews/pr-480/scaling-book/12-gpus/" class="group flex h-full min-w-0 gap-4 rounded-2xl border border-zinc-200 bg-neutral-50/70 p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-sky-400 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:border-sky-600"> <span class="flex h-10 min-w-10 items-center justify-center rounded-xl bg-sky-100 px-2 text-xs font-bold text-sky-800 dark:bg-sky-950 dark:text-sky-300"> 12 </span> <span class="min-w-0"> <span class="block text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400"> 第 12 章 </span> <span class="mt-1 block font-semibold leading-snug text-zinc-900 group-hover:text-sky-700 dark:text-zinc-100 dark:group-hover:text-sky-300"> 如何理解 GPU </span> <span class="mt-2 block text-sm leading-6 text-zinc-600 [overflow-wrap:anywhere] dark:text-zinc-400"> 我们在 Google 热爱 TPU，但 GPU 同样出色。本章将深入探索 GPU 的世界：每块芯片如何工作、它们如何通过网络连接，以及这些特性对 LLM 意味着什么，尤其是与 TPU 相比时。尽管 NVIDIA、AMD、Intel 等厂商提供了众多 GPU 架构，本章将重点关注 NVIDIA GPU。本章建立在第 2 章（https://jax-ml.github.io/scaling-book/tpus/）和第 5 章（https://jax-ml.github.io/scaling-book/training）的基础上，建议先阅读这两章。 </span> </span> </a> </li> </ol> </section> <section class="mt-12" aria-labelledby="authors-heading"> <p class="text-sm font-medium text-sky-700 dark:text-sky-300">原书署名</p> <h2 id="authors-heading" class="mt-1 text-2xl font-bold">作者与章节贡献者</h2> <p class="mt-3 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+第 0—11 章的共同署名如下；第 10 章与第 12 章的特有署名另列于后。
+</p> <div class="mt-5 flex flex-wrap gap-2"> <a href="https://www.jacobaustin.org/" target="_blank" rel="noopener noreferrer" class="rounded-full border border-zinc-200 bg-neutral-50 px-3 py-1.5 text-sm text-zinc-700 transition hover:border-sky-400 hover:text-sky-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-sky-600 dark:hover:text-sky-300"> Jacob Austin </a><a href="https://x.com/_sholtodouglas" target="_blank" rel="noopener noreferrer" class="rounded-full border border-zinc-200 bg-neutral-50 px-3 py-1.5 text-sm text-zinc-700 transition hover:border-sky-400 hover:text-sky-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-sky-600 dark:hover:text-sky-300"> Sholto Douglas </a><a href="https://cs.stanford.edu/~rfrostig/" target="_blank" rel="noopener noreferrer" class="rounded-full border border-zinc-200 bg-neutral-50 px-3 py-1.5 text-sm text-zinc-700 transition hover:border-sky-400 hover:text-sky-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-sky-600 dark:hover:text-sky-300"> Roy Frostig </a><a href="https://anselmlevskaya.com/" target="_blank" rel="noopener noreferrer" class="rounded-full border border-zinc-200 bg-neutral-50 px-3 py-1.5 text-sm text-zinc-700 transition hover:border-sky-400 hover:text-sky-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-sky-600 dark:hover:text-sky-300"> Anselm Levskaya </a><a href="https://x.com/charliexychen" target="_blank" rel="noopener noreferrer" class="rounded-full border border-zinc-200 bg-neutral-50 px-3 py-1.5 text-sm text-zinc-700 transition hover:border-sky-400 hover:text-sky-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-sky-600 dark:hover:text-sky-300"> Charlie Chen </a><a href="https://sharadvikram.com/" target="_blank" rel="noopener noreferrer" class="rounded-full border border-zinc-200 bg-neutral-50 px-3 py-1.5 text-sm text-zinc-700 transition hover:border-sky-400 hover:text-sky-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-sky-600 dark:hover:text-sky-300"> Sharad Vikram </a><a href="https://fedelebron.com/" target="_blank" rel="noopener noreferrer" class="rounded-full border border-zinc-200 bg-neutral-50 px-3 py-1.5 text-sm text-zinc-700 transition hover:border-sky-400 hover:text-sky-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-sky-600 dark:hover:text-sky-300"> Federico Lebron </a><a href="https://x.com/pchoy95" target="_blank" rel="noopener noreferrer" class="rounded-full border border-zinc-200 bg-neutral-50 px-3 py-1.5 text-sm text-zinc-700 transition hover:border-sky-400 hover:text-sky-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-sky-600 dark:hover:text-sky-300"> Peter Choy </a><a href="https://x.com/vinayramasesh" target="_blank" rel="noopener noreferrer" class="rounded-full border border-zinc-200 bg-neutral-50 px-3 py-1.5 text-sm text-zinc-700 transition hover:border-sky-400 hover:text-sky-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-sky-600 dark:hover:text-sky-300"> Vinay Ramasesh </a><a href="https://representation.ai/" target="_blank" rel="noopener noreferrer" class="rounded-full border border-zinc-200 bg-neutral-50 px-3 py-1.5 text-sm text-zinc-700 transition hover:border-sky-400 hover:text-sky-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-sky-600 dark:hover:text-sky-300"> Albert Webson </a><a href="https://x.com/reinerpope" target="_blank" rel="noopener noreferrer" class="rounded-full border border-zinc-200 bg-neutral-50 px-3 py-1.5 text-sm text-zinc-700 transition hover:border-sky-400 hover:text-sky-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-sky-600 dark:hover:text-sky-300"> Reiner Pope </a> </div> <div class="mt-4 space-y-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400"> <p> 第 10 章另署名： <a href="https://x.com/yashk2810" target="_blank" rel="noopener noreferrer" class="font-medium text-sky-700 underline underline-offset-2 dark:text-sky-300"> Yash Katariya </a>   </p><p> 第 12 章按该章原文单独署名： <a href="https://www.jacobaustin.org/" target="_blank" rel="noopener noreferrer" class="font-medium text-sky-700 underline underline-offset-2 dark:text-sky-300"> Jacob Austin </a> 、<a href="https://www.linkedin.com/in/swapnil-patil-5b47a068" target="_blank" rel="noopener noreferrer" class="font-medium text-sky-700 underline underline-offset-2 dark:text-sky-300"> Swapnil Patil </a> 、<a href="https://x.com/apaszke" target="_blank" rel="noopener noreferrer" class="font-medium text-sky-700 underline underline-offset-2 dark:text-sky-300"> Adam Paszke </a> 、<a href="https://x.com/reinerpope" target="_blank" rel="noopener noreferrer" class="font-medium text-sky-700 underline underline-offset-2 dark:text-sky-300"> Reiner Pope </a>  。本章作者标注的机构为 Google DeepMind 与 MatX。 </p> </div> </section> <section class="mt-12" aria-labelledby="references-heading"> <h2 id="references-heading" class="text-2xl font-bold">参考文献</h2> <ol class="mt-5 space-y-3 text-sm leading-6 text-zinc-700 dark:text-zinc-300"> <li id="ref-transformers" class="scroll-mt-28 rounded-xl border border-zinc-200 px-4 py-3 dark:border-zinc-800"> <span class="font-mono text-xs text-zinc-500 dark:text-zinc-400">
+[transformers]
+</span>  <span>Vaswani et al.</span>.  <a href="https://arxiv.org/abs/1706.03762" target="_blank" rel="noopener noreferrer" class="font-medium text-sky-700 underline decoration-sky-300 underline-offset-2 dark:text-sky-300"> Attention Is All You Need </a>
+. <span>2017</span>.
+</li><li id="ref-tpu_paper" class="scroll-mt-28 rounded-xl border border-zinc-200 px-4 py-3 dark:border-zinc-800"> <span class="font-mono text-xs text-zinc-500 dark:text-zinc-400">
+[tpu_paper]
+</span>  <span>Jouppi et al.</span>.  <a href="https://arxiv.org/abs/2304.01433" target="_blank" rel="noopener noreferrer" class="font-medium text-sky-700 underline decoration-sky-300 underline-offset-2 dark:text-sky-300"> TPU v4: An Optically Reconfigurable Supercomputer for Machine Learning with Hardware Support for Embeddings </a>
+. <span>2023</span>.
+</li><li id="ref-glu" class="scroll-mt-28 rounded-xl border border-zinc-200 px-4 py-3 dark:border-zinc-800"> <span class="font-mono text-xs text-zinc-500 dark:text-zinc-400">
+[glu]
+</span>  <span>Shazeer</span>.  <a href="https://arxiv.org/abs/2002.05202" target="_blank" rel="noopener noreferrer" class="font-medium text-sky-700 underline decoration-sky-300 underline-offset-2 dark:text-sky-300"> GLU Variants Improve Transformer </a>
+. <span>2020</span>.
+</li><li id="ref-mqa" class="scroll-mt-28 rounded-xl border border-zinc-200 px-4 py-3 dark:border-zinc-800"> <span class="font-mono text-xs text-zinc-500 dark:text-zinc-400">
+[mqa]
+</span>  <span>Shazeer</span>.  <a href="https://arxiv.org/abs/1911.02150" target="_blank" rel="noopener noreferrer" class="font-medium text-sky-700 underline decoration-sky-300 underline-offset-2 dark:text-sky-300"> Fast Transformer Decoding: One Write-Head Is All You Need </a>
+. <span>2019</span>.
+</li><li id="ref-gmqa" class="scroll-mt-28 rounded-xl border border-zinc-200 px-4 py-3 dark:border-zinc-800"> <span class="font-mono text-xs text-zinc-500 dark:text-zinc-400">
+[gmqa]
+</span>  <span>Ainslie et al.</span>.  <a href="https://arxiv.org/abs/2305.13245" target="_blank" rel="noopener noreferrer" class="font-medium text-sky-700 underline decoration-sky-300 underline-offset-2 dark:text-sky-300"> GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints </a>
+. <span>2023</span>.
+</li><li id="ref-moe" class="scroll-mt-28 rounded-xl border border-zinc-200 px-4 py-3 dark:border-zinc-800"> <span class="font-mono text-xs text-zinc-500 dark:text-zinc-400">
+[moe]
+</span>  <span>Shazeer et al.</span>.  <a href="https://arxiv.org/abs/1701.06538" target="_blank" rel="noopener noreferrer" class="font-medium text-sky-700 underline decoration-sky-300 underline-offset-2 dark:text-sky-300"> Outrageously Large Neural Networks: The Sparsely-Gated Mixture-of-Experts Layer </a>
+. <span>2017</span>.
+</li><li id="ref-zero" class="scroll-mt-28 rounded-xl border border-zinc-200 px-4 py-3 dark:border-zinc-800"> <span class="font-mono text-xs text-zinc-500 dark:text-zinc-400">
+[zero]
+</span>  <span>Rajbhandari et al.</span>.  <a href="https://arxiv.org/abs/1910.02054" target="_blank" rel="noopener noreferrer" class="font-medium text-sky-700 underline decoration-sky-300 underline-offset-2 dark:text-sky-300"> ZeRO: Memory Optimizations Toward Training Trillion Parameter Models </a>
+. <span>2019</span>.
+</li><li id="ref-megatron" class="scroll-mt-28 rounded-xl border border-zinc-200 px-4 py-3 dark:border-zinc-800"> <span class="font-mono text-xs text-zinc-500 dark:text-zinc-400">
+[megatron]
+</span>  <span>Shoeybi et al.</span>.  <a href="https://arxiv.org/abs/1909.08053" target="_blank" rel="noopener noreferrer" class="font-medium text-sky-700 underline decoration-sky-300 underline-offset-2 dark:text-sky-300"> Megatron-LM: Training Multi-Billion Parameter Language Models Using Model Parallelism </a>
+. <span>2019</span>.
+</li><li id="ref-DeepSeek3" class="scroll-mt-28 rounded-xl border border-zinc-200 px-4 py-3 dark:border-zinc-800"> <span class="font-mono text-xs text-zinc-500 dark:text-zinc-400">
+[DeepSeek3]
+</span>  <span>DeepSeek-AI et al.</span>.  <a href="https://arxiv.org/abs/2412.19437" target="_blank" rel="noopener noreferrer" class="font-medium text-sky-700 underline decoration-sky-300 underline-offset-2 dark:text-sky-300"> DeepSeek-V3 Technical Report </a>
+. <span>2024</span>.
+</li><li id="ref-llama3" class="scroll-mt-28 rounded-xl border border-zinc-200 px-4 py-3 dark:border-zinc-800"> <span class="font-mono text-xs text-zinc-500 dark:text-zinc-400">
+[llama3]
+</span>  <span>Grattafiori et al.</span>.  <a href="https://arxiv.org/abs/2407.21783" target="_blank" rel="noopener noreferrer" class="font-medium text-sky-700 underline decoration-sky-300 underline-offset-2 dark:text-sky-300"> The Llama 3 Herd of Models </a>
+. <span>2024</span>.
+</li><li id="ref-esti" class="scroll-mt-28 rounded-xl border border-zinc-200 px-4 py-3 dark:border-zinc-800"> <span class="font-mono text-xs text-zinc-500 dark:text-zinc-400">
+[esti]
+</span>  <span>Pope et al.</span>.  <a href="https://arxiv.org/abs/2211.05102" target="_blank" rel="noopener noreferrer" class="font-medium text-sky-700 underline decoration-sky-300 underline-offset-2 dark:text-sky-300"> Efficiently Scaling Transformer Inference </a>
+. <span>2022</span>.
+</li><li id="ref-paged" class="scroll-mt-28 rounded-xl border border-zinc-200 px-4 py-3 dark:border-zinc-800"> <span class="font-mono text-xs text-zinc-500 dark:text-zinc-400">
+[paged]
+</span>  <span>Kwon et al.</span>.  <a href="https://arxiv.org/abs/2309.06180" target="_blank" rel="noopener noreferrer" class="font-medium text-sky-700 underline decoration-sky-300 underline-offset-2 dark:text-sky-300"> Efficient Memory Management for Large Language Model Serving with PagedAttention </a>
+. <span>2023</span>.
+</li><li id="ref-spec1" class="scroll-mt-28 rounded-xl border border-zinc-200 px-4 py-3 dark:border-zinc-800"> <span class="font-mono text-xs text-zinc-500 dark:text-zinc-400">
+[spec1]
+</span>  <span>Leviathan et al.</span>.  <a href="https://arxiv.org/abs/2211.17192" target="_blank" rel="noopener noreferrer" class="font-medium text-sky-700 underline decoration-sky-300 underline-offset-2 dark:text-sky-300"> Fast Inference from Transformers via Speculative Decoding </a>
+. <span>2022</span>.
+</li><li id="ref-spec2" class="scroll-mt-28 rounded-xl border border-zinc-200 px-4 py-3 dark:border-zinc-800"> <span class="font-mono text-xs text-zinc-500 dark:text-zinc-400">
+[spec2]
+</span>  <span>Chen et al.</span>.  <a href="https://arxiv.org/abs/2302.01318" target="_blank" rel="noopener noreferrer" class="font-medium text-sky-700 underline decoration-sky-300 underline-offset-2 dark:text-sky-300"> Accelerating Large Language Model Decoding with Speculative Sampling </a>
+. <span>2023</span>.
+</li><li id="ref-eagle" class="scroll-mt-28 rounded-xl border border-zinc-200 px-4 py-3 dark:border-zinc-800"> <span class="font-mono text-xs text-zinc-500 dark:text-zinc-400">
+[eagle]
+</span>  <span>Li et al.</span>.  <a href="https://arxiv.org/abs/2401.15077" target="_blank" rel="noopener noreferrer" class="font-medium text-sky-700 underline decoration-sky-300 underline-offset-2 dark:text-sky-300"> EAGLE: Speculative Sampling Requires Rethinking Feature Uncertainty </a>
+. <span>2024</span>.
+</li><li id="ref-medusa" class="scroll-mt-28 rounded-xl border border-zinc-200 px-4 py-3 dark:border-zinc-800"> <span class="font-mono text-xs text-zinc-500 dark:text-zinc-400">
+[medusa]
+</span>  <span>Cai et al.</span>.  <a href="https://arxiv.org/abs/2401.10774" target="_blank" rel="noopener noreferrer" class="font-medium text-sky-700 underline decoration-sky-300 underline-offset-2 dark:text-sky-300"> Medusa: Simple LLM Inference Acceleration Framework with Multiple Decoding Heads </a>
+. <span>2024</span>.
+</li> </ol> </section> </main> <footer class="py-8 mt-auto border-t border-zinc-200 dark:border-zinc-800"> <div class="container mx-auto px-4 text-center text-zinc-500 max-w-4xl">
+&copy; 2026 Yuanle Liu. All rights reserved. </div> </footer>  <script type="module" src="/blog-preview/previews/pr-480/_astro/Layout.astro_astro_type_script_index_0_lang.BPB9lUd-.js"></script> <script type="module">const i=new WeakMap,c=(e,t)=>{e.dataset.state=t,t==="copied"?e.textContent="Copied":t==="error"?e.textContent="Failed":e.textContent="Copy";const o=i.get(e);if(o&&window.clearTimeout(o),t!=="idle"){const r=window.setTimeout(()=>c(e,"idle"),2e3);i.set(e,r)}},n=async e=>{const t=e.closest(".code-block");if(!t)return;const o=t.getAttribute("data-raw-code")??"";try{await navigator.clipboard.writeText(o),c(e,"copied")}catch(r){console.error("Copy failed",r),c(e,"error")}},s=()=>{document.addEventListener("click",e=>{const o=e.target?.closest("button.code-block__copy");o&&(e.preventDefault(),n(o))})},a=()=>{typeof document>"u"||s()};a();</script> <script type="module">function d(){const n=document.querySelector("[data-site-header]");if(!n){document.documentElement.style.setProperty("--site-header-height","0px");return}let i=0;const t=()=>{const e=n.getBoundingClientRect().height;Math.abs(e-i)>.5&&(i=e,document.documentElement.style.setProperty("--site-header-height",`${e}px`),window.dispatchEvent(new CustomEvent("headerheightchange",{detail:{height:e}})))};t(),"ResizeObserver"in window&&new ResizeObserver(()=>{t()}).observe(n),window.addEventListener("resize",t,{passive:!0}),window.addEventListener("load",t,{once:!0})}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",d):d();</script> </body> </html>

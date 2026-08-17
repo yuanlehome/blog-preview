@@ -1,0 +1,287 @@
+<!DOCTYPE html><html lang="en"> <head><script>(() => {
+  const storageKey = 'theme';
+  const className = 'dark';
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  const validThemes = ['light', 'dark'];
+  let currentPreference = (() => {
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored && validThemes.includes(stored)) return stored;
+    } catch (error) {
+      console.warn('Unable to access localStorage for theme:', error);
+    }
+    return mediaQuery.matches ? 'dark' : 'light';
+  })();
+
+  const resolveTheme = (preference) => (preference === 'dark' ? 'dark' : 'light');
+
+  const applyTheme = (preference) => {
+    const effectiveTheme = resolveTheme(preference);
+    document.documentElement.classList.toggle(className, effectiveTheme === 'dark');
+    document.documentElement.dataset.theme = effectiveTheme;
+    return effectiveTheme;
+  };
+
+  const dispatchChange = (preference) => {
+    const resolved = document.documentElement.classList.contains(className) ? 'dark' : 'light';
+    window.dispatchEvent(
+      new CustomEvent('themechange', {
+        detail: { theme: preference, resolved },
+      }),
+    );
+  };
+
+  applyTheme(currentPreference);
+
+  window.__setTheme = (next) => {
+    const preference = validThemes.includes(String(next)) ? String(next) : resolveTheme(currentPreference);
+    currentPreference = preference;
+    try {
+      localStorage.setItem(storageKey, preference);
+    } catch (error) {
+      console.warn('Unable to persist theme selection:', error);
+    }
+    applyTheme(preference);
+    dispatchChange(preference);
+  };
+})();</script><meta charset="UTF-8"><meta name="description" content="训练大语言模型常常给人一种炼金术般的感觉，但理解和优化模型性能并非一定如此。本书旨在揭开语言模型扩展科学的神秘面纱：TPU（以及 GPU）如何工作、它们如何彼此通信，LLM 如何在真实硬件上运行，以及如何在训练和推理期间并行化模型，使其在超大规模下仍能高效运行。如果你曾想过“训练这个 LLM 应该有多贵”“我自己部署这个模型需要多少内存”或“什么是 AllGather”，我们希望本书能对你有所帮助。"><meta name="viewport" content="width=device-width"><link rel="icon" type="image/x-icon" href="/blog-preview/previews/pr-480/favicon.ico"><link rel="icon" type="image/png" sizes="32x32" href="/blog-preview/previews/pr-480/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/blog-preview/previews/pr-480/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/blog-preview/previews/pr-480/apple-touch-icon.png"><meta name="generator" content="Astro v5.16.6"><link rel="canonical" href="https://yuanlehome.github.io/blog-preview/previews/pr-480/scaling-book/00-introduction/"><meta property="og:title" content="导论｜Scaling Book 中文版"><meta property="og:description" content="训练大语言模型常常给人一种炼金术般的感觉，但理解和优化模型性能并非一定如此。本书旨在揭开语言模型扩展科学的神秘面纱：TPU（以及 GPU）如何工作、它们如何彼此通信，LLM 如何在真实硬件上运行，以及如何在训练和推理期间并行化模型，使其在超大规模下仍能高效运行。如果你曾想过“训练这个 LLM 应该有多贵”“我自己部署这个模型需要多少内存”或“什么是 AllGather”，我们希望本书能对你有所帮助。"><meta property="og:image" content="/blog-preview/previews/pr-480/placeholder-social.jpg"><meta property="og:type" content="article"><meta property="og:url" content="https://yuanlehome.github.io/blog-preview/previews/pr-480/scaling-book/00-introduction/"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="导论｜Scaling Book 中文版"><meta name="twitter:description" content="训练大语言模型常常给人一种炼金术般的感觉，但理解和优化模型性能并非一定如此。本书旨在揭开语言模型扩展科学的神秘面纱：TPU（以及 GPU）如何工作、它们如何彼此通信，LLM 如何在真实硬件上运行，以及如何在训练和推理期间并行化模型，使其在超大规模下仍能高效运行。如果你曾想过“训练这个 LLM 应该有多贵”“我自己部署这个模型需要多少内存”或“什么是 AllGather”，我们希望本书能对你有所帮助。"><meta name="twitter:image" content="/blog-preview/previews/pr-480/placeholder-social.jpg"><title>导论｜Scaling Book 中文版</title><style>:root {
+  /* Typography */
+  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial, Noto Sans SC, PingFang SC, Microsoft YaHei, sans-serif;
+  --font-serif: ui-serif, Georgia, Cambria, Times New Roman, Times, serif;
+  --font-mono: JetBrains Mono, Fira Code, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  --font-size-4xl: 2.25rem;
+  --line-height-body: 1.75;
+  --line-height-heading: 1.3;
+  --line-height-code: 1.65;
+  --line-height-tight: 1.25;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Components */
+  --radius-sm: 0.35rem;
+  --radius-md: 0.65rem;
+  --radius-lg: 0.9rem;
+  --radius-xl: 0.75rem;
+  --shadow-card: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-code-block: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-header: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --border-style: solid;
+  --border-width: 1px;
+  --motion-duration: 160ms;
+  --motion-easing: ease;
+  --spacing-multiplier: 1;
+
+  /* Light Mode Colors */
+  --color-brand: #0284c7;
+  --color-accent: #0284c7;
+  --color-background: #fafafa;
+  --color-foreground: #18181b;
+  --color-muted: #71717a;
+  --color-border: #e4e4e7;
+  --color-card: #f4f4f5;
+  --color-code-background: #f4f4f5;
+  --color-code-foreground: #18181b;
+  --color-code-border: #e4e4e7;
+  --color-code-keyword: #0284c7;
+  --color-code-string: #059669;
+  --color-code-comment: #a1a1aa;
+  --color-code-function: #0284c7;
+
+  /* Code block specific (legacy support) */
+  --code-font: var(--font-mono);
+  --code-radius: 0.9rem;
+  --code-border: 1px solid var(--color-code-border);
+  --code-bg: var(--color-code-background);
+  --code-fg: var(--color-code-foreground);
+  --code-scrollbar: rgb(203 213 225 / 0.75);
+  --code-highlight-bg: rgb(59 130 246 / 0.12);
+  --code-highlight-accent: rgb(59 130 246);
+
+  /* Header specific (legacy support) */
+  --header-bg: rgb(248 250 252 / 0.92);
+  --header-bg-scrolled: rgb(248 250 252 / 0.98);
+  --header-border: rgb(226 232 240 / 0.9);
+  --header-shadow: var(--shadow-header);
+  --header-shadow-strong: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+.dark {
+  /* Dark Mode Colors */
+  --color-brand: #38bdf8;
+  --color-accent: #38bdf8;
+  --color-background: #18181b;
+  --color-foreground: #fafafa;
+  --color-muted: #a1a1aa;
+  --color-border: #3f3f46;
+  --color-card: #27272a;
+  --color-code-background: #1f1f23;
+  --color-code-foreground: #e4e4e7;
+  --color-code-border: #3f3f46;
+  --color-code-keyword: #38bdf8;
+  --color-code-string: #34d399;
+  --color-code-comment: #71717a;
+  --color-code-function: #38bdf8;
+
+  /* Dark mode shadows */
+  --shadow-card: 0 10px 30px rgb(0 0 0 / 0.28);
+  --shadow-code-block: 0 10px 30px rgb(0 0 0 / 0.28);
+  --shadow-header: 0 10px 30px rgb(0 0 0 / 0.28);
+
+  /* Code block specific (legacy support) */
+  --code-border: 1px solid var(--color-code-border);
+  --code-bg: var(--color-code-background);
+  --code-fg: var(--color-code-foreground);
+  --code-scrollbar: rgb(71 85 105 / 0.8);
+  --code-highlight-bg: rgb(59 130 246 / 0.2);
+  --code-highlight-accent: rgb(96 165 250);
+
+  /* Header specific (legacy support) */
+  --header-bg: rgb(15 23 42 / 0.72);
+  --header-bg-scrolled: rgb(15 23 42 / 0.8400000000000001);
+  --header-border: rgb(71 85 105 / 0.8);
+  --header-shadow: var(--shadow-header);
+  --header-shadow-strong: 0 20px 40px rgb(0 0 0 / 0.35);
+}
+</style><link rel="stylesheet" href="/blog-preview/previews/pr-480/_astro/_slug_.Cj2S-0Jt.css">
+<style>.reading-progress[data-astro-cid-mu6cnre2]{position:fixed;inset:0 0 auto;height:3px;width:100%;background:transparent;z-index:50;pointer-events:none}.reading-progress__bar[data-astro-cid-mu6cnre2]{display:block;height:100%;width:100%;transform:scaleX(var(--progress-value, 0));transform-origin:left center;background:linear-gradient(90deg,var(--progress-color-start),var(--progress-color-end));transition:transform .1s linear}:root{--progress-color-start: #2563eb;--progress-color-end: #22d3ee}:root.dark{--progress-color-start: #38bdf8;--progress-color-end: #a855f7}@media(prefers-reduced-motion:reduce){.reading-progress__bar[data-astro-cid-mu6cnre2]{transition:none}}
+[data-book-chapter]>span[id]{display:block;scroll-margin-top:calc(var(--site-header-height) + var(--page-space-top) + .75rem)}[data-book-chapter] img:is([src$="/pointwise-product.gif"],[src$="/roofline-plot-q3.png"],[src$="/cores.png"],[src$="/ici-wraparound.png"],[src$="/challenge-problem.png"],[src$="/systolic-array2.gif"],[src$="/systolic-array-bad.gif"],[src$="/sharding-colored1.png"],[src$="/sharding-colored2.png"],[src$="/sharding-colored3.png"],[src$="/sharding-colored4.png"],[src$="/sharding-colored6.png"],[src$="/all-gather-bandwidth.png"],[src$="/moe.png"],[src$="/paged-attention.png"],[src$="/batch-scaling-latency.png"],[src$="/batch-scaling-throughput.png"],[src$="/2d-weight-stationary.png"],[src$="/tiling2.png"],[src$="/blackwell-sm.png"],[src$="/b200-node.png"]){max-width:min(100%,500px);margin-inline:auto}:root.dark [data-book-chapter] img[src$="/mixed-fsdp-comms-2.png"]{padding:.75rem;border:1px solid rgb(63 63 70 / .9);background:#fff;box-shadow:0 18px 40px #00000038}[data-book-chapter] a[href*="#ref-"]{display:inline-block;margin-inline:.08em;font-size:.72em;line-height:1;vertical-align:super;white-space:nowrap}[data-book-chapter] details{margin-block:1.5rem;overflow:hidden;border:1px solid rgb(212 212 216 / .9);border-radius:.9rem;background:#fafafab8;padding:.9rem 1rem}:root.dark [data-book-chapter] details{border-color:#3f3f46e6;background:#18181b94}[data-book-chapter] details>summary{cursor:pointer;font-weight:650;color:#0369a1}:root.dark [data-book-chapter] details>summary{color:#7dd3fc}[data-book-chapter] .algorithm{margin-block:1.5rem;border:1px dashed rgb(14 116 144 / .55);border-radius:.9rem;background:#ecfeff8c;padding:1rem 1.1rem}:root.dark [data-book-chapter] .algorithm{border-color:#22d3ee66;background:#08334440}[data-book-chapter] .algorithm>:first-child{margin-top:0}[data-book-chapter] .algorithm>:last-child{margin-bottom:0}[data-book-chapter] .scaling-book-plotly{width:100%;margin-block:2rem;overflow:hidden;border:1px solid rgb(212 212 216 / .9);border-radius:1rem;background:#fff;box-shadow:0 8px 24px #18181b14}:root.dark [data-book-chapter] .scaling-book-plotly{border-color:#3f3f46e6}[data-book-chapter] .scaling-book-plotly iframe{display:block;width:100%;height:min(70vh,34rem);min-height:25rem;border:0;background:#fff}@media(max-width:640px){[data-book-chapter] table th,[data-book-chapter] table td{overflow-wrap:normal;word-break:normal}[data-book-chapter] table th{white-space:nowrap}[data-book-chapter] .scaling-book-plotly{height:28rem;min-height:28rem;aspect-ratio:auto!important;overflow-x:auto;overscroll-behavior-inline:contain;-webkit-overflow-scrolling:touch}[data-book-chapter] .scaling-book-plotly:before{position:sticky;left:0;z-index:1;display:flex;width:100%;height:2rem;align-items:center;padding-inline:.75rem;background:#f4f4f5f5;color:#52525b;content:"↔ 左右滑动查看完整交互图";font-size:.75rem;font-weight:600}[data-book-chapter] .scaling-book-plotly iframe{top:2rem!important;width:48rem!important;min-width:48rem;height:calc(100% - 2rem)!important}}
+</style></head> <body class="bg-neutral-50 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 min-h-screen flex flex-col">  <div class="reading-progress" data-reading-progress data-target-selector="[data-article]" data-astro-cid-mu6cnre2> <span class="reading-progress__bar" data-reading-progress-bar data-astro-cid-mu6cnre2></span> </div>  <script type="module">const s=document.querySelector("[data-reading-progress]"),p=s?.dataset?.targetSelector||"[data-article]",g=s?.querySelector("[data-reading-progress-bar]"),o=document.querySelector(p);if(s&&g&&o){let n=0,a=0,t=!1;const u=(e,r,w)=>Math.min(Math.max(e,r),w),c=()=>{n=o.getBoundingClientRect().top+window.scrollY,a=o.scrollHeight},i=()=>{const e=Math.max(a-window.innerHeight,1),r=u((window.scrollY-n)/e,0,1);g.style.setProperty("--progress-value",r.toString()),t=!1},l=()=>{t||(t=!0,requestAnimationFrame(i))},d=()=>{c(),l()};c(),i(),window.addEventListener("scroll",l,{passive:!0}),window.addEventListener("resize",d),window.addEventListener("load",d,{once:!0})}</script> <header class="site-header header-variant-frosted" data-header data-site-header> <div class="container mx-auto px-5 py-3 sm:py-4 flex justify-between items-start max-w-5xl"> <a href="/blog-preview/previews/pr-480/" class="text-xl font-bold hover:text-sky-600 dark:hover:text-sky-400 flex shrink-0 items-center gap-2"> <img src="/blog-preview/previews/pr-480/placeholder-social.jpg" alt="Yuanle Liu" width="32" height="32" class="h-8 w-8 rounded"> <span class="hidden sm:inline">Yuanle Liu</span> </a> <nav class="flex items-start items-center gap-1 text-sm sm:gap-3 sm:text-base"> <a href="/blog-preview/previews/pr-480/" class="hover:underline inline-flex items-center "> Home </a><a href="/blog-preview/previews/pr-480/columns/" class="hover:underline inline-flex items-center text-sky-600 dark:text-sky-400 font-semibold" aria-current="page"> Columns </a><a href="/blog-preview/previews/pr-480/archive/" class="hover:underline inline-flex items-center "> Archive </a><a href="/blog-preview/previews/pr-480/tags/" class="hover:underline inline-flex items-center "> Tags </a><a href="/blog-preview/previews/pr-480/about/" class="hover:underline inline-flex items-center "> About </a> <button id="theme-toggle" class="inline-flex items-center gap-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800 px-1" aria-label="Toggle theme"> 🖥️ ☀️ </button> </nav> </div> </header> <div class="site-header-spacer" aria-hidden="true"></div> <script type="module">const u="theme",l=["light","dark"];const g=()=>{try{const e=localStorage.getItem(u);if(e==="light"||e==="dark")return e}catch(e){console.warn("Unable to read theme preference:",e)}return window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"},f=()=>document.documentElement.classList.contains("dark")?"dark":"light",p=e=>e==="dark"?"🌙":"☀️",k=e=>e==="dark"?"Dark":"Light",c=(e,n)=>{const t=document.getElementById("theme-toggle");if(!t)return;const o=n??f(),s=p(o),a=k(o);t.dataset.theme=e,t.textContent="";const i=document.createElement("span");i.className="inline-flex items-center justify-center",i.style.lineHeight="1",i.textContent=s,t.appendChild(i);const r=document.createElement("span");r.className="hidden sm:inline",r.textContent=a,t.appendChild(r),t.setAttribute("aria-label",`Toggle theme (current: ${a})`)},d=e=>{if(typeof window.__setTheme=="function"){window.__setTheme?.(e);return}const n=e==="dark"?"dark":"light";document.documentElement.classList.toggle("dark",n==="dark");try{localStorage.setItem(u,e)}catch(t){console.warn("Unable to persist theme preference:",t)}window.dispatchEvent(new CustomEvent("themechange",{detail:{theme:e,resolved:n}}))},E=(e,n)=>{const t=n.getBoundingClientRect(),o=e instanceof MouseEvent,s=o&&e.detail>0&&(e.clientX!==0||e.clientY!==0),a=s&&o?e.clientX:t.left+t.width/2,i=s&&o?e.clientY:t.top+t.height/2,r=Math.max(Math.hypot(a,i),Math.hypot(window.innerWidth-a,i),Math.hypot(a,window.innerHeight-i),Math.hypot(window.innerWidth-a,window.innerHeight-i));return{x:a,y:i,r}},T=({x:e,y:n,r:t})=>{const o=document.documentElement;o.style.setProperty("--theme-toggle-x",`${e}px`),o.style.setProperty("--theme-toggle-y",`${n}px`),o.style.setProperty("--theme-toggle-r",`${t}px`)},L=async(e,n,t)=>{if(t){d(e),c(e);return}T(n),document.documentElement.classList.add("theme-toggle-transitioning");const o=document;try{if(typeof o.startViewTransition=="function"){await o.startViewTransition(()=>{d(e),c(e)}).finished.catch(i=>{console.warn("Theme view transition failed:",i)});return}const s=document.createElement("div");s.className="theme-toggle-overlay",e==="dark"&&s.classList.add("dark"),document.body.appendChild(s);try{s.getBoundingClientRect(),s.classList.add("is-animating"),await new Promise(a=>{let i=!1;const r=()=>{i||(i=!0,a())};s.addEventListener("animationend",r,{once:!0}),s.addEventListener("animationcancel",r,{once:!0}),window.setTimeout(r,550)}),d(e),c(e)}finally{s.remove()}}finally{document.documentElement.classList.remove("theme-toggle-transitioning")}};let m=!1;const M=async e=>{if(m)return;const n=e.currentTarget instanceof HTMLElement?e.currentTarget:null;if(!n)return;m=!0,n.setAttribute("disabled","true");const t=g(),o=l[(l.indexOf(t)+1)%l.length];try{const s=E(e,n);await L(o,s,w.matches)}finally{window.setTimeout(()=>{n.removeAttribute("disabled"),m=!1},500)}},h=document.querySelector("[data-header]"),w=window.matchMedia("(prefers-reduced-motion: reduce)"),v=w.matches,y=()=>{if(!h)return;const e=window.scrollY>6;h.classList.toggle("is-scrolled",e)};document.getElementById("theme-toggle")?.addEventListener("click",M);c(g());window.addEventListener("themechange",e=>{const n=e.detail,t=n?.theme??g(),o=n?.resolved;c(t,o)});y();const b=()=>y();window.addEventListener("scroll",b,{passive:!0});v&&h?.classList.add("reduce-motion");</script> <main class="page-shell page-shell-mobile-fab-safe container mx-auto max-w-7xl px-4"> <div class="page-stack lg:grid lg:grid-cols-[18rem_minmax(0,54rem)] lg:items-start lg:justify-center lg:gap-8" data-book-layout> <div class="min-w-0 lg:sticky lg:self-start" style="top: calc(var(--site-header-height) + var(--page-space-top, 0px));" data-book-sidebar> <details class="rounded-xl border border-zinc-200 bg-neutral-50/80 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/60 lg:hidden"> <summary class="cursor-pointer select-none px-4 py-3 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+全书目录
+</summary> <nav class="max-h-[60vh] overflow-y-auto border-t border-zinc-200 p-3 dark:border-zinc-800"> <ol class="space-y-1" aria-label="Scaling Book 章节目录"> <li> <a href="/blog-preview/previews/pr-480/scaling-book/00-introduction/" aria-current="page" class="flex items-start gap-2 rounded-lg px-3 py-2 text-sm transition bg-sky-100 font-semibold text-sky-800 dark:bg-sky-950 dark:text-sky-300"> <span class="shrink-0 text-xs leading-5 text-zinc-500 dark:text-zinc-400"> 导论 </span> <span>导论</span> </a> </li><li> <a href="/blog-preview/previews/pr-480/scaling-book/01-roofline/" class="flex items-start gap-2 rounded-lg px-3 py-2 text-sm transition text-zinc-700 hover:bg-zinc-100 hover:text-sky-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-sky-300"> <span class="shrink-0 text-xs leading-5 text-zinc-500 dark:text-zinc-400"> 第 1 章 </span> <span>Roofline 模型详解</span> </a> </li><li> <a href="/blog-preview/previews/pr-480/scaling-book/02-tpus/" class="flex items-start gap-2 rounded-lg px-3 py-2 text-sm transition text-zinc-700 hover:bg-zinc-100 hover:text-sky-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-sky-300"> <span class="shrink-0 text-xs leading-5 text-zinc-500 dark:text-zinc-400"> 第 2 章 </span> <span>如何理解 TPU</span> </a> </li><li> <a href="/blog-preview/previews/pr-480/scaling-book/03-sharding/" class="flex items-start gap-2 rounded-lg px-3 py-2 text-sm transition text-zinc-700 hover:bg-zinc-100 hover:text-sky-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-sky-300"> <span class="shrink-0 text-xs leading-5 text-zinc-500 dark:text-zinc-400"> 第 3 章 </span> <span>分片矩阵及其乘法</span> </a> </li><li> <a href="/blog-preview/previews/pr-480/scaling-book/04-transformers/" class="flex items-start gap-2 rounded-lg px-3 py-2 text-sm transition text-zinc-700 hover:bg-zinc-100 hover:text-sky-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-sky-300"> <span class="shrink-0 text-xs leading-5 text-zinc-500 dark:text-zinc-400"> 第 4 章 </span> <span>你需要掌握的全部 Transformer 数学</span> </a> </li><li> <a href="/blog-preview/previews/pr-480/scaling-book/05-training/" class="flex items-start gap-2 rounded-lg px-3 py-2 text-sm transition text-zinc-700 hover:bg-zinc-100 hover:text-sky-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-sky-300"> <span class="shrink-0 text-xs leading-5 text-zinc-500 dark:text-zinc-400"> 第 5 章 </span> <span>如何并行化 Transformer 训练</span> </a> </li><li> <a href="/blog-preview/previews/pr-480/scaling-book/06-llama3-training/" class="flex items-start gap-2 rounded-lg px-3 py-2 text-sm transition text-zinc-700 hover:bg-zinc-100 hover:text-sky-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-sky-300"> <span class="shrink-0 text-xs leading-5 text-zinc-500 dark:text-zinc-400"> 第 6 章 </span> <span>在 TPU 上训练 LLaMA 3</span> </a> </li><li> <a href="/blog-preview/previews/pr-480/scaling-book/07-inference/" class="flex items-start gap-2 rounded-lg px-3 py-2 text-sm transition text-zinc-700 hover:bg-zinc-100 hover:text-sky-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-sky-300"> <span class="shrink-0 text-xs leading-5 text-zinc-500 dark:text-zinc-400"> 第 7 章 </span> <span>Transformer 推理详解</span> </a> </li><li> <a href="/blog-preview/previews/pr-480/scaling-book/08-llama3-inference/" class="flex items-start gap-2 rounded-lg px-3 py-2 text-sm transition text-zinc-700 hover:bg-zinc-100 hover:text-sky-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-sky-300"> <span class="shrink-0 text-xs leading-5 text-zinc-500 dark:text-zinc-400"> 第 8 章 </span> <span>在 TPU 上部署 LLaMA 3-70B 服务</span> </a> </li><li> <a href="/blog-preview/previews/pr-480/scaling-book/09-profiling/" class="flex items-start gap-2 rounded-lg px-3 py-2 text-sm transition text-zinc-700 hover:bg-zinc-100 hover:text-sky-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-sky-300"> <span class="shrink-0 text-xs leading-5 text-zinc-500 dark:text-zinc-400"> 第 9 章 </span> <span>如何对 TPU 程序进行性能剖析</span> </a> </li><li> <a href="/blog-preview/previews/pr-480/scaling-book/10-jax/" class="flex items-start gap-2 rounded-lg px-3 py-2 text-sm transition text-zinc-700 hover:bg-zinc-100 hover:text-sky-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-sky-300"> <span class="shrink-0 text-xs leading-5 text-zinc-500 dark:text-zinc-400"> 第 10 章 </span> <span>使用 JAX 为 TPU 编程</span> </a> </li><li> <a href="/blog-preview/previews/pr-480/scaling-book/11-conclusion/" class="flex items-start gap-2 rounded-lg px-3 py-2 text-sm transition text-zinc-700 hover:bg-zinc-100 hover:text-sky-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-sky-300"> <span class="shrink-0 text-xs leading-5 text-zinc-500 dark:text-zinc-400"> 第 11 章 </span> <span>总结与延伸阅读</span> </a> </li><li> <a href="/blog-preview/previews/pr-480/scaling-book/12-gpus/" class="flex items-start gap-2 rounded-lg px-3 py-2 text-sm transition text-zinc-700 hover:bg-zinc-100 hover:text-sky-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-sky-300"> <span class="shrink-0 text-xs leading-5 text-zinc-500 dark:text-zinc-400"> 第 12 章 </span> <span>如何理解 GPU</span> </a> </li> </ol> </nav> </details> <aside class="hidden lg:block"> <div class="flex max-h-[inherit] flex-col overflow-hidden rounded-xl border border-zinc-200 bg-neutral-50/85 shadow-md backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-900/60" style="max-height: calc(100dvh - var(--site-header-height) - var(--page-space-top, 0px) - 1rem);"> <div class="border-b border-zinc-200 px-4 py-4 dark:border-zinc-800"> <a href="/blog-preview/previews/pr-480/scaling-book/" class="text-sm font-semibold text-zinc-900 transition hover:text-sky-600 dark:text-zinc-100 dark:hover:text-sky-400">
+Scaling Book 中文版
+</a> <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">全书 13 章</p> </div> <nav class="min-h-0 flex-1 overflow-y-auto p-3" aria-label="Scaling Book 章节目录"> <ol class="space-y-1"> <li> <a href="/blog-preview/previews/pr-480/scaling-book/00-introduction/" aria-current="page" class="block rounded-lg px-3 py-2 text-sm leading-snug transition bg-sky-100 font-semibold text-sky-800 dark:bg-sky-950 dark:text-sky-300"> <span class="mb-0.5 block text-[0.68rem] uppercase tracking-wide text-zinc-500 dark:text-zinc-400"> 导论 </span> 导论 </a> <ol class="my-2 ml-3 space-y-1 border-l border-zinc-200 pl-3 dark:border-zinc-700"> <li> <a href="#为什么你应当关心这些" class="block py-1 text-xs leading-snug text-zinc-500 transition hover:text-sky-600 dark:text-zinc-400 dark:hover:text-sky-400 pl-3"> 为什么你应当关心这些？ </a> </li><li> <a href="#全书概览" class="block py-1 text-xs leading-snug text-zinc-500 transition hover:text-sky-600 dark:text-zinc-400 dark:hover:text-sky-400 "> 全书概览 </a> </li><li> <a href="#闲话少说-第-1-章-将从-tpu-的-roofline-模型讲起" class="block py-1 text-xs leading-snug text-zinc-500 transition hover:text-sky-600 dark:text-zinc-400 dark:hover:text-sky-400 pl-3"> 闲话少说，第 1 章将从 TPU 的 Roofline 模型讲起。 </a> </li><li> <a href="#章节导航" class="block py-1 text-xs leading-snug text-zinc-500 transition hover:text-sky-600 dark:text-zinc-400 dark:hover:text-sky-400 "> 章节导航 </a> </li><li> <a href="#footnote-label" class="block py-1 text-xs leading-snug text-zinc-500 transition hover:text-sky-600 dark:text-zinc-400 dark:hover:text-sky-400 "> 脚注 </a> </li> </ol> </li><li> <a href="/blog-preview/previews/pr-480/scaling-book/01-roofline/" class="block rounded-lg px-3 py-2 text-sm leading-snug transition text-zinc-700 hover:bg-zinc-100 hover:text-sky-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-sky-300"> <span class="mb-0.5 block text-[0.68rem] uppercase tracking-wide text-zinc-500 dark:text-zinc-400"> 第 1 章 </span> Roofline 模型详解 </a>  </li><li> <a href="/blog-preview/previews/pr-480/scaling-book/02-tpus/" class="block rounded-lg px-3 py-2 text-sm leading-snug transition text-zinc-700 hover:bg-zinc-100 hover:text-sky-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-sky-300"> <span class="mb-0.5 block text-[0.68rem] uppercase tracking-wide text-zinc-500 dark:text-zinc-400"> 第 2 章 </span> 如何理解 TPU </a>  </li><li> <a href="/blog-preview/previews/pr-480/scaling-book/03-sharding/" class="block rounded-lg px-3 py-2 text-sm leading-snug transition text-zinc-700 hover:bg-zinc-100 hover:text-sky-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-sky-300"> <span class="mb-0.5 block text-[0.68rem] uppercase tracking-wide text-zinc-500 dark:text-zinc-400"> 第 3 章 </span> 分片矩阵及其乘法 </a>  </li><li> <a href="/blog-preview/previews/pr-480/scaling-book/04-transformers/" class="block rounded-lg px-3 py-2 text-sm leading-snug transition text-zinc-700 hover:bg-zinc-100 hover:text-sky-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-sky-300"> <span class="mb-0.5 block text-[0.68rem] uppercase tracking-wide text-zinc-500 dark:text-zinc-400"> 第 4 章 </span> 你需要掌握的全部 Transformer 数学 </a>  </li><li> <a href="/blog-preview/previews/pr-480/scaling-book/05-training/" class="block rounded-lg px-3 py-2 text-sm leading-snug transition text-zinc-700 hover:bg-zinc-100 hover:text-sky-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-sky-300"> <span class="mb-0.5 block text-[0.68rem] uppercase tracking-wide text-zinc-500 dark:text-zinc-400"> 第 5 章 </span> 如何并行化 Transformer 训练 </a>  </li><li> <a href="/blog-preview/previews/pr-480/scaling-book/06-llama3-training/" class="block rounded-lg px-3 py-2 text-sm leading-snug transition text-zinc-700 hover:bg-zinc-100 hover:text-sky-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-sky-300"> <span class="mb-0.5 block text-[0.68rem] uppercase tracking-wide text-zinc-500 dark:text-zinc-400"> 第 6 章 </span> 在 TPU 上训练 LLaMA 3 </a>  </li><li> <a href="/blog-preview/previews/pr-480/scaling-book/07-inference/" class="block rounded-lg px-3 py-2 text-sm leading-snug transition text-zinc-700 hover:bg-zinc-100 hover:text-sky-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-sky-300"> <span class="mb-0.5 block text-[0.68rem] uppercase tracking-wide text-zinc-500 dark:text-zinc-400"> 第 7 章 </span> Transformer 推理详解 </a>  </li><li> <a href="/blog-preview/previews/pr-480/scaling-book/08-llama3-inference/" class="block rounded-lg px-3 py-2 text-sm leading-snug transition text-zinc-700 hover:bg-zinc-100 hover:text-sky-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-sky-300"> <span class="mb-0.5 block text-[0.68rem] uppercase tracking-wide text-zinc-500 dark:text-zinc-400"> 第 8 章 </span> 在 TPU 上部署 LLaMA 3-70B 服务 </a>  </li><li> <a href="/blog-preview/previews/pr-480/scaling-book/09-profiling/" class="block rounded-lg px-3 py-2 text-sm leading-snug transition text-zinc-700 hover:bg-zinc-100 hover:text-sky-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-sky-300"> <span class="mb-0.5 block text-[0.68rem] uppercase tracking-wide text-zinc-500 dark:text-zinc-400"> 第 9 章 </span> 如何对 TPU 程序进行性能剖析 </a>  </li><li> <a href="/blog-preview/previews/pr-480/scaling-book/10-jax/" class="block rounded-lg px-3 py-2 text-sm leading-snug transition text-zinc-700 hover:bg-zinc-100 hover:text-sky-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-sky-300"> <span class="mb-0.5 block text-[0.68rem] uppercase tracking-wide text-zinc-500 dark:text-zinc-400"> 第 10 章 </span> 使用 JAX 为 TPU 编程 </a>  </li><li> <a href="/blog-preview/previews/pr-480/scaling-book/11-conclusion/" class="block rounded-lg px-3 py-2 text-sm leading-snug transition text-zinc-700 hover:bg-zinc-100 hover:text-sky-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-sky-300"> <span class="mb-0.5 block text-[0.68rem] uppercase tracking-wide text-zinc-500 dark:text-zinc-400"> 第 11 章 </span> 总结与延伸阅读 </a>  </li><li> <a href="/blog-preview/previews/pr-480/scaling-book/12-gpus/" class="block rounded-lg px-3 py-2 text-sm leading-snug transition text-zinc-700 hover:bg-zinc-100 hover:text-sky-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-sky-300"> <span class="mb-0.5 block text-[0.68rem] uppercase tracking-wide text-zinc-500 dark:text-zinc-400"> 第 12 章 </span> 如何理解 GPU </a>  </li> </ol> </nav> </div> </aside> </div> <article class="prose min-w-0 max-w-none dark:prose-invert prose-img:rounded-xl" data-article data-book-chapter> <header class="page-heading not-prose"> <nav class="text-sm text-zinc-500 dark:text-zinc-400" aria-label="面包屑导航"> <a href="/blog-preview/previews/pr-480/columns/" class="transition hover:text-sky-600 dark:hover:text-sky-400">
+专栏
+</a> <span class="mx-2" aria-hidden="true">/</span> <a href="/blog-preview/previews/pr-480/scaling-book/" class="transition hover:text-sky-600 dark:hover:text-sky-400"> Scaling Book 中文版 </a> <span class="mx-2" aria-hidden="true">/</span> <span aria-current="page">导论</span> </nav> <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-zinc-200 bg-neutral-50/75 px-4 py-3 text-sm text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900/55 dark:text-zinc-400"> <span class="font-semibold text-zinc-800 dark:text-zinc-200">导论</span> <span>3362 字 · 8 min read</span> <a href="https://github.com/jax-ml/scaling-book/blob/44109cacac9c5a9809a81c68ae4d45d7d2632ea6/index.md" target="_blank" rel="noopener noreferrer" class="font-medium text-sky-700 transition hover:text-sky-800 dark:text-sky-300 dark:hover:text-sky-200">
+查看本章英文源码 ↗
+</a> </div> </header> <p><span id="introduction"></span></p>
+<h1 id="导论">导论<a href="#导论" class="heading-anchor" aria-label="Link to 导论"></a></h1>
+<p><img src="/blog-preview/previews/pr-480/images/scaling-book/img/dragon.png" alt=""></p>
+<p>深度学习的许多部分至今仍像某种黑魔法，但模型性能优化并非如此——即使规模极其庞大也一样！从单个加速器到数以万计的加速器，相对简单的原理始终适用。理解这些原理后，你就能完成许多实用的事情：</p>
+<ul>
+<li>粗略估计模型各部分距离理论最优性能还有多远。</li>
+<li>在不同规模下，对不同并行方案（即如何把计算拆分到多个设备上）做出有依据的选择。</li>
+<li>估算训练和运行大型 Transformer 模型所需的成本与时间。</li>
+<li>设计能够利用<a href="https://arxiv.org/abs/2205.14135" target="_blank" rel="noopener noreferrer">特定</a><a href="https://arxiv.org/abs/1911.02150" target="_blank" rel="noopener noreferrer">硬件</a><a href="https://arxiv.org/abs/2007.00072" target="_blank" rel="noopener noreferrer">特性</a>的算法。</li>
+<li>在明确理解当前算法性能瓶颈的基础上设计硬件。</li>
+</ul>
+<p><strong>预期背景：</strong> 我们假设你对大语言模型（LLM）和 Transformer 架构有基本了解，但不一定熟悉它们如何在大规模系统上运行。你应当了解 LLM 训练的基础知识，最好还对 JAX 有一些基本认识。实用的背景读物包括介绍 Transformer 架构的<a href="https://jalammar.github.io/illustrated-transformer/" target="_blank" rel="noopener noreferrer">这篇博客文章</a>和<a href="https://arxiv.org/abs/1706.03762" target="_blank" rel="noopener noreferrer">原始 Transformer 论文</a>。你还可以查看<a href="../11-conclusion/#further-reading">这份列表</a>，其中收录了更多适合同时或日后阅读的资料。</p>
+<p><strong>目标与反馈：</strong> 读完本书后，你应当能够较有把握地估算：对于给定硬件平台上的 Transformer 模型，哪种并行方案最好，以及训练和推理大致需要多长时间。如果你仍然做不到，请给我们发邮件或留言！我们非常希望知道怎样才能把这些内容讲得更清楚。</p>
+<p>你或许也会喜欢新增的 NVIDIA GPU <a href="../12-gpus/#how-to-think-about-gpus">第 12 章</a>！</p>
+<p><span id="why-should-you-care"></span></p>
+<h3 id="为什么你应当关心这些">为什么你应当关心这些？<a href="#为什么你应当关心这些" class="heading-anchor" aria-label="Link to 为什么你应当关心这些？"></a></h3>
+<p>三四年前，我认为大多数机器学习研究人员都不需要理解本书中的任何内容。但如今，即使是“小”模型也已如此接近硬件极限，以至于要开展创新研究，就必须考虑大规模系统的效率问题。<sup><a href="#user-content-fn-ch0-1" id="user-content-fnref-ch0-1" data-footnote-ref="" aria-describedby="footnote-label">1</a></sup> <strong>如果基准成绩提高 20% 的代价是 Roofline 效率下降 20%，那么这项提升就毫无意义。</strong> 很有前景的模型架构常常失败，要么因为它们根本<em>无法</em>在大规模系统上高效运行，要么因为没有人愿意投入精力让它们高效运行。</p>
+<p><strong>“模型扩展”的目标，是在增加训练或推理所用芯片数量时，让吞吐量也按比例线性增加。</strong> 这称为“<em>强扩展</em>（strong scaling）”。增加芯片（即增加“并行度”）通常会缩短计算时间，但也会带来额外的芯片间通信。当通信耗时超过计算耗时时，系统便进入“通信受限”状态，无法继续实现强扩展。<sup><a href="#user-content-fn-ch0-2" id="user-content-fnref-ch0-2" data-footnote-ref="" aria-describedby="footnote-label">2</a></sup> 如果我们对硬件有足够深入的理解，能预判这些瓶颈会在哪里出现，就可以通过设计或重新配置模型来避开它们。<sup><a href="#user-content-fn-ch0-3" id="user-content-fnref-ch0-3" data-footnote-ref="" aria-describedby="footnote-label">3</a></sup></p>
+<p><em>本书旨在解释 TPU（以及 GPU）硬件如何工作，以及 Transformer 架构为了在当代硬件上高效运行而经历了怎样的演变。我们希望，这既能帮助设计新架构的研究人员，也能帮助致力于让这一代 LLM 高速运行的工程师。</em></p>
+<p><span id="high-level-outline"></span></p>
+<h2 id="全书概览">全书概览<a href="#全书概览" class="heading-anchor" aria-label="Link to 全书概览"></a></h2>
+<p>本书的整体结构如下：</p>
+<p><a href="../01-roofline/#all-about-rooflines">第 1 章</a>介绍 Roofline 分析，以及可能限制系统扩展能力的因素（通信、计算和内存）。<a href="../02-tpus/#how-to-think-about-tpus">第 2 章</a>和<a href="../03-sharding/#sharded-matrices-and-how-to-multiply-them">第 3 章</a>详细讨论 TPU 如何工作：既把它看作单独的芯片，也——这一点至关重要——把它看作由带宽和延迟都有限的芯片间链路连接起来的系统。我们将回答如下问题：</p>
+<ul>
+<li>一次给定规模的矩阵乘法应当耗时多久？它在什么情况下受计算能力、内存带宽或通信带宽限制？</li>
+<li>TPU 如何互连成训练集群？系统各部分的带宽有多大？</li>
+<li>在多个 TPU 之间聚合、分散或重新分布数组需要多长时间？</li>
+<li>如何高效地将以不同方式分布在多个设备上的矩阵相乘？</li>
+</ul>
+<p><img src="/blog-preview/previews/pr-480/images/scaling-book/img/pointwise-product.gif" alt="图：第 2 章中的示意图，展示 TPU 如何执行逐元素乘法。根据数组大小和不同链路的带宽，运算可能处于计算受限状态（充分使用硬件计算能力），也可能处于内存受限状态（瓶颈在于从内存加载数据）。"></p>
+<p>详见<a href="../02-tpus/#how-to-think-about-tpus">第 2 章</a>。</p>
+<p>五年前，机器学习领域还有丰富多彩的架构版图——ConvNet、LSTM、MLP、Transformer——但如今基本只剩下 Transformer<a href="../#ref-transformers">[transformers]</a>。我们坚信，Transformer 架构的每个组成部分都值得深入理解：每个矩阵的确切大小、归一化发生的位置，以及各部分包含多少参数和 FLOPs<sup><a href="#user-content-fn-ch0-4" id="user-content-fnref-ch0-4" data-footnote-ref="" aria-describedby="footnote-label">4</a></sup>。<a href="../04-transformers/#all-the-transformer-math-you-need-to-know">第 4 章</a>将细致讲解这些“Transformer 数学”，说明如何计算训练与推理过程中的参数量和 FLOPs。由此，我们便能知道模型会占用多少内存、计算或通信分别会消耗多少时间，以及注意力相对于前馈块会在什么时候变得重要。</p>
+<p><img src="/blog-preview/previews/pr-480/images/scaling-book/img/transformer-diagram.png" alt="图：标准 Transformer 层，其中每次矩阵乘法（matmul）都画成圆圈中的一个点。所有参数（归一化参数除外）均以紫色标出。第 4 章将更详细地讲解这张图。"></p>
+<p>详见<a href="../04-transformers/#all-the-transformer-math-you-need-to-know">第 4 章</a>。</p>
+<p><a href="../05-training/#how-to-parallelize-a-transformer-for-training">第 5 章：训练</a>和<a href="../07-inference/#all-about-transformer-inference">第 7 章：推理</a>是本书的核心，我们将在其中讨论一个根本问题：给定某种规模的模型和一定数量的芯片，如何并行化模型，才能让系统保持在“强扩展”区间？这是一个看似简单、答案却出乎意料地复杂的问题。从高层来看，把模型拆分到多个芯片上主要有四种并行技术（<strong>数据并行</strong>、<strong>张量并行</strong>、<strong>流水线并行</strong>和<strong>专家并行</strong>），此外还有许多用于降低内存需求的技术（<strong>重计算（rematerialization）</strong>、<strong>优化器/模型分片（即 ZeRO）</strong>、<strong>主机卸载</strong>、<strong>梯度累积</strong>）。这些内容都会在相应章节中讨论。</p>
+<p>我们希望，在读完这些章节后，面对新的架构或设置，你能够自行选择合适的方法。<a href="../06-llama3-training/#training-llama-3-on-tpus">第 6 章</a>和<a href="../08-llama3-inference/#serving-llama-3-70b-on-tpus">第 8 章</a>则是实践教程，将这些概念应用于广受欢迎的开源模型 LLaMA 3。</p>
+<p>最后，<a href="../09-profiling/#how-to-profile-tpu-programs">第 9 章</a>和<a href="../10-jax/#programming-tpus-in-jax">第 10 章</a>介绍如何在 JAX 中实现其中一些思想，以及在出现问题时如何对代码进行性能剖析和调试。<a href="../12-gpus/#how-to-think-about-gpus">第 12 章</a>是新增内容，将深入讨论 GPU。</p>
+<p>全书各处都安排了练习题，供你亲自思考。你完全不必有压力，不需要读完所有章节，也不必按顺序阅读。还请留下反馈。目前本书仍是一份草稿，会继续修订。谢谢！</p>
+<p><em>在此特别感谢 James Bradbury 和 Blake Hechtman，他们推导出了本书中的许多思想。</em></p>
+<p><span id="without-further-ado-here-is-section-1-about-tpu-rooflines"></span></p>
+<h3 id="闲话少说-第-1-章-将从-tpu-的-roofline-模型讲起">闲话少说，<a href="../01-roofline/#all-about-rooflines">第 1 章</a>将从 TPU 的 Roofline 模型讲起。<a href="#闲话少说-第-1-章-将从-tpu-的-roofline-模型讲起" class="heading-anchor" aria-label="Link to 闲话少说， 第 1 章 将从 TPU 的 Roofline 模型讲起。"></a></h3>
+<p><span id="links-to-sections"></span></p>
+<h2 id="章节导航">章节导航<a href="#章节导航" class="heading-anchor" aria-label="Link to 章节导航"></a></h2>
+<p><em>这一系列文章可能比实际需要的更长，但我们希望这不会让你望而却步。前三章是预备知识；如果你已经熟悉这些材料，可以跳过，不过其中会引入后续章节使用的记号。最后三部分或许最具实践价值，因为它们会说明如何处理真实模型。</em></p>
+<p><strong>第一部分：预备知识</strong></p>
+<ul>
+<li>
+<p><a href="../01-roofline/#all-about-rooflines"><strong>第 1 章：Roofline 分析简介</strong></a>。算法受三类因素限制：计算、通信和内存。我们可以据此近似估算算法的运行速度。</p>
+</li>
+<li>
+<p><a href="../02-tpus/#how-to-think-about-tpus"><strong>第 2 章：如何理解 TPU</strong></a>。TPU 如何工作？这会怎样影响我们能够训练和部署推理服务的模型？</p>
+</li>
+<li>
+<p><a href="../03-sharding/#sharded-matrices-and-how-to-multiply-them"><strong>第 3 章：分片矩阵及其乘法</strong></a>。本章借助我们最喜欢的运算——（分片）矩阵乘法——来解释模型分片和多 TPU 并行。</p>
+</li>
+</ul>
+<p><strong>第二部分：Transformer</strong></p>
+<ul>
+<li>
+<p><a href="../04-transformers/#all-the-transformer-math-you-need-to-know"><strong>第 4 章：你需要掌握的全部 Transformer 数学</strong></a>。Transformer 的前向传播和反向传播分别需要多少 FLOPs？你能计算它的参数量吗？KV 缓存有多大？本章将逐步推导这些计算。</p>
+</li>
+<li>
+<p><a href="../05-training/#how-to-parallelize-a-transformer-for-training"><strong>第 5 章：如何并行化 Transformer 训练</strong></a>。FSDP、Megatron 分片、流水线并行：给定一定数量的芯片，如何用给定批大小尽可能高效地训练给定规模的模型？</p>
+</li>
+<li>
+<p><a href="../06-llama3-training/#training-llama-3-on-tpus"><strong>第 6 章：在 TPU 上训练 LLaMA 3</strong></a>。如何在 TPU 上训练 LLaMA 3？需要多长时间？成本是多少？</p>
+</li>
+<li>
+<p><a href="../07-inference/#all-about-transformer-inference"><strong>第 7 章：Transformer 推理详解</strong></a>。训练完成后，我们还需要部署模型。推理引入了一个新的考量因素——延迟——并改变了内存使用格局。本章将讨论解耦式推理服务如何工作，以及应如何理解 KV 缓存。</p>
+</li>
+<li>
+<p><a href="../08-llama3-inference/#serving-llama-3-70b-on-tpus"><strong>第 8 章：在 TPU 上部署 LLaMA 3 推理服务</strong></a>。在 TPU v5e 上部署 LLaMA 3 推理服务需要多少成本？延迟与吞吐量之间有怎样的权衡？</p>
+</li>
+</ul>
+<p><strong>第三部分：实践教程</strong></p>
+<ul>
+<li>
+<p><a href="../09-profiling/#how-to-profile-tpu-programs"><strong>第 9 章：如何对 TPU 代码进行性能剖析</strong></a>。真实的 LLM 从来不像前面的理论那样简单。本章介绍 JAX + XLA 软件栈，以及如何使用 JAX/TensorBoard 性能剖析器调试和修复真实问题。</p>
+</li>
+<li>
+<p><a href="../10-jax/#programming-tpus-in-jax"><strong>第 10 章：使用 JAX 为 TPU 编程</strong></a>。JAX 提供了一系列仿佛魔法般的计算并行 API，但你需要知道如何使用它们。本章包含有趣的示例和附有解答的练习题。</p>
+</li>
+</ul>
+<p><strong>第四部分：总结与附加内容</strong></p>
+<ul>
+<li>
+<p><a href="../11-conclusion/#conclusions-and-further-reading"><strong>第 11 章：总结与延伸阅读</strong></a>。关于 TPU 和 LLM 的总结思考与延伸阅读。</p>
+</li>
+<li>
+<p><a href="../12-gpus/#how-to-think-about-gpus"><strong>第 12 章：如何理解 GPU</strong></a>。介绍 GPU 的附加章节，讨论 GPU 的工作方式、互连方式，以及它的 Roofline 模型与 TPU 有何不同。</p>
+</li>
+</ul>
+<section data-footnotes="" class="footnotes"><h2 class="sr-only" id="footnote-label">脚注<a href="#footnote-label" class="heading-anchor" aria-label="Link to 脚注"></a></h2>
+<ol>
+<li id="user-content-fn-ch0-1">
+<p>从历史上看，机器学习研究大体遵循着系统创新与软件改进交替推进的“滴答”周期。Alex Krizhevsky 当年不得不编写堪称邪术的 CUDA 代码来加速 CNN，但几年之内，Theano 和 TensorFlow 等库便让你不再需要这样做。也许这里同样会发生这种变化，几年后，本书中的所有内容都会被抽象层完全隐藏起来。不过，规模定律不断把模型推向硬件能力的最前沿；至少在可预见的未来，前沿研究很可能仍与高效地把模型扩展到大型硬件拓扑这一能力密不可分。 <a href="#user-content-fnref-ch0-1" data-footnote-backref="" aria-label="Back to reference 1" class="data-footnote-backref">↩</a></p>
+</li>
+<li id="user-content-fn-ch0-2">
+<p>随着计算时间缩短，你通常也会在单芯片层面遇到瓶颈。崭新的 TPU 或 GPU 也许号称每秒可执行 500 万亿次运算，但如果不够谨慎，让它被内存中的参数搬运拖住，它同样可能只能发挥十分之一的性能。单芯片计算能力、内存带宽和总内存容量之间的相互作用，是理解扩展问题的关键。 <a href="#user-content-fnref-ch0-2" data-footnote-backref="" aria-label="Back to reference 2" class="data-footnote-backref">↩</a></p>
+</li>
+<li id="user-content-fn-ch0-3">
+<p>硬件设计者面临的恰好是反问题：在尽量降低成本的同时，为算法提供刚刚足够的计算能力、带宽和内存。可以想象，这种“协同设计”问题会带来多大压力：你必须押注在首批芯片真正可用时——往往是两三年后——算法会是什么样子。TPU 的发展堪称这场博弈中的巨大成功。矩阵乘法是一种独特的算法，它每搬运一个字节所执行的 FLOPs（每字节 N FLOPs）远多于几乎所有其他算法；早期 TPU 及其脉动阵列架构在当时实现了远优于 GPU 的单位成本性能。TPU 是为机器学习工作负载设计的，而配备 Tensor Core 的 GPU 也正在迅速演进以填补这一领域。但可以想象：如果神经网络没有兴起，或者发生了某种根本变化，使本就不如 GPU 灵活的 TPU 无法应对，代价会有多么高昂。 <a href="#user-content-fnref-ch0-3" data-footnote-backref="" aria-label="Back to reference 3" class="data-footnote-backref">↩</a></p>
+</li>
+<li id="user-content-fn-ch0-4">
+<p>FLOPs 是浮点运算次数（FLoating point OPerations），基本上就是所需加法和乘法的总次数。许多资料把 FLOPs 当作“每秒运算次数”，而本书会明确使用 FLOPs/s 表示速率。 <a href="#user-content-fnref-ch0-4" data-footnote-backref="" aria-label="Back to reference 4" class="data-footnote-backref">↩</a></p>
+</li>
+</ol>
+</section> <nav class="not-prose mt-12 grid gap-4 sm:grid-cols-2" aria-label="相邻章节"> <span></span> <a href="/blog-preview/previews/pr-480/scaling-book/01-roofline/" class="group rounded-xl border border-zinc-200 bg-neutral-50/70 p-4 text-right shadow-sm transition hover:-translate-y-0.5 hover:border-sky-400 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:border-sky-600"> <span class="text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+下一章 →
+</span> <span class="mt-2 block font-semibold text-zinc-900 group-hover:text-sky-700 dark:text-zinc-100 dark:group-hover:text-sky-300"> Roofline 模型详解 </span> </a> </nav> <div id="page-bottom-anchor" aria-hidden="true" style="height: 1px;"></div> </article> </div> <div class="fixed inset-0 z-50 pointer-events-none data-[open=true]:pointer-events-auto lg:hidden" data-mobile-toc data-open="false" aria-hidden="true"><div class="absolute inset-0 bg-zinc-900/40 opacity-0 transition duration-200 data-[open=true]:opacity-100 dark:bg-black/50" data-mobile-toc-backdrop></div><div id="mobile-toc-drawer" role="dialog" aria-modal="true" aria-label="文章目录" class="mobile-drawer-panel absolute inset-x-0 bottom-0 translate-y-full rounded-t-[1.75rem] border border-zinc-200 bg-neutral-50/95 shadow-2xl ring-1 ring-black/5 transition duration-200 data-[open=true]:translate-y-0 dark:border-zinc-800 dark:bg-zinc-900/95 dark:ring-white/10" data-mobile-toc-drawer><div class="mobile-drawer-handle bg-zinc-300/70 dark:bg-zinc-700/80"></div><div class="mobile-drawer-header"><div><p class="text-sm font-semibold text-zinc-900 dark:text-zinc-50">文章目录</p><p class="text-xs text-zinc-500 dark:text-zinc-400">点击条目可跳转</p></div><button type="button" class="mobile-drawer-close inline-flex items-center justify-center rounded-full border border-zinc-200 bg-neutral-50 text-sm font-medium text-zinc-800 shadow-sm transition hover:text-sky-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:text-sky-400 dark:focus-visible:ring-offset-zinc-900" data-mobile-toc-close>
+关闭
+</button></div><div class="mobile-drawer-scroll" data-mobile-toc-scroll><ol class="space-y-3 text-sm"><li><a href="#为什么你应当关心这些" data-toc-link data-mobile-toc-link data-target="为什么你应当关心这些" title="为什么你应当关心这些？" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>为什么你应当关心这些？</span></a></li><li><a href="#全书概览" data-toc-link data-mobile-toc-link data-target="全书概览" title="全书概览" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>全书概览</span></a><ol class="mt-1 space-y-1"><li><a href="#闲话少说-第-1-章-将从-tpu-的-roofline-模型讲起" data-toc-link data-mobile-toc-link data-target="闲话少说-第-1-章-将从-tpu-的-roofline-模型讲起" title="闲话少说，第 1 章将从 TPU 的 Roofline 模型讲起。" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-600 dark:text-zinc-300 pl-6"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>闲话少说，第 1 章将从 TPU 的 Roofline 模型讲起。</span></a></li></ol></li><li><a href="#章节导航" data-toc-link data-mobile-toc-link data-target="章节导航" title="章节导航" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>章节导航</span></a></li><li><a href="#footnote-label" data-toc-link data-mobile-toc-link data-target="footnote-label" title="脚注" class="group flex items-start gap-2 truncate underline-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900 text-sm text-zinc-700 dark:text-zinc-200 pl-3"><span class="mt-0.5 text-xs transition-colors group-data-[active=true]:text-sky-600 dark:group-data-[active=true]:text-sky-400 text-zinc-400 dark:text-zinc-500">
+#
+</span><span class="flex-1 truncate" data-title>脚注</span></a></li></ol></div></div></div><script type="module">const T=({moveThreshold:e=12,scrollThreshold:i=6,getScrollY:o=()=>typeof window>"u"?0:window.scrollY}={})=>{let n=null,r=null;const k=t=>{r&&t-r.finishedAt>800&&(r=null)};return{handlePointerDown(t){t.pointerType==="touch"&&(n={pointerId:t.pointerId,startX:t.clientX,startY:t.clientY,startScrollY:o(),moved:!1},r=null)},handlePointerMove(t){if(!n||t.pointerId!==n.pointerId)return;const d=t.clientX-n.startX,O=t.clientY-n.startY;Math.hypot(d,O)>=e&&(n.moved=!0)},handleScroll(t){n&&Math.abs(t-n.startScrollY)>=i&&(n.moved=!0)},handlePointerUp(t){!n||t.pointerId!==n.pointerId||(r={finishedAt:t.timeStamp,moved:n.moved},n=null)},handlePointerCancel(t){!n||t.pointerId!==n.pointerId||(r={finishedAt:t.timeStamp,moved:!0},n=null)},shouldHandleClick(t){if(k(t.timeStamp),!r)return!0;const d=!r.moved;return r=null,d}}},c=document.querySelector("[data-mobile-toc]"),u=document.querySelector("[data-mobile-toc-drawer]"),p=document.querySelector("[data-mobile-toc-backdrop]"),w=()=>Array.from(document.querySelectorAll("[data-mobile-toc-open]")),C=document.querySelector("[data-mobile-toc-close]"),y=()=>Array.from((u??c)?.querySelectorAll("[data-mobile-toc-link]")??[]),l=document.body,s=T(),D=()=>{const e=getComputedStyle(document.documentElement).getPropertyValue("--site-header-height");return parseFloat(e)||0},b=()=>{const e=getComputedStyle(document.documentElement).getPropertyValue("--page-space-top");return parseFloat(e)||0},S=()=>D()+b();let h=0;const I=50,P=e=>window.dispatchEvent(new CustomEvent("mobile-toc:toggle",{detail:{open:e}})),A=e=>{w().forEach(i=>i.setAttribute("aria-expanded",e?"true":"false"))},f=e=>{if(e instanceof MouseEvent&&!s.shouldHandleClick(e)){e.preventDefault();return}e.preventDefault(),a(!0)},m=e=>{s.handlePointerDown(e)},_=e=>{s.handlePointerMove(e)},H=()=>{s.handleScroll(window.scrollY)},M=e=>{s.handlePointerUp(e)},Y=e=>{s.handlePointerCancel(e)},L=()=>{w().forEach(e=>{e.removeEventListener("pointerdown",m),e.removeEventListener("click",f),e.addEventListener("pointerdown",m,{passive:!0}),e.addEventListener("click",f),e.style.touchAction="pan-y"})},R=()=>{h=window.scrollY,l.style.position="fixed",l.style.width="100%",l.style.top=`-${h}px`},B=()=>{l.style.position="",l.style.width="",l.style.top="",window.scrollTo({top:h,behavior:"instant"})},a=e=>{!c||!u||(c.dataset.open=String(e),u.dataset.open=String(e),p?.setAttribute("data-open",String(e)),c.setAttribute("aria-hidden",e?"false":"true"),A(e),P(e),e?R():B())},v=()=>{const e=S();y().map(o=>document.getElementById(o.dataset.target||"")).filter(o=>!!o).forEach(o=>{o.style.scrollMarginTop=`${e+16}px`})},g=e=>`#${encodeURIComponent(e)}`,U=(e,i=!1)=>{const o=document.getElementById(e);if(!o)return;const n=S(),r=window.scrollY+o.getBoundingClientRect().top-n-16;window.scrollTo({top:r,behavior:"instant"}),i?history.replaceState(null,"",g(e)):history.pushState(null,"",g(e))};L();const F=new MutationObserver(L);F.observe(document.body,{subtree:!0,childList:!0,attributes:!0,attributeFilter:["data-mobile-toc-open"]});window.addEventListener("pointermove",_,{passive:!0});window.addEventListener("scroll",H,{passive:!0});window.addEventListener("pointerup",M,{passive:!0});window.addEventListener("pointercancel",Y,{passive:!0});C?.addEventListener("click",()=>a(!1));p?.addEventListener("click",e=>{e.target===p&&a(!1)});const E=e=>{const o=e.currentTarget?.dataset.target;o&&(e.preventDefault(),e.stopPropagation(),a(!1),setTimeout(()=>U(o),I))};y().forEach(e=>{e.removeEventListener("click",E),e.addEventListener("click",E)});window.addEventListener("keydown",e=>{e.key==="Escape"&&a(!1)});v();window.addEventListener("headerheightchange",v);</script> <div class="floating-action-stack mobile-fab-stack fixed z-40 flex flex-col items-end gap-3 lg:hidden pointer-events-auto transition-opacity data-[toc-open=true]:opacity-0 data-[toc-open=true]:pointer-events-none" data-floating-action-stack><button type="button" class="floating-action-stack__button mobile-fab-button touch-pan-y inline-flex h-11 w-11 items-center justify-center rounded-full border border-zinc-200 bg-neutral-50/92 text-zinc-900 shadow-lg backdrop-blur-sm ring-offset-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 hover:-translate-y-0.5 hover:border-sky-200 hover:text-sky-600 data-[visible=false]:opacity-0 data-[visible=false]:pointer-events-none data-[visible=true]:opacity-100 data-[visible=true]:pointer-events-auto dark:border-zinc-800 dark:bg-zinc-900/88 dark:text-zinc-100 dark:ring-offset-zinc-900 dark:hover:border-sky-500/50 dark:hover:text-sky-300" data-floating-action-button data-action="toc" data-visible="true" style="transition-delay: 0ms;" aria-label="打开目录抽屉" data-mobile-toc-open="true"><span class="sr-only">目录</span><span aria-hidden="true" class="text-base leading-none">📑</span></button></div><script type="module">const o=document.querySelector("[data-floating-action-stack]"),r=o?.querySelector('[data-action="toc"]'),e=document.querySelector("[data-mobile-toc]"),a=t=>{o&&(o.dataset.tocOpen=t?"true":"false")};a(e?.dataset.open==="true");r?.addEventListener("click",()=>{requestAnimationFrame(()=>r?.blur())});window.addEventListener("mobile-toc:toggle",t=>{const n=t.detail;n&&a(n.open)});e&&new MutationObserver(()=>{a(e.dataset.open==="true")}).observe(e,{attributes:!0,attributeFilter:["data-open"]});</script> <button type="button" class="scroll-up-top-button fixed z-40 inline-flex h-12 w-12 items-center justify-center rounded-full border border-zinc-200 bg-neutral-50/92 text-zinc-900 shadow-lg backdrop-blur-sm transition data-[visible=false]:pointer-events-none data-[visible=false]:translate-y-2 data-[visible=false]:opacity-0 data-[visible=true]:opacity-100 dark:border-zinc-800 dark:bg-zinc-900/88 dark:text-zinc-100 lg:h-auto lg:w-auto lg:gap-2 lg:px-4 lg:py-2 lg:-translate-x-1/2 lg:data-[visible=false]:-translate-y-2" data-scroll-up-top-button data-target-selector="[data-book-chapter]" data-visible="false" style="--scroll-up-offset: calc(var(--mobile-fab-size) + var(--mobile-fab-gap));" aria-label="回到文章顶部"> <span aria-hidden="true" class="text-lg leading-none">↑</span> <span class="sr-only">回到顶部</span> <span aria-hidden="true" class="hidden lg:inline">回到顶部</span> </button> <script type="module">const t=document.querySelector("[data-scroll-up-top-button]"),w=t?.dataset.targetSelector||"[data-article]",d=document.querySelector(w),h=window.matchMedia("(prefers-reduced-motion: reduce)");if(!t||!d)t&&(t.dataset.visible="false");else{let o=0,n=window.scrollY,r=!1;const u=()=>{const e=getComputedStyle(document.documentElement).getPropertyValue("--site-header-height");return parseFloat(e)||0},p=()=>{const e=getComputedStyle(document.documentElement).getPropertyValue("--page-space-top");return parseFloat(e)||0},g=()=>u()+p(),s=()=>{o=d.getBoundingClientRect().top+window.scrollY},c=e=>{t.dataset.visible=e?"true":"false"},a=()=>{const e=window.scrollY,i=e-n,f=Math.abs(i)>=6;e<=o+140?c(!1):f&&c(i<0),n=e,r=!1},l=()=>{r||(r=!0,requestAnimationFrame(a))},m=()=>{const e=Math.max(0,o-g());window.scrollTo({top:e,behavior:h.matches?"auto":"smooth"})};s(),a(),window.addEventListener("scroll",l,{passive:!0}),window.addEventListener("resize",()=>{s(),l()}),window.addEventListener("load",()=>{s(),a()},{once:!0}),t.addEventListener("click",m)}</script> </main> <footer class="py-8 mt-auto border-t border-zinc-200 dark:border-zinc-800"> <div class="container mx-auto px-4 text-center text-zinc-500 max-w-4xl">
+&copy; 2026 Yuanle Liu. All rights reserved. </div> </footer>  <script type="module" src="/blog-preview/previews/pr-480/_astro/Layout.astro_astro_type_script_index_0_lang.BPB9lUd-.js"></script> <script type="module">const i=new WeakMap,c=(e,t)=>{e.dataset.state=t,t==="copied"?e.textContent="Copied":t==="error"?e.textContent="Failed":e.textContent="Copy";const o=i.get(e);if(o&&window.clearTimeout(o),t!=="idle"){const r=window.setTimeout(()=>c(e,"idle"),2e3);i.set(e,r)}},n=async e=>{const t=e.closest(".code-block");if(!t)return;const o=t.getAttribute("data-raw-code")??"";try{await navigator.clipboard.writeText(o),c(e,"copied")}catch(r){console.error("Copy failed",r),c(e,"error")}},s=()=>{document.addEventListener("click",e=>{const o=e.target?.closest("button.code-block__copy");o&&(e.preventDefault(),n(o))})},a=()=>{typeof document>"u"||s()};a();</script> <script type="module">function d(){const n=document.querySelector("[data-site-header]");if(!n){document.documentElement.style.setProperty("--site-header-height","0px");return}let i=0;const t=()=>{const e=n.getBoundingClientRect().height;Math.abs(e-i)>.5&&(i=e,document.documentElement.style.setProperty("--site-header-height",`${e}px`),window.dispatchEvent(new CustomEvent("headerheightchange",{detail:{height:e}})))};t(),"ResizeObserver"in window&&new ResizeObserver(()=>{t()}).observe(n),window.addEventListener("resize",t,{passive:!0}),window.addEventListener("load",t,{once:!0})}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",d):d();</script> </body> </html> 
